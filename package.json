@@ -1,12 +1,6 @@
 {
   "type": "module",
-  "name": "agent-chat",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "start": "node server.mjs",
-    "proxy": "node proxy.mjs"
-  },
+  "scripts": { "start": "node proxy.mjs" },
   "dependencies": {
     "@aws-sdk/client-bedrock-agent-runtime": "^3.634.0",
     "cors": "^2.8.5",
