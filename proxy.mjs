@@ -29,9 +29,9 @@ function cors(res) {
 }
 function aliasFromHost(host) {
   if (!host) return "plain";
-  if (host.startsWith("gain.")) return "gain";
-  if (host.startsWith("brain.")) return "brain";
-  if (host.startsWith("plain.")) return "plain";
+  if (host.startsWith("gina.")) return "gain";
+  if (host.startsWith("bianca.")) return "brain";
+  if (host.startsWith("paul.")) return "plain";
   return "plain";
 }
 function withCors(req, res) {
