@@ -1,0 +1,9 @@
+FLIGHT: LH0760
+SESSION: 50603384-7648-4a07-bc72-f0521c244ecb
+STARTED: 2025-10-15T14:22:31.994Z
+---
+[2025-10-15T14:22:31.994Z] ASSISTANT: Hello! Write your prompt to start communicating with your flight booking assistant!”
+[2025-10-15T14:22:45.220Z] USER: Hi
+[2025-10-15T14:22:47.228Z] ASSISTANT: Hello! I'm here to help you find your next travel destination and plan. To get started, could you share your travel interests or any specific destinations you're considering?
+[2025-10-15T14:23:06.442Z] USER: Can you give me the list of flights from Zagreb to Munich next week
+[2025-10-15T14:23:10.985Z] ASSISTANT: Error: Proxy error 502. Check proxy logs.

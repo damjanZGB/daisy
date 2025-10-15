@@ -1,0 +1,30 @@
+FLIGHT: LH4075
+SESSION: 69e2118e-a78c-4ffc-9a8e-6d556f8213b4
+STARTED: 2025-10-15T15:49:39.906Z
+---
+[2025-10-15T15:49:39.906Z] ASSISTANT: Hello! Provide route, dates, and travelers to search fares. Example: “Zagreb to Copenhagen, 06.11–11.11.2025, 1 adult.”
+[2025-10-15T15:49:46.902Z] USER: Can you give me the cheapest flight from Madrid to Rome on November 1st, 1 person
+[2025-10-15T15:49:50.395Z] ASSISTANT: Error: Proxy error 502. Check proxy logs.
+[2025-10-15T15:50:09.964Z] USER: Zagreb to Copenhagen, 06.11–11.11.2025, 1 adult.
+[2025-10-15T15:50:19.687Z] ASSISTANT: Here are the available flight options from Zagreb to Copenhagen for your travel dates:
+                           1. Lufthansa (LH5989) Zagreb to Munich, then LH2440 Munich to Copenhagen
+                           - Departure: 06 Nov 2025, 08:35 (ZAG) - 09:45 (MUC)
+                           - Arrival: 06 Nov 2025, 11:00 (MUC) - 12:40 (CPH)
+                           - Price: €181.98
+                           2. Lufthansa (LH5999) Zagreb to Munich, then LH2446 Munich to Copenhagen
+                           - Departure: 06 Nov 2025, 18:40 (ZAG) - 19:50 (MUC)
+                           - Arrival: 06 Nov 2025, 21:15 (MUC) - 22:55 (CPH)
+                           - Price: €181.98
+                           3. Lufthansa (LH5989) Zagreb to Munich, then LH2442 Munich to Copenhagen
+                           - Departure: 06 Nov 2025, 08:35 (ZAG) - 09:45 (MUC)
+                           - Arrival: 06 Nov 2025, 15:50 (MUC) - 17:30 (CPH)
+                           - Price: €181.98
+                           4. Austrian Airlines (OS7054) Zagreb to Vienna, then OS989 Vienna to Copenhagen
+                           - Departure: 06 Nov 2025, 17:50 (ZAG) - 18:45 (VIE)
+                           - Arrival: 06 Nov 2025, 20:55 (VIE) - 22:40 (CPH)
+                           - Price: €182.20
+                           5. Austrian Airlines (OS7052) Zagreb to Vienna, then OS995 Vienna to Copenhagen
+                           - Departure: 06 Nov 2025, 08:15 (ZAG) - 09:10 (VIE)
+                           - Arrival: 06 Nov 2025, 15:05 (VIE) - 16:50 (CPH)
+                           - Price: €182.20
+                           Please let me know if you have any preferences or need further assistance.

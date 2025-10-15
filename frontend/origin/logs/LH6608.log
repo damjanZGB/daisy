@@ -1,0 +1,17 @@
+FLIGHT: LH6608
+SESSION: 9e9a0dc1-2a0f-4657-b89b-d4f60b7e8f4a
+STARTED: 2025-10-15T14:26:44.648Z
+---
+[2025-10-15T14:26:44.649Z] ASSISTANT: Hello! Write your prompt to start communicating with your flight booking assistant!”
+[2025-10-15T14:27:01.946Z] USER: Hi
+[2025-10-15T14:27:03.983Z] ASSISTANT: Hello! I'm here to help you find your next travel destination and plan. To get started, could you share your travel interests or any specific destinations you're considering?
+[2025-10-15T14:27:27.713Z] USER: Could you give me the list of flights from Zagreb to Munich in the next week
+[2025-10-15T14:27:31.098Z] ASSISTANT: Error: Proxy error 502. Check proxy logs.
+[2025-10-15T14:48:57.430Z] USER: What are the cheapest flights from Madrid to Paris on June 1st
+[2025-10-15T14:49:01.675Z] ASSISTANT: Error: Proxy error 502. Check proxy logs.
+[2025-10-15T14:50:44.410Z] USER: What are the cheapest flights from Madrid to Paris on June 1st
+[2025-10-15T14:50:48.267Z] ASSISTANT: Error: Proxy error 502. Check proxy logs.
+[2025-10-15T14:57:12.086Z] USER: What are the cheapest flights from Madrid to Paris on November1st
+[2025-10-15T14:57:16.062Z] ASSISTANT: Error: Proxy error 502. Check proxy logs.
+[2025-10-15T15:00:33.439Z] USER: What are the cheapest flights from Madrid to Paris on November1st
+[2025-10-15T15:00:37.764Z] ASSISTANT: Error: Proxy error 502. Check proxy logs.
