@@ -1,6 +1,9 @@
 {
   "type": "module",
-  "scripts": { "start": "node proxy.mjs" },
+  "scripts": { 
+    "start": "node proxy.mjs",
+    "build:iata": "node scripts/convert-iata-md.js ./data/iata.md ./backend/iata.json"
+   },
   "dependencies": {
     "@aws-sdk/client-bedrock-agent-runtime": "^3.634.0",
     "cors": "^2.8.5",
