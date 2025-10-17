@@ -197,6 +197,7 @@
         });
 
         const [proxyOnline, setProxyOnline] = useState(true);
+        const locationHintSentRef = useRef(null);
 
         // Server-append state
         const headerSentRef = useRef(false);
@@ -504,7 +505,19 @@
 
           setBusy(true);
           try {
-            const payload = { inputText: text, sessionId };
+            let payloadText = text;
+            const originCode = locationInfo?.inferredOrigin;
+            if (originCode) {
+              const alreadySent = locationHintSentRef.current;
+              if (alreadySent !== originCode) {
+                const labelText = locationInfo?.label;
+                const originLabel = labelText && !/detecting/i.test(labelText) ? ` (${labelText})` : '';
+                const contextLine = `SYSTEM CONTEXT: Default departure airport inferred via UI geolocation is ${originCode}${originLabel}. Use this origin unless the traveler specifies a different one.`;
+                payloadText = `${contextLine}\n\n${payloadText}`;
+                locationHintSentRef.current = originCode;
+              }
+            }
+            const payload = { inputText: payloadText, sessionId };
             const res = await fetch(apiUrl, {
               method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             });
