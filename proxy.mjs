@@ -107,6 +107,7 @@ function signV4({ service, region, method, hostname, path, headers, body, access
   const now = new Date();
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
   const dateStamp = amzDate.slice(0, 8);
+  headers["x-amz-date"] = amzDate;
   const canonicalHeaders = Object.entries(headers)
     .map(([k, v]) => [k.toLowerCase().trim(), String(v).trim()])
     .sort((a,b) => a[0] < b[0] ? -1 : 1)
