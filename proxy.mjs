@@ -225,15 +225,37 @@ function loadIata() {
 }
 function iataLookup(term) {
   const db = loadIata();
-  const q = String(term || "").toUpperCase();
-  const out = [];
+  const q = String(term || "").trim().toUpperCase();
+  if (!q) return [];
+
+  const scored = [];
   for (const [code, rec] of Object.entries(db)) {
-    if (code.startsWith(q) || (rec.name || "").toUpperCase().includes(q) || (rec.city || "").toUpperCase().includes(q)) {
-      out.push({ code, ...rec });
-      if (out.length >= 20) break;
+    const airportCode = code.toUpperCase();
+    const name = String(rec.name || "").toUpperCase();
+    const city = String(rec.city || "").toUpperCase();
+
+    if (!airportCode.includes(q) && !name.includes(q) && !city.includes(q)) {
+      continue;
     }
+
+    if (airportCode === q) {
+      return [{ code: airportCode, ...rec }];
+    }
+
+    let score = 100;
+    if (city === q || name === q) score = 0;
+    else if (city.startsWith(q) || name.startsWith(q)) score = 1;
+    else if (airportCode.startsWith(q)) score = 2;
+    else if (city.includes(q)) score = 3;
+    else if (name.includes(q)) score = 4;
+    else score = 5;
+
+    scored.push({ score, code: airportCode, record: rec });
   }
-  return out;
+
+  scored.sort((a, b) => (a.score === b.score ? a.code.localeCompare(b.code) : a.score - b.score));
+
+  return scored.slice(0, 20).map(({ code, record }) => ({ code, ...record }));
 }
 
 const server = http.createServer(async (req, res) => {
