@@ -56,10 +56,11 @@
 
       function Header({ apiUrl, onOpenSettings, locationInfo }) {
         const formattedTime = (() => {
+          const reference = locationInfo?.localTime instanceof Date ? locationInfo.localTime : new Date(locationInfo?.localTime || Date.now());
           try {
-            return new Intl.DateTimeFormat([], { dateStyle: 'medium', timeStyle: 'short', timeZone: locationInfo?.tz }).format(locationInfo?.localTime || new Date());
+            return reference.toLocaleString(undefined, locationInfo?.tz ? { timeZone: locationInfo.tz } : undefined);
           } catch (_) {
-            return (locationInfo?.localTime || new Date()).toLocaleString();
+            return reference.toLocaleString();
           }
         })();
         const locationLabel = locationInfo?.label || "Detecting location�?�";
@@ -86,8 +87,10 @@
                   <div className="text-white/50">{formattedTime}{originLabel}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="hidden sm:inline text-xs text-white/60">Proxy:</span>
-                  <span className="text-xs px-2 py-1 rounded bg-white/5 border border-white/10 text-white/80 max-w-[40ch] truncate" title={apiUrl}>{apiUrl}</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/5 border border-white/10 text-[11px] text-white/70" title="Proxy connection active">
+                    <span className="block h-2 w-2 rounded-full bg-lhYellow"></span>
+                    Online
+                  </span>
                   {SETTINGS_VISIBLE && (
                     <button onClick={onOpenSettings} className="ml-2 text-sm px-3 py-1.5 rounded-lg bg-lhYellow text-lhBlue font-semibold hover:brightness-95 active:brightness-90 focus:outline-none focus:ring-2 focus:ring-white/40">
                       Settings

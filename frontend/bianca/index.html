@@ -68,10 +68,11 @@
 
       function Header({ apiUrl, onOpenSettings, locationInfo }) {
         const formattedTime = (() => {
+          const reference = locationInfo?.localTime instanceof Date ? locationInfo.localTime : new Date(locationInfo?.localTime || Date.now());
           try {
-            return new Intl.DateTimeFormat([], { dateStyle: 'medium', timeStyle: 'short', timeZone: locationInfo?.tz }).format(locationInfo?.localTime || new Date());
+            return reference.toLocaleString(undefined, locationInfo?.tz ? { timeZone: locationInfo.tz } : undefined);
           } catch (_) {
-            return (locationInfo?.localTime || new Date()).toLocaleString();
+            return reference.toLocaleString();
           }
         })();
         const locationLabel = locationInfo?.label || "Detecting location…";
