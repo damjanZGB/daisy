@@ -201,6 +201,129 @@
         // Tests
         useEffect(() => { console.assert(/^LH \d{4}$/.test(flightNo), 'Flight number format invalid', flightNo); }, [flightNo]);
 
+        useEffect(() => {
+          const timer = setInterval(() => {
+            setLocationInfo(prev => ({ ...prev, localTime: new Date() }));
+          }, 30000);
+          return () => clearInterval(timer);
+        }, []);
+
+        useEffect(() => {
+          const inferIata = async (input) => {
+            if (!lookupUrl) return null;
+            let term = '';
+            let lat;
+            let lon;
+            if (typeof input === 'string') {
+              term = input.trim();
+            } else if (input && typeof input === 'object') {
+              const termCandidates = [input.term, input.city, input.country];
+              for (const candidate of termCandidates) {
+                if (typeof candidate === 'string' && !term) {
+                  const trimmed = candidate.trim();
+                  if (trimmed) term = trimmed;
+                }
+              }
+              const latCandidate = Number(input.lat ?? input.latitude);
+              const lonCandidate = Number(input.lon ?? input.longitude);
+              if (Number.isFinite(latCandidate) && Number.isFinite(lonCandidate)) {
+                lat = latCandidate;
+                lon = lonCandidate;
+              }
+            }
+            const hasTerm = term.length > 0;
+            const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
+            if (!hasTerm && !hasCoords) return null;
+            const params = new URLSearchParams();
+            if (hasTerm) params.set('term', term);
+            if (hasCoords) {
+              params.set('lat', lat.toFixed(6));
+              params.set('lon', lon.toFixed(6));
+            }
+            params.set('limit', '5');
+            try {
+              const res = await fetch(`${lookupUrl}?${params.toString()}`);
+              if (!res.ok) throw new Error('lookup');
+              const data = await res.json();
+              const match = (data.matches || [])[0];
+              return match?.code || null;
+            } catch {
+              return null;
+            }
+          };
+
+          const applyLocation = (label, tz, inferred) => {
+            setLocationInfo(prev => ({
+              ...prev,
+              label,
+              tz: tz || prev.tz,
+              localTime: new Date(),
+              inferredOrigin: inferred || prev.inferredOrigin || null,
+            }));
+            if (inferred) {
+              localStorage.setItem('inferred_origin', inferred);
+            }
+          };
+
+          const updateFromCoords = async (lat, lon) => {
+            try {
+              const resp = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+              if (!resp.ok) throw new Error('reverse');
+              const data = await resp.json();
+              const locality = data.city || data.locality || data.principalSubdivision || '';
+              const country = data.countryName || data.countryCode || '';
+              const label = [locality, country].filter(Boolean).join(', ') || 'Current location';
+              let inferred = await inferIata({ lat, lon, term: locality });
+              if (!inferred && country) inferred = await inferIata({ term: country });
+              applyLocation(label, Intl.DateTimeFormat().resolvedOptions().timeZone, inferred);
+              return true;
+            } catch {
+              return false;
+            }
+          };
+
+          const fetchIpLocation = async () => {
+            try {
+              const resp = await fetch('https://ipapi.co/json/');
+              if (!resp.ok) throw new Error('geo');
+              const data = await resp.json();
+              const city = data.city;
+              const region = data.region;
+              const country = data.country_name || data.country;
+              const tz = data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+              const label = [city, region, country].filter(Boolean).join(', ') || 'Approximate location';
+              const lat = Number(data.latitude);
+              const lon = Number(data.longitude);
+              let inferred = await inferIata({ term: city, lat, lon });
+              if (!inferred && country) inferred = await inferIata({ term: country });
+              applyLocation(label, tz, inferred);
+            } catch {
+              applyLocation('Location unavailable', Intl.DateTimeFormat().resolvedOptions().timeZone, null);
+            }
+          };
+
+          const resolveLocation = async () => {
+            if ('geolocation' in navigator) {
+              const success = await new Promise(resolve => {
+                navigator.geolocation.getCurrentPosition(
+                  async pos => {
+                    const handled = await updateFromCoords(pos.coords.latitude, pos.coords.longitude);
+                    resolve(handled);
+                  },
+                  async () => {
+                    resolve(false);
+                  },
+                  { enableHighAccuracy: false, timeout: 5000, maximumAge: 600000 }
+                );
+              });
+              if (success) return;
+            }
+            await fetchIpLocation();
+          };
+
+          resolveLocation();
+        }, [lookupUrl]);
+
         // ===== Log formatting tools =====
         const tsStr = (iso) => `[${iso}]`;
         const baseIndent = (iso) => ' '.repeat(tsStr(iso).length + 1); // after timestamp + one space
@@ -390,7 +513,7 @@
 
         return (
           <div className="min-h-screen grid grid-rows-[auto,1fr,auto] bg-gradient-to-b from-lhBlueDark to-[#0b1229]">
-            <Header apiUrl={apiUrl} onOpenSettings={SETTINGS_VISIBLE ? () => setOpenSettings(true) : () => {}} />
+            <Header apiUrl={apiUrl} onOpenSettings={SETTINGS_VISIBLE ? () => setOpenSettings(true) : () => {}} locationInfo={locationInfo} />
 
             <main className="max-w-5xl mx-auto w-full px-4 py-6">
               <div ref={scrollRef} className="scroll-area h-[66vh] sm:h-[70vh] rounded-2xl bg-slate-900/60 border border-white/10 p-4 overflow-y-auto space-y-3">

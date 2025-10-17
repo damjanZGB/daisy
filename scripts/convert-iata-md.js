@@ -23,11 +23,33 @@ const out = {};
 for (const r of rows) {
   const code = (r.iata || r.code || r["iata code"] || "").toUpperCase();
   if (!code) continue;
+  const latCandidates = [
+    r.latitude,
+    r.lat,
+    r["latitude deg"],
+    r["latitude_deg"],
+  ].map(v => (typeof v === "string" ? v.trim() : v));
+  const lonCandidates = [
+    r.longitude,
+    r.lon,
+    r["longitude deg"],
+    r["longitude_deg"],
+  ].map(v => (typeof v === "string" ? v.trim() : v));
+  const parseMaybeNumber = (value) => {
+    if (value === undefined || value === null || value === "") return undefined;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : undefined;
+  };
+  const latitude = latCandidates.map(parseMaybeNumber).find(v => v !== undefined);
+  const longitude = lonCandidates.map(parseMaybeNumber).find(v => v !== undefined);
+
   out[code] = {
     name: r.name || r.airport || "",
     city: r.city || "",
     country: r.country || "",
-    type: (r.type || (r.airport ? "airport" : "city") || "").toLowerCase()
+    type: (r.type || (r.airport ? "airport" : "city") || "").toLowerCase(),
+    ...(latitude !== undefined ? { latitude } : {}),
+    ...(longitude !== undefined ? { longitude } : {}),
   };
 }
 fs.writeFileSync(outPath, JSON.stringify(out, null, 2));

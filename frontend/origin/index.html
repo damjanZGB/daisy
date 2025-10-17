@@ -208,11 +208,40 @@
         }, []);
 
         useEffect(() => {
-          const inferIata = async (term) => {
-            const cleaned = (term || '').trim();
-            if (!lookupUrl || !cleaned) return null;
+          const inferIata = async (input) => {
+            if (!lookupUrl) return null;
+            let term = '';
+            let lat;
+            let lon;
+            if (typeof input === 'string') {
+              term = input.trim();
+            } else if (input && typeof input === 'object') {
+              const termCandidates = [input.term, input.city, input.country];
+              for (const candidate of termCandidates) {
+                if (typeof candidate === 'string' && !term) {
+                  const trimmed = candidate.trim();
+                  if (trimmed) term = trimmed;
+                }
+              }
+              const latCandidate = Number(input.lat ?? input.latitude);
+              const lonCandidate = Number(input.lon ?? input.longitude);
+              if (Number.isFinite(latCandidate) && Number.isFinite(lonCandidate)) {
+                lat = latCandidate;
+                lon = lonCandidate;
+              }
+            }
+            const hasTerm = term.length > 0;
+            const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
+            if (!hasTerm && !hasCoords) return null;
+            const params = new URLSearchParams();
+            if (hasTerm) params.set('term', term);
+            if (hasCoords) {
+              params.set('lat', lat.toFixed(6));
+              params.set('lon', lon.toFixed(6));
+            }
+            params.set('limit', '5');
             try {
-              const res = await fetch(`${lookupUrl}?term=${encodeURIComponent(cleaned)}`);
+              const res = await fetch(`${lookupUrl}?${params.toString()}`);
               if (!res.ok) throw new Error('lookup');
               const data = await res.json();
               const match = (data.matches || [])[0];
@@ -243,8 +272,8 @@
               const locality = data.city || data.locality || data.principalSubdivision || '';
               const country = data.countryName || data.countryCode || '';
               const label = [locality, country].filter(Boolean).join(', ') || 'Current location';
-              let inferred = await inferIata(locality);
-              if (!inferred) inferred = await inferIata(country);
+              let inferred = await inferIata({ lat, lon, term: locality });
+              if (!inferred && country) inferred = await inferIata({ term: country });
               applyLocation(label, Intl.DateTimeFormat().resolvedOptions().timeZone, inferred);
               return true;
             } catch {
@@ -262,8 +291,10 @@
               const country = data.country_name || data.country;
               const tz = data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
               const label = [city, region, country].filter(Boolean).join(', ') || 'Approximate location';
-              let inferred = await inferIata(city);
-              if (!inferred) inferred = await inferIata(country);
+              const lat = Number(data.latitude);
+              const lon = Number(data.longitude);
+              let inferred = await inferIata({ term: city, lat, lon });
+              if (!inferred && country) inferred = await inferIata({ term: country });
               applyLocation(label, tz, inferred);
             } catch {
               applyLocation('Location unavailable', Intl.DateTimeFormat().resolvedOptions().timeZone, null);

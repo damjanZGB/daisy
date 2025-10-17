@@ -5,6 +5,7 @@
 - [x] Augment `_summarize_offers` to compute explicit per-segment durations for user-facing responses.
 - [ ] Coordinate with the Bedrock team to plan persona/memory updates once Lambda stability is verified.
 - [ ] (Continuous) After each deployment, run the automated stress suite and only promote when all scenarios pass and confidence is at least 95%; revert immediately on regression.
+- [ ] Backfill coordinates for airports missing from the OpenFlights dataset (~3.1k entries) so geolocation fallback covers every served city.
 
 ## NLP Feedback Loop Project
 - [ ] Define structured logging for chat transcripts (store in S3/location suitable for replay).

@@ -410,6 +410,17 @@ function normalizeOffers(json) {
   return { offers, raw: json };
 }
 let IATA_DB = null;
+const EARTH_RADIUS_KM = 6371;
+const toRadians = (deg) => (deg * Math.PI) / 180;
+function haversineDistanceKm(lat1, lon1, lat2, lon2) {
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+  const rLat1 = toRadians(lat1);
+  const rLat2 = toRadians(lat2);
+  const a = Math.sin(dLat / 2) ** 2 + Math.sin(dLon / 2) ** 2 * Math.cos(rLat1) * Math.cos(rLat2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return EARTH_RADIUS_KM * c;
+}
 function loadIata() {
   if (IATA_DB) return IATA_DB;
   try {
@@ -420,9 +431,35 @@ function loadIata() {
   }
   return IATA_DB;
 }
-function iataLookup(term) {
+function iataLookup({ term, lat, lon, limit = 20 } = {}) {
   const db = loadIata();
   const q = String(term || "").trim().toUpperCase();
+  const latNum = Number(lat);
+  const lonNum = Number(lon);
+  const hasCoords = Number.isFinite(latNum) && Number.isFinite(lonNum);
+  const results = [];
+
+  if (hasCoords) {
+    for (const [code, rec] of Object.entries(db)) {
+      if ((rec.type || "").toLowerCase() !== "airport") continue;
+      const recLat = Number(rec.latitude);
+      const recLon = Number(rec.longitude);
+      if (!Number.isFinite(recLat) || !Number.isFinite(recLon)) continue;
+      const airportCode = code.toUpperCase();
+      const name = String(rec.name || "").toUpperCase();
+      const city = String(rec.city || "").toUpperCase();
+      if (q && !airportCode.includes(q) && !name.includes(q) && !city.includes(q)) continue;
+      const distanceKm = haversineDistanceKm(latNum, lonNum, recLat, recLon);
+      results.push({
+        code: airportCode,
+        ...rec,
+        distanceKm: Number(distanceKm.toFixed(1)),
+      });
+    }
+    results.sort((a, b) => (a.distanceKm === b.distanceKm ? a.code.localeCompare(b.code) : a.distanceKm - b.distanceKm));
+    return results.slice(0, limit);
+  }
+
   if (!q) return [];
 
   const scored = [];
@@ -452,7 +489,7 @@ function iataLookup(term) {
 
   scored.sort((a, b) => (a.score === b.score ? a.code.localeCompare(b.code) : a.score - b.score));
 
-  return scored.slice(0, 20).map(({ code, record }) => ({ code, ...record }));
+  return scored.slice(0, limit).map(({ code, record }) => ({ code, ...record }));
 }
 
 const server = http.createServer(async (req, res) => {
@@ -562,7 +599,18 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "GET" && pathname === "/tools/iata/lookup") {
       const term = searchParams.get("term") || "";
-      const matches = iataLookup(term);
+      const latStr = searchParams.get("lat");
+      const lonStr = searchParams.get("lon");
+      const limitStr = searchParams.get("limit");
+      const lat = latStr === null ? undefined : Number(latStr);
+      const lon = lonStr === null ? undefined : Number(lonStr);
+      const limit = limitStr === null ? undefined : Number(limitStr);
+      const matches = iataLookup({
+        term,
+        lat: Number.isFinite(lat) ? lat : undefined,
+        lon: Number.isFinite(lon) ? lon : undefined,
+        limit: Number.isFinite(limit) && limit > 0 ? limit : 20,
+      });
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify({ matches }));
       logger.info(`[${requestId}] IATA lookup returned ${matches.length} results`);
