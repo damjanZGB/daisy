@@ -46,15 +46,36 @@
     <script type="text/babel">
       const { useState, useEffect, useRef } = React;
 
+      const resolveInitialApiUrl = () => {
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const apiParam = params.get('api');
+          if (apiParam) {
+            localStorage.setItem('api_url', apiParam);
+            return apiParam;
+          }
+        } catch (_) {}
+        return localStorage.getItem('api_url') || 'https://bianca-daisy.onrender.com/invoke';
+      };
+
       // ---- Utilities ----
       const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
       const DEFAULTS = {
-        API_URL: localStorage.getItem('api_url') || 'https://bianca-daisy.onrender.com/invoke',
+        API_URL: resolveInitialApiUrl(),
       };
       const SETTINGS_VISIBLE = false;
       const MAX_COL = 250; // hard wrap width for logs
 
-      function Header({ apiUrl, onOpenSettings }) {
+      function Header({ apiUrl, onOpenSettings, locationInfo }) {
+        const formattedTime = (() => {
+          try {
+            return new Intl.DateTimeFormat([], { dateStyle: 'medium', timeStyle: 'short', timeZone: locationInfo?.tz }).format(locationInfo?.localTime || new Date());
+          } catch (_) {
+            return (locationInfo?.localTime || new Date()).toLocaleString();
+          }
+        })();
+        const locationLabel = locationInfo?.label || "Detecting location…";
+        const originLabel = locationInfo?.inferredOrigin ? ` · Default origin: ${locationInfo.inferredOrigin}` : '';
         return (
           <header className="sticky top-0 z-10 bg-lhBlueDark/95 backdrop-blur border-b border-white/10">
             <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -72,8 +93,10 @@
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="hidden sm:inline text-xs text-white/60">Proxy:</span>
-                <span className="text-xs px-2 py-1 rounded bg-white/5 border border-white/10 text-white/80 max-w-[40ch] truncate" title={apiUrl}>{apiUrl}</span>
+                <div className="text-xs text-white/70">
+                  <div>{locationLabel}</div>
+                  <div className="text-white/50">{formattedTime}{originLabel}</div>
+                </div>
                 {SETTINGS_VISIBLE && (
                   <button onClick={onOpenSettings} className="ml-2 text-sm px-3 py-1.5 rounded-lg bg-lhYellow text-lhBlue font-semibold hover:brightness-95 active:brightness-90 focus:outline-none focus:ring-2 focus:ring-white/40">
                     Settings
@@ -132,7 +155,7 @@
         };
 
         // State
-        const [apiUrl, setApiUrl] = useState(DEFAULTS.API_URL);
+        const [apiUrl] = useState(DEFAULTS.API_URL);
         const [openSettings, setOpenSettings] = useState(false);
         const [sessionId] = useState(uid());
         const [startedAt] = useState(() => new Date());
@@ -140,8 +163,31 @@
         const [busy, setBusy] = useState(false);
         const [input, setInput] = useState('');
         const [messages, setMessages] = useState([
-          { id: uid(), role: 'assistant', text: 'Lufthansa Group Inspirational AI flight assistant. Nice to meet you!”', ts: new Date().toISOString() }
+          { id: uid(), role: 'assistant', text: 'Lufthansa Group Inspirational AI flight assistant. Nice to meet you!', ts: new Date().toISOString() }
         ]);
+
+        const deriveLookupUrl = (base) => {
+          try {
+            const url = new URL(base);
+            if (url.pathname.endsWith('/invoke')) {
+              url.pathname = url.pathname.replace(/\/invoke$/, '/tools/iata/lookup');
+            } else {
+              url.pathname = '/tools/iata/lookup';
+            }
+            url.search = '';
+            return url.toString();
+          } catch (_) {
+            return null;
+          }
+        };
+
+        const lookupUrl = deriveLookupUrl(apiUrl);
+        const [locationInfo, setLocationInfo] = useState({
+          label: 'Detecting location…',
+          tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          localTime: new Date(),
+          inferredOrigin: localStorage.getItem('inferred_origin') || null,
+        });
 
         // Server-append state
         const headerSentRef = useRef(false);
