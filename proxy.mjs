@@ -279,8 +279,25 @@ function decodeAgentEventStream(buffer) {
       finalResponse = json;
     }
   }
-  const text = chunks.join("");
-  const result = { text, events };
+  const combined = chunks.join("");
+  const askUserQuestions = [];
+  const askUserTag = /<user[\w.\-]*askuser\b[^>]*question="([^"]+)"[^>]*\/?>/gi;
+  let cleanedText = combined.replace(askUserTag, (_, question) => {
+    const decoded = question
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">");
+    askUserQuestions.push(decoded);
+    return decoded;
+  });
+  cleanedText = cleanedText.trim();
+  if (!cleanedText && askUserQuestions.length > 0) {
+    cleanedText = askUserQuestions[askUserQuestions.length - 1];
+  }
+  const result = { text: cleanedText, events };
+  if (askUserQuestions.length > 0) result.askUserQuestions = askUserQuestions;
   if (finalResponse) result.finalResponse = finalResponse;
   return result;
 }
