@@ -44,7 +44,7 @@ flowchart LR
 ## Proposed Enhancements
 - __Automated Runner__ – `scripts/run_stress_tests.ps1` (now available) executes the ladder, collects outputs in `test_suite/results_*`, and fails fast when scenarios regress.
 - __Proxy Timeout Review__ – Proxy latency measurements (FRA→SYD currently ~8 s) suggest increasing the timeout to 12 s or streaming responses for Oceania searches.
-- __Segment Duration Calculation__ – Compute per-segment duration to satisfy user requests such as “How long is this leg?”.
+- __Segment Duration Calculation__ – Complete: `_summarize_offers` now computes per-leg durations, enabling precise flight-time reporting.
 - __Persona Growth (Bedrock)__ – Coordinate updates to agent instructions for memory/persona tuning (outside Lambda scope).
 - __NLP Feedback Loop__ – Maintain comprehensive logs, support replay-based evaluations, and document every change so the system can be replicated in other Bedrock accounts.
 

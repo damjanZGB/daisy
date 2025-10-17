@@ -24,18 +24,18 @@
   <div class="mermaid">
 flowchart LR
     START((Stress Suite))
-    START --> run_a_json
-    run_a_json["run_a.json\\nStatus 200\\nOffers 3"]
-    class run_a_json success;
-    START --> run_b_json
-    run_b_json["run_b.json\\nStatus 200\\nOffers 3"]
-    class run_b_json success;
-    START --> run_c_json
-    run_c_json["run_c.json\\nStatus 200\\nOffers 3"]
-    class run_c_json success;
-    START --> run1_json
-    run1_json["run1.json\\nStatus 502\\nFail"]
-    class run1_json failure;
+    START --> test_event_a_json
+    test_event_a_json["test_event_a.json\\nStatus 200\\nOffers 3"]
+    class test_event_a_json success;
+    START --> test_event_b_json
+    test_event_b_json["test_event_b.json\\nStatus 200\\nOffers 3"]
+    class test_event_b_json success;
+    START --> test_event_c_json
+    test_event_c_json["test_event_c.json\\nStatus 200\\nOffers 3"]
+    class test_event_c_json success;
+    START --> test_event1_json
+    test_event1_json["test_event1.json\\nStatus 200\\nOffers 3"]
+    class test_event1_json success;
     classDef success fill:#d1fae5,stroke:#10b981,stroke-width:2px;
     classDef failure fill:#fee2e2,stroke:#ef4444,stroke-width:2px;
   </div>
@@ -44,10 +44,10 @@ flowchart LR
       <tr><th>Result File</th><th>Status</th><th>Offers</th><th>Generated At</th><th>Query</th><th>Error</th></tr>
     </thead>
     <tbody>
-<tr class='pass'><td>out_run_a.json</td><td>200</td><td>3</td><td>2025-10-17T14:52:30Z</td><td>{&quot;origin&quot;:&quot;ZAG&quot;,&quot;destination&quot;:&quot;ZRH&quot;,&quot;departureDate&quot;:&quot;2025-11-12&quot;,&quot;returnDate&quot;:&quot;2025-12-07&quot;,&quot;adults&quot;:1,&quot;cabin&quot;:&quot;ECONOMY&quot;,&quot;nonstop&quot;:false,&quot;currency&quot;:&quot;EUR&quot;,&quot;lhGroupOnly&quot;:true,&quot;max&quot;:3}</td><td></td></tr>
-<tr class='pass'><td>out_run_b.json</td><td>200</td><td>3</td><td>2025-10-17T14:52:50Z</td><td>{&quot;origin&quot;:&quot;FRA&quot;,&quot;destination&quot;:&quot;BCN&quot;,&quot;departureDate&quot;:&quot;2025-11-15&quot;,&quot;returnDate&quot;:null,&quot;adults&quot;:1,&quot;cabin&quot;:&quot;ECONOMY&quot;,&quot;nonstop&quot;:false,&quot;currency&quot;:&quot;EUR&quot;,&quot;lhGroupOnly&quot;:true,&quot;max&quot;:3}</td><td></td></tr>
-<tr class='pass'><td>out_run_c.json</td><td>200</td><td>3</td><td>2025-10-17T14:53:16Z</td><td>{&quot;origin&quot;:&quot;FRA&quot;,&quot;destination&quot;:&quot;BOS&quot;,&quot;departureDate&quot;:&quot;2025-12-10&quot;,&quot;returnDate&quot;:&quot;2025-12-18&quot;,&quot;adults&quot;:1,&quot;cabin&quot;:&quot;PREMIUM_ECONOMY&quot;,&quot;nonstop&quot;:false,&quot;currency&quot;:&quot;EUR&quot;,&quot;lhGroupOnly&quot;:true,&quot;max&quot;:3}</td><td></td></tr>
-<tr class='fail'><td>out_run1.json</td><td>502</td><td>0</td><td></td><td>n/a</td><td>The read operation timed out</td></tr>
+<tr class='pass'><td>out_test_event_a.json</td><td>200</td><td>3</td><td>2025-10-17T17:40:29Z</td><td>{&quot;origin&quot;:&quot;ZAG&quot;,&quot;destination&quot;:&quot;ZRH&quot;,&quot;departureDate&quot;:&quot;2025-11-12&quot;,&quot;returnDate&quot;:&quot;2025-12-07&quot;,&quot;adults&quot;:1,&quot;cabin&quot;:&quot;ECONOMY&quot;,&quot;nonstop&quot;:false,&quot;currency&quot;:&quot;EUR&quot;,&quot;lhGroupOnly&quot;:true,&quot;max&quot;:3}</td><td></td></tr>
+<tr class='pass'><td>out_test_event_b.json</td><td>200</td><td>3</td><td>2025-10-17T17:40:35Z</td><td>{&quot;origin&quot;:&quot;FRA&quot;,&quot;destination&quot;:&quot;BCN&quot;,&quot;departureDate&quot;:&quot;2025-11-15&quot;,&quot;returnDate&quot;:null,&quot;adults&quot;:1,&quot;cabin&quot;:&quot;ECONOMY&quot;,&quot;nonstop&quot;:false,&quot;currency&quot;:&quot;EUR&quot;,&quot;lhGroupOnly&quot;:true,&quot;max&quot;:3}</td><td></td></tr>
+<tr class='pass'><td>out_test_event_c.json</td><td>200</td><td>3</td><td>2025-10-17T17:40:45Z</td><td>{&quot;origin&quot;:&quot;FRA&quot;,&quot;destination&quot;:&quot;BOS&quot;,&quot;departureDate&quot;:&quot;2025-12-10&quot;,&quot;returnDate&quot;:&quot;2025-12-18&quot;,&quot;adults&quot;:1,&quot;cabin&quot;:&quot;PREMIUM_ECONOMY&quot;,&quot;nonstop&quot;:false,&quot;currency&quot;:&quot;EUR&quot;,&quot;lhGroupOnly&quot;:true,&quot;max&quot;:3}</td><td></td></tr>
+<tr class='pass'><td>out_test_event1.json</td><td>200</td><td>3</td><td>2025-10-17T17:40:56Z</td><td>{&quot;origin&quot;:&quot;FRA&quot;,&quot;destination&quot;:&quot;SYD&quot;,&quot;departureDate&quot;:&quot;2025-11-20&quot;,&quot;returnDate&quot;:&quot;2025-12-05&quot;,&quot;adults&quot;:1,&quot;cabin&quot;:&quot;BUSINESS&quot;,&quot;nonstop&quot;:false,&quot;currency&quot;:&quot;EUR&quot;,&quot;lhGroupOnly&quot;:true,&quot;max&quot;:3}</td><td></td></tr>
     </tbody>
   </table>
 </body>

@@ -505,6 +505,20 @@ def _summarize_offers(
             elif not isinstance(services, list):
                 services = []
 
+            segment_duration = seg.get("duration")
+            if not segment_duration and dep_time and arr_time:
+                try:
+                    dep_dt = datetime.fromisoformat(dep_time.replace("Z", "+00:00"))
+                    arr_dt = datetime.fromisoformat(arr_time.replace("Z", "+00:00"))
+                    delta = arr_dt - dep_dt
+                    if delta.total_seconds() < 0:
+                        delta += timedelta(days=1)
+                    total_minutes = int(delta.total_seconds() // 60)
+                    hours, minutes = divmod(total_minutes, 60)
+                    segment_duration = f"PT{hours}H{minutes}M"
+                except Exception:
+                    segment_duration = seg.get("duration")
+
             return {
                 "carrier": carrier,
                 "marketingCarrier": seg.get("marketingCarrier"),
@@ -519,7 +533,7 @@ def _summarize_offers(
                 "to": arr_airport,
                 "toTerminal": arr_terminal,
                 "arrivalTime": arr_time,
-                "duration": seg.get("duration"),
+                "duration": segment_duration,
                 "mileage": seg.get("mileage"),
                 "stops": seg.get("numberOfStops"),
                 "layoverDuration": seg.get("layoverDuration"),
