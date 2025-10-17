@@ -1,0 +1,27 @@
+﻿{
+  "messageVersion": "1.0",
+  "actionGroup": "daisy_in_action",
+  "apiPath": "/tools/amadeus/search",
+  "httpMethod": "POST",
+  "sessionId": "test-run-1",
+  "agent": {"name": "test"},
+  "sessionAttributes": {},
+  "promptSessionAttributes": {},
+  "parameters": [],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "properties": [
+          {"name": "originLocationCode", "value": "FRA"},
+          {"name": "destinationLocationCode", "value": "SYD"},
+          {"name": "departureDate", "value": "2025-11-20"},
+          {"name": "returnDate", "value": "2025-12-05"},
+          {"name": "adults", "value": "1"},
+          {"name": "travelClass", "value": "BUSINESS"},
+          {"name": "max", "value": "3"},
+          {"name": "currencyCode", "value": "EUR"}
+        ]
+      }
+    }
+  }
+}

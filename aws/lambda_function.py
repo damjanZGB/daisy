@@ -479,8 +479,18 @@ def _summarize_offers(
 
         def _normalize_segment(segment: Dict[str, Any]) -> Dict[str, Any]:
             seg = dict(segment or {})
-            departure = seg.get("departure") or {}
-            arrival = seg.get("arrival") or {}
+
+            def _extract_airport(data: Any, fallback_key: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+                if isinstance(data, dict):
+                    return data.get("iataCode"), data.get("terminal"), data.get("at")
+                airport = seg.get(fallback_key) or seg.get(fallback_key.capitalize())
+                terminal = seg.get(f"{fallback_key}Terminal") or seg.get(f"{fallback_key}terminal")
+                time = seg.get(f"{fallback_key}Time") or seg.get(f"{fallback_key.capitalize()}Time")
+                return airport, terminal, time
+
+            dep_airport, dep_terminal, dep_time = _extract_airport(seg.get("departure"), "departure")
+            arr_airport, arr_terminal, arr_time = _extract_airport(seg.get("arrival"), "arrival")
+
             carrier = (
                 seg.get("carrier")
                 or seg.get("carrierCode")
@@ -489,7 +499,12 @@ def _summarize_offers(
             )
             aircraft = seg.get("aircraft")
             aircraft_code = aircraft.get("code") if isinstance(aircraft, dict) else aircraft
-            services = seg.get("services") or []
+            services = seg.get("services")
+            if isinstance(services, str):
+                services = [services]
+            elif not isinstance(services, list):
+                services = []
+
             return {
                 "carrier": carrier,
                 "marketingCarrier": seg.get("marketingCarrier"),
@@ -498,12 +513,12 @@ def _summarize_offers(
                 "aircraft": aircraft_code,
                 "cabin": seg.get("cabin"),
                 "fareClass": seg.get("fareClass") or seg.get("class"),
-                "from": departure.get("iataCode"),
-                "fromTerminal": departure.get("terminal"),
-                "departureTime": departure.get("at"),
-                "to": arrival.get("iataCode"),
-                "toTerminal": arrival.get("terminal"),
-                "arrivalTime": arrival.get("at"),
+                "from": dep_airport,
+                "fromTerminal": dep_terminal,
+                "departureTime": dep_time,
+                "to": arr_airport,
+                "toTerminal": arr_terminal,
+                "arrivalTime": arr_time,
                 "duration": seg.get("duration"),
                 "mileage": seg.get("mileage"),
                 "stops": seg.get("numberOfStops"),

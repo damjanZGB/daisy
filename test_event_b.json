@@ -1,0 +1,26 @@
+﻿{
+  "messageVersion": "1.0",
+  "actionGroup": "daisy_in_action",
+  "apiPath": "/tools/amadeus/search",
+  "httpMethod": "POST",
+  "sessionId": "test-b",
+  "agent": {"name": "test"},
+  "sessionAttributes": {},
+  "promptSessionAttributes": {},
+  "parameters": [],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "properties": [
+          {"name": "originLocationCode", "value": "FRA"},
+          {"name": "destinationLocationCode", "value": "BCN"},
+          {"name": "departureDate", "value": "2025-11-15"},
+          {"name": "adults", "value": "1"},
+          {"name": "travelClass", "value": "ECONOMY"},
+          {"name": "max", "value": "3"},
+          {"name": "currencyCode", "value": "EUR"}
+        ]
+      }
+    }
+  }
+}
