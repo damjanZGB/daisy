@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import calendar
 import contextvars
 import json
 import os
@@ -23,6 +24,34 @@ LH_GROUP_CODES = ["LH", "LX", "OS", "SN", "EW", "4Y", "EN"]
 PROXY_BASE_URL = (os.getenv("PROXY_BASE_URL") or "http://localhost:8787").rstrip("/")
 
 MAX_LOOKAHEAD_DAYS = 365
+
+_MONTH_LOOKUP = {
+    "jan": 1,
+    "january": 1,
+    "feb": 2,
+    "february": 2,
+    "mar": 3,
+    "march": 3,
+    "apr": 4,
+    "april": 4,
+    "may": 5,
+    "jun": 6,
+    "june": 6,
+    "jul": 7,
+    "july": 7,
+    "aug": 8,
+    "august": 8,
+    "sep": 9,
+    "sept": 9,
+    "september": 9,
+    "oct": 10,
+    "october": 10,
+    "nov": 11,
+    "november": 11,
+    "dec": 12,
+    "december": 12,
+}
+_STOPWORDS = {"in", "on", "the", "of"}
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -203,11 +232,20 @@ def _to_int(val: Any, default: int = 1) -> int:
 
 
 def _iso_date(val: str) -> Optional[str]:
+    if val is None:
+        return None
+    text = str(val).strip()
+    if not text:
+        return None
     try:
-        dt = datetime.strptime(val, "%Y-%m-%d")
+        dt = datetime.strptime(text, "%Y-%m-%d")
         return dt.strftime("%Y-%m-%d")
     except Exception:
-        return None
+        pass
+    parsed_month = _parse_month_phrase(text, reference=datetime.utcnow().date())
+    if parsed_month is not None:
+        return parsed_month.strftime("%Y-%m-%d")
+    return None
 
 
 def _parse_iso_date(val: str) -> Optional[date]:
@@ -215,6 +253,78 @@ def _parse_iso_date(val: str) -> Optional[date]:
         return datetime.strptime(val, "%Y-%m-%d").date()
     except Exception:
         return None
+
+
+def _parse_month_phrase(raw: str, *, reference: date) -> Optional[date]:
+    if not raw:
+        return None
+    text = raw.lower()
+    text = re.sub(r"[,\-/]+", " ", text)
+    text = re.sub(r"(st|nd|rd|th)\b", "", text)
+    tokens = [tok for tok in text.split() if tok and tok not in _STOPWORDS]
+    if not tokens:
+        return None
+    prefix_next = False
+    if tokens and tokens[0] in {"next", "upcoming"}:
+        prefix_next = True
+        tokens = tokens[1:]
+    month = None
+    day = None
+    year = None
+    for token in tokens:
+        if token in _MONTH_LOOKUP:
+            month = _MONTH_LOOKUP[token]
+            continue
+        if token.isdigit():
+            num = int(token)
+            if num >= 1900:
+                year = num
+            elif 1 <= num <= 31 and day is None:
+                day = num
+            continue
+    if month is None:
+        return None
+    if day is None:
+        day = 1
+    ref_year = reference.year
+    if year is None or year < ref_year:
+        year = ref_year
+    def _safe_date(target_year: int) -> date:
+        last_day = calendar.monthrange(target_year, month)[1]
+        return date(target_year, month, min(day, last_day))
+    candidate = _safe_date(year)
+    if year == ref_year and candidate < reference:
+        candidate = _safe_date(year + 1)
+    if prefix_next and candidate <= reference:
+        candidate = _safe_date(candidate.year + 1)
+    return candidate
+
+
+def _roll_forward_recent_past_date(date_str: Optional[str], *, threshold: int = 6) -> Optional[str]:
+    """If the provided date is within the last `threshold` days, roll it forward by one week.
+
+    This guards against natural-language interpretations like "next Saturday" being resolved
+    to the most recent occurrence instead of the upcoming one.
+    """
+    if not date_str:
+        return date_str
+    parsed = _parse_iso_date(date_str)
+    if parsed is None:
+        return date_str
+    today = datetime.utcnow().date()
+    if parsed < today:
+        delta = (today - parsed).days
+        if 0 < delta <= threshold:
+            adjusted = parsed + timedelta(days=7)
+            new_value = adjusted.strftime("%Y-%m-%d")
+            _log(
+                "Rolled forward recent past date",
+                original=date_str,
+                adjusted=new_value,
+                delta_days=delta,
+            )
+            return new_value
+    return date_str
 
 
 def _validate_booking_window(
@@ -831,6 +941,9 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         return _wrap_openapi(
             event, 400, {"error": "Provide 'departureDate' in YYYY-MM-DD."}
         )
+    departure_date = _roll_forward_recent_past_date(departure_date) or departure_date
+    if return_date:
+        return_date = _roll_forward_recent_past_date(return_date) or return_date
     window_error = _validate_booking_window(departure_date, return_date)
     if window_error:
         _log("OpenAPI validation error", reason="window_error", detail=window_error)
@@ -977,6 +1090,9 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
         return _wrap_function(
             event, 400, {"error": "Provide 'departureDate' in YYYY-MM-DD."}
         )
+    departure_date = _roll_forward_recent_past_date(departure_date) or departure_date
+    if return_date:
+        return_date = _roll_forward_recent_past_date(return_date) or return_date
     window_error = _validate_booking_window(departure_date, return_date)
     if window_error:
         _log("Function validation error", reason="window_error", detail=window_error)
