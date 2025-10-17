@@ -126,8 +126,8 @@ function signV4({ service, region, method, hostname, path, headers, body, access
   return { amzDate, authorization };
 }
 async function awsInvokeAgent({ aliasId, sessionId, inputText }) {
-  const service = "bedrock-agent-runtime";
-  const hostname = `${service}.${REGION}.amazonaws.com`;
+  const service = "bedrock";
+  const hostname = `bedrock-agent-runtime.${REGION}.amazonaws.com`;
   const path = `/agents/${AGENT_ID}/agentaliases/${aliasId}/sessions/${encodeURIComponent(sessionId)}/text`;
   const body = JSON.stringify({ inputText });
   const headers = { "content-type": "application/json", "host": hostname, "x-amz-date": "" };
