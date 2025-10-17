@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/x-icon" href="../img/lhg_favicon.ico" />
     <title>Lufthansa Group – Agent Chat</title>
 
     <!-- Tailwind CDN (config with LH brand colors) -->
@@ -30,7 +31,15 @@
         --lh-blue-dark: #07163B;
         --lh-yellow: #F7B500;
       }
-      body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+      body {
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        background-image: url('../img/dAisy-background.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        background-color: #0f172a;
+      }
       .scroll-area { scroll-behavior: smooth; }
       code { background: rgba(255,255,255,0.08); padding: 0 .25rem; border-radius: .25rem; }
     </style>
