@@ -1,0 +1,9 @@
+{
+  "description": "Verify closest airport selection for Zaprešic, Croatia coordinates",
+  "coordinates": {
+    "latitude": 45.86790775647403,
+    "longitude": 15.790267703403517
+  },
+  "expected": "ZAG",
+  "runner": "run_iata_location_test.mjs"
+}

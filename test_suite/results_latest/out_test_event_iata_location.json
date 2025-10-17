@@ -1,0 +1,62 @@
+{
+  "timestamp": "2025-10-17T21:40:20.790Z",
+  "coordinates": {
+    "latitude": 45.86790775647403,
+    "longitude": 15.790267703403517
+  },
+  "expected": "ZAG",
+  "actual": "ZAG",
+  "pass": true,
+  "matches": [
+    {
+      "code": "ZAG",
+      "name": "Zagreb Franjo Tuđman International Airport",
+      "city": "Velika Gorica",
+      "country": "HR",
+      "type": "airport",
+      "latitude": 45.742901,
+      "longitude": 16.0688,
+      "distanceKm": 25.7
+    },
+    {
+      "code": "MBX",
+      "name": "Maribor Edvard Rusjan Airport",
+      "city": "Orehova Vas",
+      "country": "SI",
+      "type": "airport",
+      "latitude": 46.4799,
+      "longitude": 15.6861,
+      "distanceKm": 68.5
+    },
+    {
+      "code": "LJU",
+      "name": "Ljubljana Jože Pučnik Airport",
+      "city": "Zgornji Brnik",
+      "country": "SI",
+      "type": "airport",
+      "latitude": 46.223701,
+      "longitude": 14.4576,
+      "distanceKm": 110.2
+    },
+    {
+      "code": "RJK",
+      "name": "Rijeka Airport",
+      "city": "Omišalj",
+      "country": "HR",
+      "type": "airport",
+      "latitude": 45.2169,
+      "longitude": 14.5703,
+      "distanceKm": 119.4
+    },
+    {
+      "code": "GRZ",
+      "name": "Graz Airport",
+      "city": "Feldkirchen bei Graz",
+      "country": "AT",
+      "type": "airport",
+      "latitude": 46.9911,
+      "longitude": 15.4396,
+      "distanceKm": 127.8
+    }
+  ]
+}

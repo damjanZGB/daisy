@@ -641,5 +641,16 @@ const server = http.createServer(async (req, res) => {
     logger.info(`[${requestId}] Completed with status ${res.statusCode} in ${Date.now() - startedAt}ms`);
   }
 });
-server.listen(PORT, () => logger.info(`Proxy listening on :${PORT}`, { origins: [...ALLOW_ORIGIN_SET] }));
+
+const entryPath = process.argv[1] ? path.resolve(process.argv[1]) : null;
+const modulePath = path.resolve(url.fileURLToPath(import.meta.url));
+const shouldStartServer = entryPath && entryPath === modulePath;
+
+if (shouldStartServer) {
+  server.listen(PORT, () => logger.info(`Proxy listening on :${PORT}`, { origins: [...ALLOW_ORIGIN_SET] }));
+} else {
+  logger.info("Proxy server initialization skipped (module import mode)");
+}
+
+export { iataLookup, loadIata };
 
