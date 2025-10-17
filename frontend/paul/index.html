@@ -51,6 +51,7 @@
       const DEFAULTS = {
         API_URL: localStorage.getItem('api_url') || 'https://paul-daisy.onrender.com/invoke',
       };
+      const SETTINGS_VISIBLE = false;
       const MAX_COL = 250; // hard wrap width for logs
 
       function Header({ apiUrl, onOpenSettings }) {
@@ -73,17 +74,19 @@
               <div className="flex items-center gap-2">
                 <span className="hidden sm:inline text-xs text-white/60">Proxy:</span>
                 <span className="text-xs px-2 py-1 rounded bg-white/5 border border-white/10 text-white/80 max-w-[40ch] truncate" title={apiUrl}>{apiUrl}</span>
-                <button onClick={onOpenSettings} className="ml-2 text-sm px-3 py-1.5 rounded-lg bg-lhYellow text-lhBlue font-semibold hover:brightness-95 active:brightness-90 focus:outline-none focus:ring-2 focus:ring-white/40">
-                  Settings
-                </button>
+                {SETTINGS_VISIBLE && (
+                  <button onClick={onOpenSettings} className="ml-2 text-sm px-3 py-1.5 rounded-lg bg-lhYellow text-lhBlue font-semibold hover:brightness-95 active:brightness-90 focus:outline-none focus:ring-2 focus:ring-white/40">
+                    Settings
+                  </button>
+                )}
               </div>
             </div>
           </header>
         );
       }
 
-      function SettingsModal({ open, onClose, apiUrl, setApiUrl }) {
-        if (!open) return null;
+      function SettingsModal({ open, onClose, apiUrl }) {
+        if (!SETTINGS_VISIBLE || !open) return null;
         return (
           <div className="fixed inset-0 z-20 bg-black/60 grid place-items-center p-4">
             <div className="w-full max-w-xl rounded-2xl bg-slate-900 border border-white/10 shadow-xl">
@@ -94,7 +97,7 @@
               <div className="p-4 space-y-4">
                 <label className="block text-sm">
                   <span className="block mb-1 text-white/70">Proxy URL (signs & forwards to Bedrock Agent)</span>
-                  <input value={apiUrl} onChange={e => setApiUrl(e.target.value)} placeholder="https://paul-daisy.onrender.com/invoke" className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lhYellow/50" />
+                  <input value={apiUrl} readOnly placeholder="https://paul-daisy.onrender.com/invoke" className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lhYellow/50 opacity-60 cursor-not-allowed" />
                 </label>
                 <p className="text-xs text-white/60">Tip: The UI POSTs <code>{"{ inputText, sessionId }"}</code> to the proxy and appends logs server-side.</p>
               </div>
@@ -341,7 +344,7 @@
 
         return (
           <div className="min-h-screen grid grid-rows-[auto,1fr,auto] bg-gradient-to-b from-lhBlueDark to-[#0b1229]">
-            <Header apiUrl={apiUrl} onOpenSettings={() => setOpenSettings(true)} />
+            <Header apiUrl={apiUrl} onOpenSettings={SETTINGS_VISIBLE ? () => setOpenSettings(true) : () => {}} />
 
             <main className="max-w-5xl mx-auto w-full px-4 py-6">
               <div ref={scrollRef} className="scroll-area h-[66vh] sm:h-[70vh] rounded-2xl bg-slate-900/60 border border-white/10 p-4 overflow-y-auto space-y-3">
@@ -387,7 +390,7 @@
               </div>
             </footer>
 
-            <SettingsModal open={openSettings} onClose={() => setOpenSettings(false)} apiUrl={apiUrl} setApiUrl={setApiUrl} />
+            <SettingsModal open={openSettings} onClose={() => setOpenSettings(false)} apiUrl={apiUrl} />
           </div>
         );
       }
