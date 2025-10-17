@@ -202,20 +202,25 @@ function parseEventStream(buffer) {
   while (offset + 8 <= buffer.length) {
     const totalLen = buffer.readUInt32BE(offset);
     offset += 4;
-    if (totalLen < 12 || offset + totalLen - 4 > buffer.length) {
+    if (totalLen < 16 || offset + totalLen - 4 > buffer.length) {
       break;
     }
     const headersLen = buffer.readUInt32BE(offset);
     offset += 4;
+    // Skip prelude CRC (4 bytes) per AWS event stream spec
+    offset += 4;
+    if (headersLen < 0 || offset + headersLen > buffer.length) {
+      break;
+    }
     const headersBuf = buffer.slice(offset, offset + headersLen);
     offset += headersLen;
-    const payloadLen = totalLen - headersLen - 12;
+    const payloadLen = totalLen - headersLen - 16;
     if (payloadLen < 0 || offset + payloadLen + 4 > buffer.length) {
       break;
     }
     const payload = buffer.slice(offset, offset + payloadLen);
     offset += payloadLen;
-    offset += 4; // skip CRC
+    offset += 4; // skip message CRC
     let headers = {};
     try {
       headers = parseEventStreamHeaders(headersBuf);
