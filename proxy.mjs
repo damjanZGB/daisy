@@ -107,13 +107,14 @@ function signV4({ service, region, method, hostname, path, headers, body, access
   const now = new Date();
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
   const dateStamp = amzDate.slice(0, 8);
+  const payloadHash = sha256(body || "");
   headers["x-amz-date"] = amzDate;
+  headers["x-amz-content-sha256"] = payloadHash;
   const canonicalHeaders = Object.entries(headers)
     .map(([k, v]) => [k.toLowerCase().trim(), String(v).trim()])
-    .sort((a,b) => a[0] < b[0] ? -1 : 1)
+    .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
     .map(([k, v]) => `${k}:${v}\n`).join("");
   const signedHeaders = Object.keys(headers).map(k => k.toLowerCase()).sort().join(";");
-  const payloadHash = sha256(body || "");
   const canonicalRequest = `${method}\n${path}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
   const algorithm = "AWS4-HMAC-SHA256";
   const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
@@ -124,15 +125,15 @@ function signV4({ service, region, method, hostname, path, headers, body, access
   const kSigning = hmac(kService, "aws4_request");
   const signature = crypto.createHmac("sha256", kSigning).update(stringToSign).digest("hex");
   const authorization = `${algorithm} Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-  return { amzDate, authorization };
+  return { amzDate, authorization, payloadHash };
 }
 async function awsInvokeAgent({ aliasId, sessionId, inputText }) {
   const service = "bedrock";
   const hostname = `bedrock-agent-runtime.${REGION}.amazonaws.com`;
-  const path = `/agents/${AGENT_ID}/agentaliases/${aliasId}/sessions/${encodeURIComponent(sessionId)}/text`;
+  const path = `/agents/${encodeURIComponent(AGENT_ID)}/agentAliases/${encodeURIComponent(aliasId)}/sessions/${encodeURIComponent(sessionId)}/text`;
   const body = JSON.stringify({ inputText });
-  const headers = { "content-type": "application/json", "host": hostname, "x-amz-date": "" };
-  const { amzDate, authorization } = signV4({
+  const headers = { "content-type": "application/json", "host": hostname };
+  const { amzDate, authorization, payloadHash } = signV4({
     service,
     region: REGION,
     method: "POST",
@@ -143,7 +144,7 @@ async function awsInvokeAgent({ aliasId, sessionId, inputText }) {
     accessKeyId: AWS_ACCESS_KEY_ID,
     secretAccessKey: AWS_SECRET_ACCESS_KEY,
   });
-  headers["x-amz-date"] = amzDate; headers["authorization"] = authorization;
+  headers["x-amz-date"] = amzDate; headers["x-amz-content-sha256"] = payloadHash; headers["authorization"] = authorization;
   const resp = await fetch(`https://${hostname}${path}`, { method: "POST", headers, body });
   if (!resp.ok) {
     const errorPayload = await resp.text();
