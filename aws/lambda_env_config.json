@@ -1,0 +1,8 @@
+{
+  "Variables": {
+    "PROXY_BASE_URL": "https://replace-with-your-proxy-hostname.example.com",
+    "DEFAULT_CURRENCY": "EUR",
+    "LH_GROUP_ONLY": "true",
+    "AWS_REGION": "eu-central-1"
+  }
+}
