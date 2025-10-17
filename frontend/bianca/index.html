@@ -32,6 +32,7 @@
       }
       body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
       .scroll-area { scroll-behavior: smooth; }
+      code { background: rgba(255,255,255,0.08); padding: 0 .25rem; border-radius: .25rem; }
     </style>
 
     <!-- React (development UMD) + Babel for JSX inline; fine for a test rig -->
@@ -45,12 +46,12 @@
     <script type="text/babel">
       const { useState, useEffect, useRef } = React;
 
-      // ---- Minimal utilities ----
+      // ---- Utilities ----
       const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
-
       const DEFAULTS = {
-        API_URL: localStorage.getItem('api_url') || 'http://localhost:8787/invoke',
+        API_URL: localStorage.getItem('api_url') || 'https://bianca-daisy.onrender.com/invoke',
       };
+      const MAX_COL = 250; // hard wrap width for logs
 
       function Header({ apiUrl, onOpenSettings }) {
         return (
@@ -93,9 +94,9 @@
               <div className="p-4 space-y-4">
                 <label className="block text-sm">
                   <span className="block mb-1 text-white/70">Proxy URL (signs & forwards to Bedrock Agent)</span>
-                  <input value={apiUrl} onChange={e => setApiUrl(e.target.value)} placeholder="http://localhost:8787/invoke" className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lhYellow/50" />
+                  <input value={apiUrl} onChange={e => setApiUrl(e.target.value)} placeholder="https://bianca-daisy.onrender.com/invoke" className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lhYellow/50" />
                 </label>
-                <p className="text-xs text-white/60">Tip: use the provided Node proxy to sign <code>InvokeAgent</code> calls. The UI simply POSTs <code>{"{ inputText, sessionId }"}</code> to this URL.</p>
+                <p className="text-xs text-white/60">Tip: The UI POSTs <code>{"{ inputText, sessionId }"}</code> to the proxy and appends logs server-side.</p>
               </div>
               <div className="p-4 border-t border-white/10 flex justify-end gap-2">
                 <button onClick={onClose} className="px-3 py-1.5 text-sm rounded-lg bg-white/10 hover:bg-white/15">Close</button>
@@ -123,72 +124,220 @@
         const scrollRef = useRef(null);
         const usedFlightNos = useRef(new Set());
         const genFlightNo = () => {
-          let n;
-          do { n = Math.floor(Math.random() * 10000); } while (usedFlightNos.current.has(n));
-          usedFlightNos.current.add(n);
-          return `LH ${String(n).padStart(4, '0')}`;
+          let n; do { n = Math.floor(Math.random() * 10000); } while (usedFlightNos.current.has(n));
+          usedFlightNos.current.add(n); return `LH ${String(n).padStart(4, '0')}`;
         };
 
         // State
         const [apiUrl, setApiUrl] = useState(DEFAULTS.API_URL);
         const [openSettings, setOpenSettings] = useState(false);
         const [sessionId] = useState(uid());
-        const [flightNo, setFlightNo] = useState(genFlightNo());
+        const [startedAt] = useState(() => new Date());
+        const [flightNo] = useState(genFlightNo()); // fixed per session; new on refresh
         const [busy, setBusy] = useState(false);
         const [input, setInput] = useState('');
         const [messages, setMessages] = useState([
-          { id: uid(), role: 'assistant', text: 'Hello! Provide route, dates, and travelers to search fares. Example: “Zagreb to Copenhagen, 06.11–11.11.2025, 1 adult.”' }
+          { id: uid(), role: 'assistant', text: 'Lufthansa Group Inspirational AI flight assistant. Nice to meet you!”', ts: new Date().toISOString() }
         ]);
+
+        // Server-append state
+        const headerSentRef = useRef(false);
+        const savedCountRef = useRef(0); // messages already flushed to server
 
         // Auto-scroll
         useEffect(() => {
-          if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-          }
+          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }, [messages, busy]);
 
-        // Tests: ensure flight number format always valid
-        useEffect(() => {
-          console.assert(/^LH \d{4}$/.test(flightNo), 'Flight number format invalid', flightNo);
-        }, [flightNo]);
+        // Tests
+        useEffect(() => { console.assert(/^LH \d{4}$/.test(flightNo), 'Flight number format invalid', flightNo); }, [flightNo]);
 
+        // ===== Log formatting tools =====
+        const tsStr = (iso) => `[${iso}]`;
+        const baseIndent = (iso) => ' '.repeat(tsStr(iso).length + 1); // after timestamp + one space
+
+        const isBulletLine = (line) => /^\s*(?:[-*+]|\d+[.)])\s+/.test(line);
+
+        const tokenizeBlocks = (raw) => {
+          const out = [];
+          const norm = String(raw || '').replace(/\r\n?/g, '\n');
+          const lines = norm.split('\n');
+          let i = 0;
+          while (i < lines.length) {
+            if (lines[i].trim() === '') { i++; continue; }
+            if (isBulletLine(lines[i])) {
+              const items = [];
+              while (i < lines.length && isBulletLine(lines[i])) {
+                const m = lines[i].match(/^\s*((?:[-*+])|(?:\d+[.)]))\s+(.*)$/);
+                const marker = m?.[1] || '-';
+                const text = (m?.[2] || '').trim();
+                items.push({ marker, text });
+                i++;
+              }
+              out.push({ type: 'list', items });
+            } else {
+              let buf = lines[i].trim();
+              i++;
+              while (i < lines.length && lines[i].trim() !== '' && !isBulletLine(lines[i])) {
+                buf += ' ' + lines[i].trim();
+                i++;
+              }
+              out.push({ type: 'text', text: buf });
+            }
+          }
+          return out;
+        };
+
+        const wrapWithIndent = (content, firstPrefix, contIndent) => {
+          const words = String(content || '').split(/\s+/).filter(Boolean);
+          const firstAvail = Math.max(10, MAX_COL - firstPrefix.length);
+          const nextAvail = Math.max(10, MAX_COL - contIndent.length);
+          const lines = [];
+          let cur = '';
+          let avail = firstAvail;
+          const pushLine = (prefix, text) => lines.push(prefix + text);
+          for (const w of words) {
+            if (cur.length === 0) {
+              if (w.length > avail) {
+                // hard-break very long token
+                pushLine(lines.length === 0 ? firstPrefix : contIndent, w.slice(0, avail));
+                let rest = w.slice(avail);
+                while (rest.length > 0) {
+                  const take = Math.min(nextAvail, rest.length);
+                  pushLine(contIndent, rest.slice(0, take));
+                  rest = rest.slice(take);
+                }
+                avail = nextAvail; cur = '';
+              } else {
+                cur = w;
+              }
+            } else if (cur.length + 1 + w.length <= avail) {
+              cur += ' ' + w;
+            } else {
+              pushLine(lines.length === 0 ? firstPrefix : contIndent, cur);
+              cur = w;
+              avail = nextAvail;
+            }
+          }
+          if (cur) pushLine(lines.length === 0 ? firstPrefix : contIndent, cur);
+          return lines.join('\n');
+        };
+
+        const formatEntry = (m) => {
+          const iso = m.ts || new Date().toISOString();
+          const role = (m.role || 'assistant').toUpperCase();
+          const ts = tsStr(iso);
+          const head = `${ts} ${role}: `; // first line prefix
+          const indent = baseIndent(iso); // continuation lines start after timestamp + space
+          const blocks = tokenizeBlocks(m.text);
+          const out = [];
+
+          if (blocks.length === 0) {
+            out.push(head); // empty line with header only
+            return out.join('\n');
+          }
+
+          // Process blocks
+          let firstPiece = true;
+          for (const b of blocks) {
+            if (b.type === 'text') {
+              const prefix = firstPiece ? head : indent; // no role repeat after first line of entry
+              out.push(wrapWithIndent(b.text, prefix, indent));
+              firstPiece = false;
+            } else if (b.type === 'list') {
+              b.items.forEach((it, idx) => {
+                const bullet = String(it.marker);
+                const bulletPad = ' '.repeat(bullet.length + 1);
+                const firstPrefix = (firstPiece && idx === 0) ? (head + bullet + ' ') : (indent + bullet + ' ');
+                const cont = indent + bulletPad; // indent continuation under the text of list item
+                out.push(wrapWithIndent(it.text, firstPrefix, cont));
+                firstPiece = false;
+              });
+            }
+          }
+          return out.join('\n');
+        };
+
+        const buildHeader = () => [
+          `FLIGHT: ${flightNo.replace(' ', '')}`,
+          `SESSION: ${sessionId}`,
+          `STARTED: ${startedAt.toISOString()}`,
+          '---'
+        ].join('\n');
+
+        const buildFullLog = () => {
+          const lines = [buildHeader()];
+          for (const m of messages) lines.push(formatEntry(m));
+          return lines.join('\n') + '\n';
+        };
+
+        // ---- Append to server (/log.php) ----
+        const appendToServer = async () => {
+          try {
+            const filename = flightNo.replace(' ', '') + '.log';
+            let chunk = '';
+            if (!headerSentRef.current) {
+              chunk += buildHeader() + '\n';
+              headerSentRef.current = true;
+            }
+            if (messages.length > savedCountRef.current) {
+              const news = messages.slice(savedCountRef.current).map(formatEntry).join('\n');
+              if (news) chunk += news + '\n';
+              savedCountRef.current = messages.length;
+            }
+            if (!chunk) return;
+            await fetch('/log.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ filename, chunk })
+            });
+          } catch (e) {
+            console.warn('Server log append failed', e);
+          }
+        };
+
+        // First write (header + initial assistant message)
+        useEffect(() => { appendToServer(); }, []);
+
+        const downloadLog = () => {
+          const blob = new Blob([buildFullLog()], { type: 'text/plain' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = flightNo.replace(' ', '') + '.log';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(a.href), 0);
+        };
+
+        // ---- Chat send ----
         const send = async () => {
           const text = input.trim();
           if (!text || busy) return;
           setInput('');
-          const userMsg = { id: uid(), role: 'user', text };
+          const userMsg = { id: uid(), role: 'user', text, ts: new Date().toISOString() };
           setMessages(m => [...m, userMsg]);
-
-          // new unique flight number each send
-          setFlightNo(genFlightNo());
 
           setBusy(true);
           try {
             const payload = { inputText: text, sessionId };
-            console.debug('[proxy] POST', apiUrl, payload);
             const res = await fetch(apiUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
+              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             });
             if (!res.ok) throw new Error(`Proxy error ${res.status}`);
             const data = await res.json();
             const reply = (data.text || data.responseText || data.answer || '').trim();
             const meta = data.cid ? `cid ${data.cid}` : undefined;
-            setMessages(m => [...m, { id: uid(), role: 'assistant', text: reply || 'No text response.', meta }]);
+            const botMsg = { id: uid(), role: 'assistant', text: reply || 'No text response.', meta, ts: new Date().toISOString() };
+            setMessages(m => [...m, botMsg]);
           } catch (err) {
-            setMessages(m => [...m, { id: uid(), role: 'assistant', text: `Error: ${err.message}. Check proxy logs.`, meta: 'client' }]);
+            const errMsg = { id: uid(), role: 'assistant', text: `Error: ${err.message}. Check proxy logs.`, meta: 'client', ts: new Date().toISOString() };
+            setMessages(m => [...m, errMsg]);
           } finally {
             setBusy(false);
+            setTimeout(appendToServer, 0);
           }
         };
 
-        const onKeyDown = (e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            send();
-          }
-        };
+        const onKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
 
         return (
           <div className="min-h-screen grid grid-rows-[auto,1fr,auto] bg-gradient-to-b from-lhBlueDark to-[#0b1229]">
@@ -208,14 +357,17 @@
               </div>
             </main>
 
-            {/* Flight number badge between chat and input */}
+            {/* Flight number & download only */}
             <section className="max-w-5xl mx-auto w-full px-4 pb-3">
-              <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3">
-                <span className="text-xs uppercase tracking-wide text-white/60">Flight number</span>
-                <span className="inline-flex items-center gap-2 text-base font-semibold text-lhBlue bg-lhYellow px-3 py-1.5 rounded-xl">
-                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M2 16l20-5-8 6v5l-4-3-8 2 4-5z"/></svg>
-                  {flightNo}
-                </span>
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs uppercase tracking-wide text-white/60">Flight number</span>
+                  <span className="inline-flex items-center gap-2 text-base font-semibold text-lhBlue bg-lhYellow px-3 py-1.5 rounded-xl">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M2 16l20-5-8 6v5l-4-3-8 2 4-5z"/></svg>
+                    {flightNo}
+                  </span>
+                </div>
+                <button onClick={downloadLog} className="px-3 py-1.5 text-xs rounded-lg bg-white/10 hover:bg-white/15 border border-white/10">Download log</button>
               </div>
             </section>
 
@@ -233,7 +385,6 @@
                   Send
                 </button>
               </div>
-              <p className="mt-2 text-[11px] text-white/40">Demo UI for testing Bedrock Agent. Uses Lufthansa Group inspired colors & clean typography. No credentials stored in the browser. Configure a local proxy in <strong>Settings</strong>.</p>
             </footer>
 
             <SettingsModal open={openSettings} onClose={() => setOpenSettings(false)} apiUrl={apiUrl} setApiUrl={setApiUrl} />
