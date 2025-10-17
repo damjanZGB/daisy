@@ -9,7 +9,7 @@ This playbook tracks the current state of the Lufthansa Group travel agent Lambd
 - Manual stress tests confirm the action group returns exactly 3 detailed options per query when inputs are complete.
 
 ## Stress-Test Ladder
-The automated runner should exercise the agent from simple to highly complex:
+All harness input payloads live in `test_suite/` (for example, `test_suite/test_event_a.json`), and raw Lambda response captures (such as `out_run_a.json`) are stored in the same folder for replay and regression analysis. The automated runner should exercise the agent from simple to highly complex:
 1. **Happy Path (Simple)** – Direct city pair with exact dates (e.g., `ZAG → ZRH`, return, economy). Confirms baseline functionality and that carrier/segment metadata survives.
 2. **Moderate Complexity** – One-way with connection, budget carrier, no return date (`FRA → BCN`). Validates fare class handling, non-LH partner mapping, and single-tool answer.
 3. **Complex Long-Haul** – Multi-leg, premium cabin, long-haul return (`FRA → BOS`) to stress proxy timeouts and itinerary aggregation.
@@ -42,7 +42,7 @@ flowchart LR
 ```
 
 ## Proposed Enhancements
-- __Automated Runner__ – Script (`scripts/run_stress_tests.ps1`) to execute the ladder, collect outputs, and fail fast on anomalies.
+- __Automated Runner__ – `scripts/run_stress_tests.ps1` (now available) executes the ladder, collects outputs in `test_suite/results_*`, and fails fast when scenarios regress.
 - __Proxy Timeout Review__ – Evaluate raising the 8 s timeout or streaming responses for Oceania searches.
 - __Segment Duration Calculation__ – Compute per-segment duration to satisfy user requests such as “How long is this leg?”.
 - __Persona Growth (Bedrock)__ – Coordinate updates to agent instructions for memory/persona tuning (outside Lambda scope).

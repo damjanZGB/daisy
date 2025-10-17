@@ -1,0 +1,54 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Test Overview and Visualization</title>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+  </script>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; background:#f8fafc; color:#0f172a; }
+    h1 { margin-bottom: .5rem; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; background:#fff; }
+    th, td { border: 1px solid #cbd5f5; padding: .5rem .75rem; font-size: .9rem; }
+    th { background: #e2e8f0; text-align: left; }
+    tr.pass { color: #065f46; }
+    tr.fail { color: #991b1b; }
+    .mermaid { background:#fff; padding:1rem; border:1px solid #cbd5f5; border-radius:.5rem; }
+  </style>
+</head>
+<body>
+  <h1>Test Overview &amp; Visualization</h1>
+  <p>Summary of executed stress tests. Source payloads and outputs reside in <code>test_suite</code>.</p>
+  <div class="mermaid">
+flowchart LR
+    START((Stress Suite))
+    START --> run_a_json
+    run_a_json["run_a.json\\nStatus 200\\nOffers 3"]
+    class run_a_json success;
+    START --> run_b_json
+    run_b_json["run_b.json\\nStatus 200\\nOffers 3"]
+    class run_b_json success;
+    START --> run_c_json
+    run_c_json["run_c.json\\nStatus 200\\nOffers 3"]
+    class run_c_json success;
+    START --> run1_json
+    run1_json["run1.json\\nStatus 502\\nFail"]
+    class run1_json failure;
+    classDef success fill:#d1fae5,stroke:#10b981,stroke-width:2px;
+    classDef failure fill:#fee2e2,stroke:#ef4444,stroke-width:2px;
+  </div>
+  <table>
+    <thead>
+      <tr><th>Result File</th><th>Status</th><th>Offers</th><th>Generated At</th><th>Query</th><th>Error</th></tr>
+    </thead>
+    <tbody>
+<tr class='pass'><td>out_run_a.json</td><td>200</td><td>3</td><td>2025-10-17T14:52:30Z</td><td>{&quot;origin&quot;:&quot;ZAG&quot;,&quot;destination&quot;:&quot;ZRH&quot;,&quot;departureDate&quot;:&quot;2025-11-12&quot;,&quot;returnDate&quot;:&quot;2025-12-07&quot;,&quot;adults&quot;:1,&quot;cabin&quot;:&quot;ECONOMY&quot;,&quot;nonstop&quot;:false,&quot;currency&quot;:&quot;EUR&quot;,&quot;lhGroupOnly&quot;:true,&quot;max&quot;:3}</td><td></td></tr>
+<tr class='pass'><td>out_run_b.json</td><td>200</td><td>3</td><td>2025-10-17T14:52:50Z</td><td>{&quot;origin&quot;:&quot;FRA&quot;,&quot;destination&quot;:&quot;BCN&quot;,&quot;departureDate&quot;:&quot;2025-11-15&quot;,&quot;returnDate&quot;:null,&quot;adults&quot;:1,&quot;cabin&quot;:&quot;ECONOMY&quot;,&quot;nonstop&quot;:false,&quot;currency&quot;:&quot;EUR&quot;,&quot;lhGroupOnly&quot;:true,&quot;max&quot;:3}</td><td></td></tr>
+<tr class='pass'><td>out_run_c.json</td><td>200</td><td>3</td><td>2025-10-17T14:53:16Z</td><td>{&quot;origin&quot;:&quot;FRA&quot;,&quot;destination&quot;:&quot;BOS&quot;,&quot;departureDate&quot;:&quot;2025-12-10&quot;,&quot;returnDate&quot;:&quot;2025-12-18&quot;,&quot;adults&quot;:1,&quot;cabin&quot;:&quot;PREMIUM_ECONOMY&quot;,&quot;nonstop&quot;:false,&quot;currency&quot;:&quot;EUR&quot;,&quot;lhGroupOnly&quot;:true,&quot;max&quot;:3}</td><td></td></tr>
+<tr class='fail'><td>out_run1.json</td><td>502</td><td>0</td><td></td><td>n/a</td><td>The read operation timed out</td></tr>
+    </tbody>
+  </table>
+</body>
+</html>
