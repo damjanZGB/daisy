@@ -240,15 +240,21 @@ function decodeAgentEventStream(buffer) {
     const eventType = headers[":event-type"] || headers.eventType;
     const messageType = headers[":message-type"] || headers.messageType;
     const payloadText = payload.toString("utf8");
-    events.push({ headers, payload: payloadText });
+    const eventRecord = { headers };
+    if (payload.length > 0) eventRecord.payload = payloadText;
+    let json;
+    if (payloadText) {
+      try {
+        json = JSON.parse(payloadText);
+        eventRecord.json = json;
+      } catch (error) {
+        // leave as raw payload text
+      }
+    }
+    events.push(eventRecord);
     if (messageType !== "event") continue;
     if (!payloadText) continue;
-    let json;
-    try {
-      json = JSON.parse(payloadText);
-    } catch (error) {
-      continue;
-    }
+    if (!json) continue;
     const byteSources = [];
     if (typeof json.bytes === "string") byteSources.push(json.bytes);
     if (typeof json.chunk?.bytes === "string") byteSources.push(json.chunk.bytes);
@@ -259,8 +265,13 @@ function decodeAgentEventStream(buffer) {
     }
     for (const base64 of byteSources) {
       try {
-        const decoded = Buffer.from(base64, "base64").toString("utf8");
+        const buffer = Buffer.from(base64, "base64");
+        const decoded = buffer.toString("utf8");
         if (decoded) chunks.push(decoded);
+        if (decoded) {
+          if (!eventRecord.decodedText) eventRecord.decodedText = [];
+          eventRecord.decodedText.push(decoded);
+        }
       } catch (error) {
         // ignore invalid base64
       }
