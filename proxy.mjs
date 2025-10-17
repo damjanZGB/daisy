@@ -14,14 +14,14 @@ const logger = {
 const PORT = 8787;
 const REGION = process.env.AWS_REGION || "us-west-2";
 const AGENT_ID = process.env.AGENT_ID;
-const AMADEUS_ENV = "test";
+const AMADEUS_ENV = process.env.AMADEUS_ENV || "test";
 const AMADEUS_HOST =
   AMADEUS_ENV === "production"
     ? "https://api.amadeus.com"
     : "https://test.api.amadeus.com";
-const AMADEUS_API_KEY = "";
-const AMADEUS_API_SECRET = "";
-const IATA_DB_PATH = "./iata.json";
+const AMADEUS_API_KEY = process.env.AMADEUS_API_KEY || "";
+const AMADEUS_API_SECRET = process.env.AMADEUS_API_SECRET || "";
+const IATA_DB_PATH = process.env.IATA_DB_PATH || "./iata.json";
 const AGENT_ALIAS_ID = (process.env.AGENT_ALIAS_ID || "").trim();
 const AWS_ACCESS_KEY_ID = (process.env.AWS_ACCESS_KEY_ID || "").trim();
 const AWS_SECRET_ACCESS_KEY = (process.env.AWS_SECRET_ACCESS_KEY || "").trim();
