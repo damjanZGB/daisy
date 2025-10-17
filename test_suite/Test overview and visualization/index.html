@@ -42,6 +42,9 @@ flowchart LR
     START --> test_event_dates_words_json
     test_event_dates_words_json["test_event_dates_words.json\\nStatus 400\\nFail\\nProvide 'departureDate' in YYYY-MM-DD."]
     class test_event_dates_words_json failure;
+    START --> test_event_iata_location_json
+    test_event_iata_location_json["test_event_iata_location.json\\nNearest airport\\nExpected ZAG"]
+    class test_event_iata_location_json success;
     START --> test_event1_json
     test_event1_json["test_event1.json\\nStatus 200\\nOffers 3"]
     class test_event1_json success;
