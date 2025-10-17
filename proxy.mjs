@@ -127,6 +127,158 @@ function signV4({ service, region, method, hostname, path, headers, body, access
   const authorization = `${algorithm} Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
   return { amzDate, authorization, payloadHash };
 }
+function parseEventStreamHeaders(buf) {
+  let offset = 0;
+  const headers = {};
+  while (offset < buf.length) {
+    const nameLen = buf[offset];
+    offset += 1;
+    const name = buf.slice(offset, offset + nameLen).toString("utf8");
+    offset += nameLen;
+    const type = buf[offset];
+    offset += 1;
+    let value;
+    switch (type) {
+      case 0: // bool true
+        value = true;
+        break;
+      case 1: // bool false
+        value = false;
+        break;
+      case 2: // byte
+        value = buf.readInt8(offset);
+        offset += 1;
+        break;
+      case 3: // short
+        value = buf.readInt16BE(offset);
+        offset += 2;
+        break;
+      case 4: // int
+        value = buf.readInt32BE(offset);
+        offset += 4;
+        break;
+      case 5: // long
+        value = buf.readBigInt64BE(offset);
+        offset += 8;
+        break;
+      case 6: { // byte array
+        const len = buf.readUInt16BE(offset);
+        offset += 2;
+        value = buf.slice(offset, offset + len);
+        offset += len;
+        break;
+      }
+      case 7: { // string
+        const len = buf.readUInt16BE(offset);
+        offset += 2;
+        value = buf.slice(offset, offset + len).toString("utf8");
+        offset += len;
+        break;
+      }
+      case 8: { // timestamp (epoch millis)
+        const ms = Number(buf.readBigInt64BE(offset));
+        offset += 8;
+        value = new Date(ms);
+        break;
+      }
+      case 9: { // uuid
+        const bytes = buf.slice(offset, offset + 16);
+        offset += 16;
+        const hex = bytes.toString("hex");
+        value = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+        break;
+      }
+      default: {
+        throw new Error(`Unsupported event stream header type ${type}`);
+      }
+    }
+    headers[name] = value;
+  }
+  return headers;
+}
+function parseEventStream(buffer) {
+  const messages = [];
+  let offset = 0;
+  while (offset + 8 <= buffer.length) {
+    const totalLen = buffer.readUInt32BE(offset);
+    offset += 4;
+    if (totalLen < 12 || offset + totalLen - 4 > buffer.length) {
+      break;
+    }
+    const headersLen = buffer.readUInt32BE(offset);
+    offset += 4;
+    const headersBuf = buffer.slice(offset, offset + headersLen);
+    offset += headersLen;
+    const payloadLen = totalLen - headersLen - 12;
+    if (payloadLen < 0 || offset + payloadLen + 4 > buffer.length) {
+      break;
+    }
+    const payload = buffer.slice(offset, offset + payloadLen);
+    offset += payloadLen;
+    offset += 4; // skip CRC
+    let headers = {};
+    try {
+      headers = parseEventStreamHeaders(headersBuf);
+    } catch (err) {
+      headers = { __parseError: err.message };
+    }
+    messages.push({ headers, payload });
+  }
+  return messages;
+}
+function decodeAgentEventStream(buffer) {
+  const messages = parseEventStream(buffer);
+  const chunks = [];
+  const events = [];
+  let finalResponse = null;
+  for (const { headers, payload } of messages) {
+    const eventType = headers[":event-type"] || headers.eventType;
+    const messageType = headers[":message-type"] || headers.messageType;
+    const payloadText = payload.toString("utf8");
+    events.push({ headers, payload: payloadText });
+    if (messageType !== "event") continue;
+    if (!payloadText) continue;
+    let json;
+    try {
+      json = JSON.parse(payloadText);
+    } catch (error) {
+      continue;
+    }
+    const byteSources = [];
+    if (typeof json.bytes === "string") byteSources.push(json.bytes);
+    if (typeof json.chunk?.bytes === "string") byteSources.push(json.chunk.bytes);
+    if (Array.isArray(json.bytesList)) {
+      for (const item of json.bytesList) {
+        if (typeof item === "string") byteSources.push(item);
+      }
+    }
+    for (const base64 of byteSources) {
+      try {
+        const decoded = Buffer.from(base64, "base64").toString("utf8");
+        if (decoded) chunks.push(decoded);
+      } catch (error) {
+        // ignore invalid base64
+      }
+    }
+    const collectTextArray = arr => {
+      if (!Array.isArray(arr)) return;
+      const text = arr.map(part => part?.text || "").join("");
+      if (text) chunks.push(text);
+    };
+    collectTextArray(json.outputText);
+    collectTextArray(json.response?.outputText);
+    if (typeof json.text === "string") {
+      chunks.push(json.text);
+    }
+    if (eventType === "final-response") {
+      finalResponse = json;
+    }
+  }
+  const text = chunks.join("");
+  const result = { text, events };
+  if (finalResponse) result.finalResponse = finalResponse;
+  return result;
+}
 async function awsInvokeAgent({ aliasId, sessionId, inputText }) {
   const service = "bedrock";
   const hostname = `bedrock-agent-runtime.${REGION}.amazonaws.com`;
@@ -146,18 +298,25 @@ async function awsInvokeAgent({ aliasId, sessionId, inputText }) {
   });
   headers["x-amz-date"] = amzDate; headers["x-amz-content-sha256"] = payloadHash; headers["authorization"] = authorization;
   const resp = await fetch(`https://${hostname}${path}`, { method: "POST", headers, body });
-  const raw = await resp.text();
+  const arrayBuffer = await resp.arrayBuffer();
+  const rawBuffer = Buffer.from(arrayBuffer);
   if (!resp.ok) {
+    const errorText = rawBuffer.toString("utf8");
     logger.error("InvokeAgent failed", {
       status: resp.status,
-      response: raw.slice(0, 500),
+      response: errorText.slice(0, 500),
     });
-    throw new Error(`InvokeAgent failed: ${resp.status} ${raw}`);
+    throw new Error(`InvokeAgent failed: ${resp.status} ${errorText}`);
   }
+  const contentType = resp.headers.get("content-type") || "";
+  if (contentType.includes("eventstream")) {
+    return decodeAgentEventStream(rawBuffer);
+  }
+  const text = rawBuffer.toString("utf8");
   try {
-    return JSON.parse(raw);
+    return JSON.parse(text);
   } catch {
-    return { raw };
+    return { raw: text };
   }
 }
 
