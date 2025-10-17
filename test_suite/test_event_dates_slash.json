@@ -1,0 +1,27 @@
+{
+  "messageVersion": "1.0",
+  "actionGroup": "daisy_in_action",
+  "apiPath": "/tools/amadeus/search",
+  "httpMethod": "POST",
+  "sessionId": "test-dates-slash",
+  "agent": { "name": "test" },
+  "sessionAttributes": {},
+  "promptSessionAttributes": {},
+  "parameters": [],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "properties": [
+          { "name": "originLocationCode", "value": "FRA" },
+          { "name": "destinationLocationCode", "value": "JFK" },
+          { "name": "departureDate", "value": "2026/02/25" },
+          { "name": "returnDate", "value": "2026/03/10" },
+          { "name": "adults", "value": "1" },
+          { "name": "travelClass", "value": "PREMIUM_ECONOMY" },
+          { "name": "max", "value": "3" },
+          { "name": "currencyCode", "value": "EUR" }
+        ]
+      }
+    }
+  }
+}

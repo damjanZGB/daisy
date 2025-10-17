@@ -1,0 +1,27 @@
+{
+  "messageVersion": "1.0",
+  "actionGroup": "daisy_in_action",
+  "apiPath": "/tools/amadeus/search",
+  "httpMethod": "POST",
+  "sessionId": "test-dates-dot",
+  "agent": { "name": "test" },
+  "sessionAttributes": {},
+  "promptSessionAttributes": {},
+  "parameters": [],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "properties": [
+          { "name": "originLocationCode", "value": "ZRH" },
+          { "name": "destinationLocationCode", "value": "BNE" },
+          { "name": "departureDate", "value": "25.02.2026" },
+          { "name": "returnDate", "value": "13.03.2026" },
+          { "name": "adults", "value": "1" },
+          { "name": "travelClass", "value": "ECONOMY" },
+          { "name": "max", "value": "3" },
+          { "name": "currencyCode", "value": "EUR" }
+        ]
+      }
+    }
+  }
+}

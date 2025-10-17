@@ -1,0 +1,27 @@
+{
+  "messageVersion": "1.0",
+  "actionGroup": "daisy_in_action",
+  "apiPath": "/tools/amadeus/search",
+  "httpMethod": "POST",
+  "sessionId": "test-dates-words",
+  "agent": { "name": "test" },
+  "sessionAttributes": {},
+  "promptSessionAttributes": {},
+  "parameters": [],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "properties": [
+          { "name": "originLocationCode", "value": "LHR" },
+          { "name": "destinationLocationCode", "value": "HND" },
+          { "name": "departureDate", "value": "March 5, 2026" },
+          { "name": "returnDate", "value": "March 20, 2026" },
+          { "name": "adults", "value": "2" },
+          { "name": "travelClass", "value": "BUSINESS" },
+          { "name": "max", "value": "3" },
+          { "name": "currencyCode", "value": "EUR" }
+        ]
+      }
+    }
+  }
+}
