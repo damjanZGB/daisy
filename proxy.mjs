@@ -146,16 +146,19 @@ async function awsInvokeAgent({ aliasId, sessionId, inputText }) {
   });
   headers["x-amz-date"] = amzDate; headers["x-amz-content-sha256"] = payloadHash; headers["authorization"] = authorization;
   const resp = await fetch(`https://${hostname}${path}`, { method: "POST", headers, body });
+  const raw = await resp.text();
   if (!resp.ok) {
-    const errorPayload = await resp.text();
     logger.error("InvokeAgent failed", {
       status: resp.status,
-      response: errorPayload.slice(0, 500),
+      response: raw.slice(0, 500),
     });
-    throw new Error(`InvokeAgent failed: ${resp.status} ${errorPayload}`);
+    throw new Error(`InvokeAgent failed: ${resp.status} ${raw}`);
   }
-  const data = await resp.json().catch(async () => ({ raw: await resp.text() }));
-  return data;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return { raw };
+  }
 }
 
 // ---- Amadeus adapter ----
