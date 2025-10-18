@@ -11,8 +11,8 @@ This Lambda replays stored chat transcripts against the staging Bedrock agent to
 | `REPLAY_VARIANTS` | Comma-separated persona list to scan (default `bianca,gina,origin,paul`). |
 | `REPLAY_LOOKBACK_DAYS` | How many days back to replay (default `1`, i.e. “yesterday”). |
 | `AGENT_ID` | Bedrock agent identifier. |
-| `AGENT_ALIAS_ID` | Default alias to replay against when no variant-specific alias is mapped. |
-| `REPLAY_ALIAS_MAP` | Optional comma-separated map `variant:aliasId` (e.g. `bianca:D84...,gina:UY0...,paul:R1...`). Missing variants fall back to `AGENT_ALIAS_ID`. |
+| `AGENT_ALIAS_ID` | Default alias to replay against when no variant-specific alias is mapped (set to Paul’s alias `R1YRB7NGUP`). |
+| `REPLAY_ALIAS_MAP` | Optional comma-separated map `variant:aliasId` (e.g. `bianca:D84...,gina:UY0...,origin:R1...,paul:R1...`). Missing variants fall back to `AGENT_ALIAS_ID`. |
 | `AWS_REGION` | Region for S3/Bedrock clients (`us-west-2`). |
 | `REPLAY_RESULTS_BUCKET` | Bucket for run summaries; defaults to `TRANSCRIPT_BUCKET`. |
 | `REPLAY_RESULTS_PREFIX` | Prefix for persisted run summaries (defaults to `<TRANSCRIPT_ROOT_PREFIX>/replay-results`). |

@@ -509,6 +509,13 @@
       const appendToServer = async () => {
         try {
           const filename = flightNo.replace(' ', '') + '.log';
+          const locationSnapshot = locationInfo && typeof locationInfo === 'object'
+            ? {
+                label: locationInfo.label || '',
+                tz: locationInfo.tz || '',
+                inferredOrigin: locationInfo.inferredOrigin || '',
+              }
+            : null;
           let chunk = '';
           if (!headerSentRef.current) {
             chunk += buildHeader() + '\n';
@@ -526,7 +533,13 @@
           await fetch('/log.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename, chunk })
+            body: JSON.stringify({
+              filename,
+              chunk,
+              locationLabel: locationSnapshot?.label || '',
+              timeZone: locationSnapshot?.tz || '',
+              inferredOrigin: locationSnapshot?.inferredOrigin || '',
+            })
           });
           await uploadTranscript(messages);
         } catch (e) {
