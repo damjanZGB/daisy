@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "paul",
+  "variant": "paul",
+  "sessionId": "64cd34e6-862b-4dbf-bd14-a00a706f8d40",
+  "flight": "LH9385",
+  "startedAt": "2025-10-17T22:56:58.636Z",
+  "completedAt": "2025-10-18T21:08:53.059677Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-17T22:56:58.636Z"
+    },
+    {
+      "role": "user",
+      "text": "hi",
+      "meta": null,
+      "ts": "2025-10-17T22:57:46.504Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Hello! To start planning your journey, could you please share your travel intentions? Are you looking for a one-way or round trip, and any specific dates or destinations in mind?",
+      "meta": null,
+      "ts": "2025-10-17T22:57:49.315Z"
+    },
+    {
+      "role": "user",
+      "text": "I want to go to Zurich next saturday. Stay for seven days. Only me.",
+      "meta": null,
+      "ts": "2025-10-17T23:01:19.615Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Thank you for sharing your plans. To proceed, could you please confirm the departure date for next Saturday and let me know from which airport you will be departing?",
+      "meta": null,
+      "ts": "2025-10-17T23:01:22.659Z"
+    },
+    {
+      "role": "user",
+      "text": "25th of October, the nearest airport to my location.",
+      "meta": null,
+      "ts": "2025-10-17T23:04:29.490Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Thank you for the details. To find the best flights, could you please provide the name of the nearest airport to your location?",
+      "meta": null,
+      "ts": "2025-10-17T23:04:32.468Z"
+    },
+    {
+      "role": "user",
+      "text": "Zagreb.",
+      "meta": null,
+      "ts": "2025-10-17T23:06:10.488Z"
+    },
+    {
+      "role": "assistant",
+      "text": "No text response.",
+      "meta": null,
+      "ts": "2025-10-17T23:06:13.063Z"
+    },
+    {
+      "role": "user",
+      "text": "Zagreb",
+      "meta": null,
+      "ts": "2025-10-17T23:07:42.007Z"
+    },
+    {
+      "role": "assistant",
+      "text": "No text response.",
+      "meta": null,
+      "ts": "2025-10-17T23:07:44.582Z"
+    },
+    {
+      "role": "user",
+      "text": "What happened? Are you ok?",
+      "meta": null,
+      "ts": "2025-10-17T23:09:41.677Z"
+    },
+    {
+      "role": "assistant",
+      "text": "I'm here to assist you with your travel plans. To find the best flights to Zurich, could you please provide the name of the nearest airport to your location?",
+      "meta": null,
+      "ts": "2025-10-17T23:09:44.650Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

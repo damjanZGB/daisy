@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "gina",
+  "variant": "gina",
+  "sessionId": "fdc07732-3dd2-4b0a-8a8e-03bb2f34c354",
+  "flight": "LH1275",
+  "startedAt": "2025-10-16T20:35:38.692Z",
+  "completedAt": "2025-10-18T21:08:50.688478Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Hello! Provide route, dates, and travelers to search fares. Example: Zagreb to Copenhagen, 06.1111.11.2025, 1 adult.",
+      "meta": null,
+      "ts": "2025-10-16T20:35:38.692Z"
+    },
+    {
+      "role": "user",
+      "text": "HI",
+      "meta": null,
+      "ts": "2025-10-16T20:35:42.046Z"
+    },
+    {
+      "role": "assistant",
+      "text": "<user__askuser question=\"Hi, I am Paul, your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today? What should I optimize",
+      "meta": null,
+      "ts": "2025-10-16T20:35:44.675Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

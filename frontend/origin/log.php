@@ -44,7 +44,8 @@ if (function_exists('mb_convert_encoding')) {
     $chunk = mb_convert_encoding($chunk, 'UTF-8', 'UTF-8,ISO-8859-1');
   }
 }
-$chunk = str_replace("
+$chunk = str_replace("
+
 ", "
 ", $chunk);
 

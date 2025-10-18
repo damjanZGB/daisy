@@ -1,0 +1,9 @@
+FLIGHT: LH4668
+SESSION: a01032a8-cffc-478c-ac6d-cdc64604bd5f
+STARTED: 2025-10-17T18:00:22.477Z
+---
+[2025-10-17T18:00:22.477Z] ASSISTANT: Lufthansa Group Inspirational AI flight assistant. Nice to meet you!”
+[2025-10-17T18:00:29.746Z] USER: hi
+[2025-10-17T18:00:32.634Z] ASSISTANT: BETA TEST: Imagine you are planning your next holiday, and you are using this chatbot to find a travel destination and associated flight. What kind of atmosphere or memories are you hoping for?
+[2025-10-17T18:06:27.492Z] USER: i want to fly next wednesday from zurich to berlin
+[2025-10-17T18:06:31.892Z] ASSISTANT: Thank you for providing the origin and destination. Could you please specify the exact departure date in the format YYYY-MM-DD for next Wednesday's flight from Zurich to Berlin?

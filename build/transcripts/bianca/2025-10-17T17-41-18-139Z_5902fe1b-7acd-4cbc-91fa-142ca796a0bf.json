@@ -1,0 +1,189 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "bianca",
+  "variant": "bianca",
+  "sessionId": "5902fe1b-7acd-4cbc-91fa-142ca796a0bf",
+  "flight": "LH8958",
+  "startedAt": "2025-10-17T17:41:18.139Z",
+  "completedAt": "2025-10-18T21:08:50.376648Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-17T17:41:18.139Z"
+    },
+    {
+      "role": "user",
+      "text": "Hi",
+      "meta": null,
+      "ts": "2025-10-17T17:41:23.136Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Error: Failed to fetch. Check proxy logs.",
+      "meta": null,
+      "ts": "2025-10-17T17:41:23.242Z"
+    },
+    {
+      "role": "user",
+      "text": "hi",
+      "meta": null,
+      "ts": "2025-10-17T17:41:47.684Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Error: Failed to fetch. Check proxy logs.",
+      "meta": null,
+      "ts": "2025-10-17T17:41:47.715Z"
+    },
+    {
+      "role": "user",
+      "text": "hi",
+      "meta": null,
+      "ts": "2025-10-17T17:41:58.027Z"
+    },
+    {
+      "role": "assistant",
+      "text": "BETA TEST: Imagine you are planning your next holiday, and you are using this chatbot to find a travel destination and associated flight. What kind of atmosphere or memories are you hoping for?",
+      "meta": null,
+      "ts": "2025-10-17T17:42:01.058Z"
+    },
+    {
+      "role": "user",
+      "text": "beach, kitesurfing, I fly from ZRH",
+      "meta": null,
+      "ts": "2025-10-17T17:42:28.878Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Could you please specify your destination and preferred travel dates for this kitesurfing adventure?",
+      "meta": null,
+      "ts": "2025-10-17T17:42:32.018Z"
+    },
+    {
+      "role": "user",
+      "text": "destination I don't know",
+      "meta": null,
+      "ts": "2025-10-17T17:42:40.843Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Given your interest in kitesurfing, here are some beach destinations known for this activity: Costa Rica, Bali, and the Maldives. Which of these destinations piques your interest, or do you have another in mind?",
+      "meta": null,
+      "ts": "2025-10-17T17:42:44.018Z"
+    },
+    {
+      "role": "user",
+      "text": "Spain",
+      "meta": null,
+      "ts": "2025-10-17T17:42:52.017Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Spain has many beautiful beach destinations. Could you specify which city you're interested in, and what are your preferred travel dates for this trip?",
+      "meta": null,
+      "ts": "2025-10-17T17:42:55.085Z"
+    },
+    {
+      "role": "user",
+      "text": "December 2025",
+      "meta": null,
+      "ts": "2025-10-17T17:43:02.797Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Thank you for sharing your travel dates. Could you please specify the city in Spain you're interested in for December 2025? This will help me find the IATA code for your destination.",
+      "meta": null,
+      "ts": "2025-10-17T17:43:06.001Z"
+    },
+    {
+      "role": "user",
+      "text": "Malaga from ZRH",
+      "meta": null,
+      "ts": "2025-10-17T17:43:29.766Z"
+    },
+    {
+      "role": "assistant",
+      "text": "No text response.",
+      "meta": null,
+      "ts": "2025-10-17T17:43:32.683Z"
+    },
+    {
+      "role": "user",
+      "text": "?",
+      "meta": null,
+      "ts": "2025-10-17T17:43:38.212Z"
+    },
+    {
+      "role": "assistant",
+      "text": "I see you're considering Spain for your trip. Here are some popular beach cities known for kitesurfing: Malaga, Valencia, and Alicante. Could you please specify which city you're interested in for December 2025?",
+      "meta": null,
+      "ts": "2025-10-17T17:43:41.469Z"
+    },
+    {
+      "role": "user",
+      "text": "Malaga",
+      "meta": null,
+      "ts": "2025-10-17T17:44:03.691Z"
+    },
+    {
+      "role": "assistant",
+      "text": "No text response.",
+      "meta": null,
+      "ts": "2025-10-17T17:44:06.526Z"
+    },
+    {
+      "role": "user",
+      "text": "Help me inspire myself",
+      "meta": null,
+      "ts": "2025-10-17T17:44:41.473Z"
+    },
+    {
+      "role": "assistant",
+      "text": "To inspire your travel plans, here are some destinations within the Lufthansa Group network known for their beautiful beaches and kitesurfing opportunities: Costa Rica, Bali, and the Maldives. Which of these",
+      "meta": null,
+      "ts": "2025-10-17T17:44:44.611Z"
+    },
+    {
+      "role": "user",
+      "text": "Kitesurfing",
+      "meta": null,
+      "ts": "2025-10-17T17:44:53.919Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Kitesurfing is an exhilarating sport! Here are some popular destinations within the Lufthansa Group network known for excellent kitesurfing conditions: Costa Rica, Bali, and the Maldives. Which of these",
+      "meta": null,
+      "ts": "2025-10-17T17:44:57.462Z"
+    },
+    {
+      "role": "user",
+      "text": "Costa Rica",
+      "meta": null,
+      "ts": "2025-10-17T17:45:03.546Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Costa Rica is a fantastic choice for kitesurfing! Could you please specify the city or region you're interested in, and what are your preferred travel dates for this trip?",
+      "meta": null,
+      "ts": "2025-10-17T17:45:06.521Z"
+    },
+    {
+      "role": "user",
+      "text": "San Juan",
+      "meta": null,
+      "ts": "2025-10-17T17:45:15.016Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Thank you for sharing your destination. Could you please specify your preferred travel dates for your trip to San Juan, Costa Rica? This will help me find the IATA code for your destination.",
+      "meta": null,
+      "ts": "2025-10-17T17:45:18.358Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

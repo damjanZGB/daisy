@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "paul",
+  "variant": "paul",
+  "sessionId": "73e779e6-0292-48c9-af0a-e177a102599b",
+  "flight": "LH1174",
+  "startedAt": "2025-10-16T22:50:06.867Z",
+  "completedAt": "2025-10-18T21:08:52.228679Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-16T22:50:06.867Z"
+    },
+    {
+      "role": "user",
+      "text": "Hi",
+      "meta": null,
+      "ts": "2025-10-16T22:50:08.834Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Hi, I am Paul, your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today? What should I optimize today: price, comfort, time,",
+      "meta": null,
+      "ts": "2025-10-16T22:50:10.892Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

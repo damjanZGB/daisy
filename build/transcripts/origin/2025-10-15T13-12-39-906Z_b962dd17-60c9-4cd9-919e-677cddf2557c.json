@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "origin",
+  "variant": "origin",
+  "sessionId": "b962dd17-60c9-4cd9-919e-677cddf2557c",
+  "flight": "LH6727",
+  "startedAt": "2025-10-15T13:12:39.906Z",
+  "completedAt": "2025-10-18T21:08:52.036652Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Hello! Provide route, dates, and travelers to search fares. Example: Zagreb to Copenhagen, 06.1111.11.2025, 1 adult.",
+      "meta": null,
+      "ts": "2025-10-15T13:12:39.906Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

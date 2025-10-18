@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "paul",
+  "variant": "paul",
+  "sessionId": "9b207a14-437c-45f6-975b-24b55d55fed0",
+  "flight": "LH5146",
+  "startedAt": "2025-10-18T15:14:06.383Z",
+  "completedAt": "2025-10-18T21:08:52.673967Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-18T15:14:06.383Z"
+    },
+    {
+      "role": "user",
+      "text": "Hi",
+      "meta": null,
+      "ts": "2025-10-18T15:14:13.666Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Hello! To assist you better, could you please share your travel intentions today? Are you looking for a one-way or return flight, and do you have any specific destinations or dates in mind?",
+      "meta": null,
+      "ts": "2025-10-18T15:14:16.500Z"
+    },
+    {
+      "role": "user",
+      "text": "Zurich",
+      "meta": null,
+      "ts": "2025-10-18T15:14:22.125Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Thank you for sharing Zurich as a destination. To assist you further, could you please let me know your departure city and the travel dates?",
+      "meta": null,
+      "ts": "2025-10-18T15:14:24.679Z"
+    },
+    {
+      "role": "user",
+      "text": "Neasrest airport to me",
+      "meta": null,
+      "ts": "2025-10-18T15:14:39.320Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Could you please provide a more specific location or city near which you are, so I can find the nearest airport for you?",
+      "meta": null,
+      "ts": "2025-10-18T15:14:42.089Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

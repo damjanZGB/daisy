@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "gina",
+  "variant": "gina",
+  "sessionId": "d147399b-4796-4ad9-a423-b54c959156b6",
+  "flight": "LH8110",
+  "startedAt": "2025-10-16T21:55:27.986Z",
+  "completedAt": "2025-10-18T21:08:51.609334Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-16T21:55:27.986Z"
+    },
+    {
+      "role": "user",
+      "text": "g",
+      "meta": null,
+      "ts": "2025-10-16T21:55:38.585Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Could you please provide more details about your request?",
+      "meta": null,
+      "ts": "2025-10-16T21:55:40.285Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "gina",
+  "variant": "gina",
+  "sessionId": "6867926a-8a0b-4d16-8285-36beebc68ee3",
+  "flight": "LH3681",
+  "startedAt": "2025-10-18T16:56:28.071Z",
+  "completedAt": "2025-10-18T21:08:51.034293Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-18T16:56:28.071Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

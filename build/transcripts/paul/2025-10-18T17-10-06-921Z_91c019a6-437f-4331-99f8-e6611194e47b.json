@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "paul",
+  "variant": "paul",
+  "sessionId": "91c019a6-437f-4331-99f8-e6611194e47b",
+  "flight": "LH8172",
+  "startedAt": "2025-10-18T17:10:06.921Z",
+  "completedAt": "2025-10-18T21:08:53.020777Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-18T17:10:06.921Z"
+    },
+    {
+      "role": "user",
+      "text": "Hi",
+      "meta": null,
+      "ts": "2025-10-18T17:10:14.826Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Hello and welcome aboard the Lufthansa Group experience. I am Aris, your digital travel orchestrator. Tell mewhat kind of journey are you envisioning today?",
+      "meta": null,
+      "ts": "2025-10-18T17:10:17.763Z"
+    },
+    {
+      "role": "user",
+      "text": "Zurich, one person, stay for five days, departure next saturday.",
+      "meta": null,
+      "ts": "2025-10-18T17:10:43.985Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Could you please confirm the departure airport? If you haven't decided yet, the default is Zapresic, Croatia (ZAG).",
+      "meta": null,
+      "ts": "2025-10-18T17:10:46.742Z"
+    },
+    {
+      "role": "user",
+      "text": "This is ok.",
+      "meta": null,
+      "ts": "2025-10-18T17:11:46.411Z"
+    },
+    {
+      "role": "assistant",
+      "text": "No text response.",
+      "meta": null,
+      "ts": "2025-10-18T17:11:49.570Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

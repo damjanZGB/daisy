@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "bianca",
+  "variant": "bianca",
+  "sessionId": "724ea0c9-e7b0-4988-8c33-b72b01936752",
+  "flight": "LH8376",
+  "startedAt": "2025-10-17T09:51:26.957Z",
+  "completedAt": "2025-10-18T21:08:50.304317Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-17T09:51:26.957Z"
+    },
+    {
+      "role": "user",
+      "text": "Hi",
+      "meta": null,
+      "ts": "2025-10-17T09:52:19.532Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Hi, I am Paul, your inspirational Digital Travel Assistant. I am here to help find a travel destination and travel plan for you. When you think of holiday, what comes to mind?",
+      "meta": null,
+      "ts": "2025-10-17T09:52:23.152Z"
+    },
+    {
+      "role": "user",
+      "text": "I want to fly from Zagreb to Zurich next month. Could you give me top 3 flights ranked by flight lenght.",
+      "meta": null,
+      "ts": "2025-10-17T09:53:41.390Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Could you please specify the exact departure date for your trip to Zurich next month?",
+      "meta": null,
+      "ts": "2025-10-17T09:53:43.666Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

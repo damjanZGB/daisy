@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "gina",
+  "variant": "gina",
+  "sessionId": "73471e27-0a76-47b5-8900-bc434574a053",
+  "flight": "LH6419",
+  "startedAt": "2025-10-17T07:58:23.655Z",
+  "completedAt": "2025-10-18T21:08:51.427736Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-17T07:58:23.655Z"
+    },
+    {
+      "role": "user",
+      "text": "Hi",
+      "meta": null,
+      "ts": "2025-10-17T07:58:27.843Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Hi, I am Paul, your inspirational Digital Travel Assistant. I am here to help find a travel destination and travel plan for you. When you think of holiday, what comes to mind?",
+      "meta": null,
+      "ts": "2025-10-17T07:58:29.946Z"
+    },
+    {
+      "role": "user",
+      "text": "I wanna fly",
+      "meta": null,
+      "ts": "2025-10-17T07:58:35.040Z"
+    },
+    {
+      "role": "assistant",
+      "text": "That sounds exciting! Could you please share more about your travel preferences? For example, are there specific destinations you have in mind, or preferred travel dates? Any particular preferences or special",
+      "meta": null,
+      "ts": "2025-10-17T07:58:37.209Z"
+    },
+    {
+      "role": "user",
+      "text": "Sydney",
+      "meta": null,
+      "ts": "2025-10-17T07:58:43.761Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Sydney sounds like a wonderful choice! Could you please share more about your travel plans? For example, are there specific dates you're considering, or any particular preferences or special requests you might",
+      "meta": null,
+      "ts": "2025-10-17T07:58:45.987Z"
+    },
+    {
+      "role": "user",
+      "text": "Give me the list of three cheapest flights in december",
+      "meta": null,
+      "ts": "2025-10-17T07:59:10.435Z"
+    },
+    {
+      "role": "assistant",
+      "text": "To find the three cheapest flights to Sydney in December, could you please share specific travel dates, the number of passengers, and any preferred travel class?",
+      "meta": null,
+      "ts": "2025-10-17T07:59:12.667Z"
+    },
+    {
+      "role": "user",
+      "text": "12.12.2025. One person, first class.",
+      "meta": null,
+      "ts": "2025-10-17T07:59:39.470Z"
+    },
+    {
+      "role": "assistant",
+      "text": "It seems there was an issue with the origin location code. Could you please confirm the IATA code for your departure city?",
+      "meta": null,
+      "ts": "2025-10-17T07:59:42.999Z"
+    },
+    {
+      "role": "user",
+      "text": "ZAG",
+      "meta": null,
+      "ts": "2025-10-17T08:03:29.545Z"
+    },
+    {
+      "role": "assistant",
+      "text": "It seems there was an issue with the origin location code. Could you please confirm the IATA code for your departure city?",
+      "meta": null,
+      "ts": "2025-10-17T08:03:32.930Z"
+    },
+    {
+      "role": "user",
+      "text": "ZAG",
+      "meta": null,
+      "ts": "2025-10-17T08:03:42.046Z"
+    },
+    {
+      "role": "assistant",
+      "text": "It seems there was an issue with the origin location code. Could you please confirm the IATA code for your departure city? If you're unsure, I can help look it up.",
+      "meta": null,
+      "ts": "2025-10-17T08:03:45.641Z"
+    },
+    {
+      "role": "user",
+      "text": "I don't know",
+      "meta": null,
+      "ts": "2025-10-17T08:04:09.006Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Could you please provide the name of your departure city so I can look up the IATA code for you?",
+      "meta": null,
+      "ts": "2025-10-17T08:04:11.244Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

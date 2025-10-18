@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "bianca",
+  "variant": "bianca",
+  "sessionId": "fac3a059-e41c-4133-bd62-c03059b421a4",
+  "flight": "LH5532",
+  "startedAt": "2025-10-17T22:57:13.118Z",
+  "completedAt": "2025-10-18T21:08:50.021938Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-17T22:57:13.118Z"
+    },
+    {
+      "role": "user",
+      "text": "Hi",
+      "meta": null,
+      "ts": "2025-10-17T22:58:55.901Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Hi there! I am Leo, your Lufthansa Group travel navigator. Tell meif you could fly anywhere soon, what would feel exciting right now?",
+      "meta": null,
+      "ts": "2025-10-17T22:58:58.781Z"
+    },
+    {
+      "role": "user",
+      "text": "I want to go to Zurich next saturday. Stay for seven days. Only me.",
+      "meta": null,
+      "ts": "2025-10-17T23:01:23.027Z"
+    },
+    {
+      "role": "assistant",
+      "text": "That sounds wonderful! To confirm, you're planning to travel to Zurich next Saturday for a week. Could you please confirm the exact date in ISO format (YYYY-MM-DD)?",
+      "meta": null,
+      "ts": "2025-10-17T23:01:25.885Z"
+    },
+    {
+      "role": "user",
+      "text": "25th of October, the nearest airport to my location.",
+      "meta": null,
+      "ts": "2025-10-17T23:04:25.999Z"
+    },
+    {
+      "role": "assistant",
+      "text": "It seems I need the IATA code for your departure airport to proceed. Could you please provide the IATA code for your nearest airport?",
+      "meta": null,
+      "ts": "2025-10-17T23:04:31.267Z"
+    },
+    {
+      "role": "user",
+      "text": "Zagreb",
+      "meta": null,
+      "ts": "2025-10-17T23:06:13.497Z"
+    },
+    {
+      "role": "assistant",
+      "text": "It seems there was a mistake with the departure date. Could you please provide a future departure date in the format YYYY-MM-DD?",
+      "meta": null,
+      "ts": "2025-10-17T23:06:17.798Z"
+    },
+    {
+      "role": "user",
+      "text": "2025-12-25",
+      "meta": null,
+      "ts": "2025-10-17T23:07:44.034Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Here are the flight options for your trip from Zagreb to Zurich on December 25th:",
+      "meta": null,
+      "ts": "2025-10-17T23:07:54.364Z"
+    },
+    {
+      "role": "user",
+      "text": "Recomend me the shortest one",
+      "meta": null,
+      "ts": "2025-10-17T23:08:58.421Z"
+    },
+    {
+      "role": "assistant",
+      "text": "The shortest flight option is the direct flight OU460 from Zagreb to Zurich with a total duration of 1 hour 20 minutes and a price of 133.34. Would you like to proceed with this option?",
+      "meta": null,
+      "ts": "2025-10-17T23:09:02.057Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "paul",
+  "variant": "paul",
+  "sessionId": "d8b54f17-143a-40e6-a54a-d039575eb5b5",
+  "flight": "LH2443",
+  "startedAt": "2025-10-17T14:40:50.441Z",
+  "completedAt": "2025-10-18T21:08:52.309967Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-17T14:40:50.441Z"
+    },
+    {
+      "role": "user",
+      "text": "Hi.",
+      "meta": null,
+      "ts": "2025-10-17T14:40:54.516Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Hi, I am Paul, your inspirational Digital Travel Assistant. I am here to help find a travel destination and travel plan for you. When you think of holiday, what comes to mind?",
+      "meta": null,
+      "ts": "2025-10-17T14:40:56.667Z"
+    },
+    {
+      "role": "user",
+      "text": "What date is today",
+      "meta": null,
+      "ts": "2025-10-17T14:41:02.570Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Sorry, I cannot provide the current date. However, you can easily find out the date by checking your device or asking me to help you find a travel destination and plan.",
+      "meta": null,
+      "ts": "2025-10-17T14:41:04.862Z"
+    },
+    {
+      "role": "user",
+      "text": "Can you book me s flight from Zagreb to Zurich?",
+      "meta": null,
+      "ts": "2025-10-17T14:41:30.488Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Could you please confirm the departure date for your flight from Zagreb to Zurich? If you have a return date, please provide that as well.",
+      "meta": null,
+      "ts": "2025-10-17T14:41:32.919Z"
+    },
+    {
+      "role": "user",
+      "text": "1.12.2025. - 7.12.2025.",
+      "meta": null,
+      "ts": "2025-10-17T14:41:51.160Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Could you please confirm the number of passengers and preferred cabin class for your flight from Zagreb to Zurich on the specified dates?",
+      "meta": null,
+      "ts": "2025-10-17T14:41:53.254Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

@@ -1,8 +1,8 @@
 <?php
-// public_html/origin/log.php
+// public_html/paul/log.php
 declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: https://origin.daisy.voyage');
+header('Access-Control-Allow-Origin: https://paul.daisy.voyage');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
@@ -44,7 +44,8 @@ if (function_exists('mb_convert_encoding')) {
     $chunk = mb_convert_encoding($chunk, 'UTF-8', 'UTF-8,ISO-8859-1');
   }
 }
-$chunk = str_replace("
+$chunk = str_replace("
+
 ", "
 ", $chunk);
 

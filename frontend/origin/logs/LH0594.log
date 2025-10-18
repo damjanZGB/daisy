@@ -1,0 +1,7 @@
+FLIGHT: LH0594
+SESSION: 6faf2b8c-c07b-41ee-a156-b0cb785839b1
+STARTED: 2025-10-16T00:38:35.087Z
+---
+[2025-10-16T00:38:35.087Z] ASSISTANT: Hello! Provide route, dates, and travelers to search fares. Example: “Zagreb to Copenhagen, 06.11–11.11.2025, 1 adult.”
+[2025-10-16T00:38:47.020Z] USER: h
+[2025-10-16T00:38:47.124Z] ASSISTANT: Error: Proxy error 500. Check proxy logs.

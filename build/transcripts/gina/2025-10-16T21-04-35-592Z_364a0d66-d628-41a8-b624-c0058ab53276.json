@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "gina",
+  "variant": "gina",
+  "sessionId": "364a0d66-d628-41a8-b624-c0058ab53276",
+  "flight": "LH5873",
+  "startedAt": "2025-10-16T21:04:35.592Z",
+  "completedAt": "2025-10-18T21:08:51.285949Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-16T21:04:35.592Z"
+    },
+    {
+      "role": "user",
+      "text": "hi",
+      "meta": null,
+      "ts": "2025-10-16T21:04:38.536Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Hi, I am Paul, your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today? To get started, could you please let me know what",
+      "meta": null,
+      "ts": "2025-10-16T21:04:40.533Z"
+    },
+    {
+      "role": "user",
+      "text": "fly to berlin in December from zurich",
+      "meta": null,
+      "ts": "2025-10-16T21:04:44.617Z"
+    },
+    {
+      "role": "assistant",
+      "text": "That sounds like a wonderful trip! To find the best flights for you, could you please specify the exact dates you're planning to travel to Berlin in December? Also, let me know if you have any preferences",
+      "meta": null,
+      "ts": "2025-10-16T21:04:46.565Z"
+    },
+    {
+      "role": "user",
+      "text": "for 1 week whenever it's cheapest",
+      "meta": null,
+      "ts": "2025-10-16T21:05:06.038Z"
+    },
+    {
+      "role": "assistant",
+      "text": "To find the most economical option for your trip, I'll need to determine the cheapest week in December for flights from Zurich to Berlin. Could you please confirm if you're open to any specific dates within this",
+      "meta": null,
+      "ts": "2025-10-16T21:05:08.433Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

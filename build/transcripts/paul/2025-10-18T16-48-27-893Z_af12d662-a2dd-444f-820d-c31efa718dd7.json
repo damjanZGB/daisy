@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "paul",
+  "variant": "paul",
+  "sessionId": "af12d662-a2dd-444f-820d-c31efa718dd7",
+  "flight": "LH2678",
+  "startedAt": "2025-10-18T16:48:27.893Z",
+  "completedAt": "2025-10-18T21:08:52.390719Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-18T16:48:27.893Z"
+    },
+    {
+      "role": "user",
+      "text": "Hi",
+      "meta": null,
+      "ts": "2025-10-18T16:48:32.351Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Hello! To assist you better, could you please share your travel intentions today? Are you looking for a one-way or return flight, and do you have any specific destinations or dates in mind?",
+      "meta": null,
+      "ts": "2025-10-18T16:48:35.045Z"
+    },
+    {
+      "role": "user",
+      "text": "Zurich. 5 day stay. 1 person. Departure next saturday",
+      "meta": null,
+      "ts": "2025-10-18T16:49:00.141Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Thank you for the details. To confirm, you're planning a 5-day stay in Zurich, and you're departing next Saturday. Could you please provide the city or airport from which you'll be departing?",
+      "meta": null,
+      "ts": "2025-10-18T16:49:03.190Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

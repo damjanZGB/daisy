@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "bianca",
+  "variant": "bianca",
+  "sessionId": "96bda5fe-fd95-43d4-849a-18356bc6fe58",
+  "flight": "LH6178",
+  "startedAt": "2025-10-17T06:41:40.063Z",
+  "completedAt": "2025-10-18T21:08:50.090300Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-17T06:41:40.063Z"
+    },
+    {
+      "role": "user",
+      "text": "Gi",
+      "meta": null,
+      "ts": "2025-10-17T06:41:45.446Z"
+    },
+    {
+      "role": "assistant",
+      "text": "No text response.",
+      "meta": null,
+      "ts": "2025-10-17T06:41:48.737Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

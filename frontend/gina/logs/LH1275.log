@@ -1,0 +1,8 @@
+FLIGHT: LH1275
+SESSION: fdc07732-3dd2-4b0a-8a8e-03bb2f34c354
+STARTED: 2025-10-16T20:35:38.692Z
+---
+[2025-10-16T20:35:38.692Z] ASSISTANT: Hello! Provide route, dates, and travelers to search fares. Example: “Zagreb to Copenhagen, 06.11–11.11.2025, 1 adult.”
+[2025-10-16T20:35:42.046Z] USER: HI
+[2025-10-16T20:35:44.675Z] ASSISTANT: <user__askuser question="Hi, I am Paul, your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today? What should I optimize
+                           today: price, comfort, time, or a balance? How much detail do you want: brief, standard, or thorough? Any hard constraints (bags, loyalty, specific airline, must be nonstop)?">

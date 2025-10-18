@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "origin",
+  "variant": "origin",
+  "sessionId": "69e2118e-a78c-4ffc-9a8e-6d556f8213b4",
+  "flight": "LH4075",
+  "startedAt": "2025-10-15T15:49:39.906Z",
+  "completedAt": "2025-10-18T21:08:51.962956Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Hello! Provide route, dates, and travelers to search fares. Example: Zagreb to Copenhagen, 06.1111.11.2025, 1 adult.",
+      "meta": null,
+      "ts": "2025-10-15T15:49:39.906Z"
+    },
+    {
+      "role": "user",
+      "text": "Can you give me the cheapest flight from Madrid to Rome on November 1st, 1 person",
+      "meta": null,
+      "ts": "2025-10-15T15:49:46.902Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Error: Proxy error 502. Check proxy logs.",
+      "meta": null,
+      "ts": "2025-10-15T15:49:50.395Z"
+    },
+    {
+      "role": "user",
+      "text": "Zagreb to Copenhagen, 06.1111.11.2025, 1 adult.",
+      "meta": null,
+      "ts": "2025-10-15T15:50:09.964Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Here are the available flight options from Zagreb to Copenhagen for your travel dates:",
+      "meta": null,
+      "ts": "2025-10-15T15:50:19.687Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

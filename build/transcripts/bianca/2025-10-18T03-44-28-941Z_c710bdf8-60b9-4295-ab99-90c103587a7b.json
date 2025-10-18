@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "bianca",
+  "variant": "bianca",
+  "sessionId": "c710bdf8-60b9-4295-ab99-90c103587a7b",
+  "flight": "LH4336",
+  "startedAt": "2025-10-18T03:44:28.941Z",
+  "completedAt": "2025-10-18T21:08:49.940089Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-18T03:44:28.941Z"
+    },
+    {
+      "role": "user",
+      "text": "hi",
+      "meta": null,
+      "ts": "2025-10-18T03:44:53.207Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Could you please tell me your travel destination and preferred departure date?",
+      "meta": null,
+      "ts": "2025-10-18T03:44:56.110Z"
+    },
+    {
+      "role": "user",
+      "text": "I am not sure",
+      "meta": null,
+      "ts": "2025-10-18T03:45:42.921Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Imagine you could fly anywhere right nowwhat kind of adventure or experience excites you the most? A tropical beach, a bustling city skyline, or a serene mountain retreat?",
+      "meta": null,
+      "ts": "2025-10-18T03:45:45.907Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "paul",
+  "variant": "paul",
+  "sessionId": "a189e0dd-f881-43eb-abb9-1f80d99d7810",
+  "flight": "LH3724",
+  "startedAt": "2025-10-17T18:04:56.427Z",
+  "completedAt": "2025-10-18T21:08:52.497592Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-17T18:04:56.427Z"
+    },
+    {
+      "role": "user",
+      "text": "i want to fly in december somewhere warm for one week",
+      "meta": null,
+      "ts": "2025-10-17T18:05:28.684Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Could you please specify the exact destination you are thinking of for your trip in December?",
+      "meta": null,
+      "ts": "2025-10-17T18:05:31.763Z"
+    },
+    {
+      "role": "user",
+      "text": "starting zurich",
+      "meta": null,
+      "ts": "2025-10-17T18:05:53.442Z"
+    },
+    {
+      "role": "assistant",
+      "text": "No text response.",
+      "meta": null,
+      "ts": "2025-10-17T18:05:55.920Z"
+    },
+    {
+      "role": "user",
+      "text": "starting zurich",
+      "meta": null,
+      "ts": "2025-10-17T18:06:07.052Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Could you please specify the exact warm destination you are thinking of for your trip in December from Zurich?",
+      "meta": null,
+      "ts": "2025-10-17T18:06:09.810Z"
+    },
+    {
+      "role": "user",
+      "text": "Sydney",
+      "meta": null,
+      "ts": "2025-10-17T18:06:23.794Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Could you please specify the exact travel dates for your trip to Sydney in December?",
+      "meta": null,
+      "ts": "2025-10-17T18:06:26.427Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

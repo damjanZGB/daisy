@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "paul",
+  "variant": "paul",
+  "sessionId": "51379bde-4292-492d-adb9-9a04ab8cae1a",
+  "flight": "LH2140",
+  "startedAt": "2025-10-17T20:41:56.979Z",
+  "completedAt": "2025-10-18T21:08:52.286563Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-17T20:41:56.979Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "paul",
+  "variant": "paul",
+  "sessionId": "6f5212c5-fc70-4fe9-b1dc-d49fa7c6423a",
+  "flight": "LH2387",
+  "startedAt": "2025-10-17T09:51:19.335Z",
+  "completedAt": "2025-10-18T21:08:52.297456Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-17T09:51:19.335Z"
+    },
+    {
+      "role": "user",
+      "text": "Hi",
+      "meta": null,
+      "ts": "2025-10-17T09:52:24.073Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Hi, I am Paul, your inspirational Digital Travel Assistant. I am here to help find a travel destination and travel plan for you. When you think of holiday, what comes to mind?",
+      "meta": null,
+      "ts": "2025-10-17T09:52:26.353Z"
+    },
+    {
+      "role": "user",
+      "text": "I want to fly from Zagreb to Zurich next month. Could you give me top 3 flights ranked by comfort.",
+      "meta": null,
+      "ts": "2025-10-17T09:53:39.129Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Could you please specify the exact travel dates for your trip from Zagreb to Zurich next month?",
+      "meta": null,
+      "ts": "2025-10-17T09:53:41.449Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

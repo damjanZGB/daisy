@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "paul",
+  "variant": "paul",
+  "sessionId": "b02daced-e61d-4e22-8042-922122128188",
+  "flight": "LH7965",
+  "startedAt": "2025-10-17T06:54:30.176Z",
+  "completedAt": "2025-10-18T21:08:52.994756Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-17T06:54:30.176Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

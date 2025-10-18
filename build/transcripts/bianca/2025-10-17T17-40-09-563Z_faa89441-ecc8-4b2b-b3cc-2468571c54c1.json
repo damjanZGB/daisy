@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "bianca",
+  "variant": "bianca",
+  "sessionId": "faa89441-ecc8-4b2b-b3cc-2468571c54c1",
+  "flight": "LH6726",
+  "startedAt": "2025-10-17T17:40:09.563Z",
+  "completedAt": "2025-10-18T21:08:50.126102Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-17T17:40:09.563Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

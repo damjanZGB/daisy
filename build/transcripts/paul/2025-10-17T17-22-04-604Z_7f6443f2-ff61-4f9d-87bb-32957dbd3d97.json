@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "paul",
+  "variant": "paul",
+  "sessionId": "7f6443f2-ff61-4f9d-87bb-32957dbd3d97",
+  "flight": "LH3528",
+  "startedAt": "2025-10-17T17:22:04.604Z",
+  "completedAt": "2025-10-18T21:08:52.486497Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-17T17:22:04.604Z"
+    },
+    {
+      "role": "user",
+      "text": "i am searching for a 2 week trip in summer. i want to have some cities to visit and also nature stuff. i like it to be more cheap in terms of food etc. my budget is quite low. what would you recommend",
+      "meta": null,
+      "ts": "2025-10-17T17:24:31.940Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Could you please share your preferred departure city for this trip? Also, if there are any specific cities or nature spots you are particularly interested in, that would be helpful.",
+      "meta": null,
+      "ts": "2025-10-17T17:24:35.211Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}

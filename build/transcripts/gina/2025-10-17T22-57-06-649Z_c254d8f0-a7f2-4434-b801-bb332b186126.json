@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "gina",
+  "variant": "gina",
+  "sessionId": "c254d8f0-a7f2-4434-b801-bb332b186126",
+  "flight": "LH0465",
+  "startedAt": "2025-10-17T22:57:06.649Z",
+  "completedAt": "2025-10-18T21:08:50.547500Z",
+  "location": null,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-17T22:57:06.649Z"
+    },
+    {
+      "role": "user",
+      "text": "Hi",
+      "meta": null,
+      "ts": "2025-10-17T22:58:34.190Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Hello, I am Mira, your Lufthansa Group digital travel companion. Let us imagine together what kind of journey would truly feel right for you. What kind of memories do you hope to create on your trip?",
+      "meta": null,
+      "ts": "2025-10-17T22:58:37.339Z"
+    },
+    {
+      "role": "user",
+      "text": "I want to go to Zurich next saturday. Stay for seven days. Only me.",
+      "meta": null,
+      "ts": "2025-10-17T23:01:21.034Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Thank you for sharing your travel plans. To confirm, you would like to travel to Zurich next Saturday for a week, and you're traveling alone. Could you please provide the exact departure date in the format",
+      "meta": null,
+      "ts": "2025-10-17T23:01:24.452Z"
+    },
+    {
+      "role": "user",
+      "text": "25th of October, the nearest airport to my location.",
+      "meta": null,
+      "ts": "2025-10-17T23:04:28.077Z"
+    },
+    {
+      "role": "assistant",
+      "text": "Thank you for the details. To proceed, could you please provide the city or country name where you are located so I can find the nearest airport's IATA code?",
+      "meta": null,
+      "ts": "2025-10-17T23:04:31.256Z"
+    },
+    {
+      "role": "user",
+      "text": "Zaprei",
+      "meta": null,
+      "ts": "2025-10-17T23:06:12.081Z"
+    },
+    {
+      "role": "assistant",
+      "text": "No text response.",
+      "meta": null,
+      "ts": "2025-10-17T23:06:14.713Z"
+    },
+    {
+      "role": "user",
+      "text": "Zaprei",
+      "meta": null,
+      "ts": "2025-10-17T23:07:15.557Z"
+    },
+    {
+      "role": "assistant",
+      "text": "No text response.",
+      "meta": null,
+      "ts": "2025-10-17T23:07:18.227Z"
+    },
+    {
+      "role": "user",
+      "text": "Zagreb",
+      "meta": null,
+      "ts": "2025-10-17T23:07:25.564Z"
+    },
+    {
+      "role": "assistant",
+      "text": "No text response.",
+      "meta": null,
+      "ts": "2025-10-17T23:07:28.105Z"
+    },
+    {
+      "role": "user",
+      "text": "Where did you go!",
+      "meta": null,
+      "ts": "2025-10-17T23:10:13.960Z"
+    },
+    {
+      "role": "assistant",
+      "text": "I'm sorry, I seem to have lost track. To find the nearest airport for you, could you please provide the city or country name where you are located?",
+      "meta": null,
+      "ts": "2025-10-17T23:10:16.880Z"
+    },
+    {
+      "role": "user",
+      "text": "Zapresic, Croatia.",
+      "meta": null,
+      "ts": "2025-10-17T23:10:35.697Z"
+    },
+    {
+      "role": "assistant",
+      "text": "<",
+      "meta": null,
+      "ts": "2025-10-17T23:10:42.262Z"
+    },
+    {
+      "role": "user",
+      "text": "Please repeat that!",
+      "meta": null,
+      "ts": "2025-10-17T23:10:56.416Z"
+    },
+    {
+      "role": "assistant",
+      "text": "No text response.",
+      "meta": null,
+      "ts": "2025-10-17T23:10:58.964Z"
+    }
+  ],
+  "extra": {
+    "source": "legacy-log-import"
+  }
+}
