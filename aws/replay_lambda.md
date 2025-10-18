@@ -16,6 +16,8 @@ This Lambda replays stored chat transcripts against the staging Bedrock agent to
 | `AWS_REGION` | Region for S3/Bedrock clients (`us-west-2`). |
 | `REPLAY_RESULTS_BUCKET` | Bucket for run summaries; defaults to `TRANSCRIPT_BUCKET`. |
 | `REPLAY_RESULTS_PREFIX` | Prefix for persisted run summaries (defaults to `<TRANSCRIPT_ROOT_PREFIX>/replay-results`). |
+| `REPLAY_METRIC_NAMESPACE` | CloudWatch namespace for replay telemetry (default `daisy/replay`). |
+| `SNS_TOPIC_ARN` | (Optional) SNS topic to notify when any replay failures occur. |
 
 ## Packaging
 
@@ -45,4 +47,6 @@ Grant the Lambda execution role:
 - `s3:GetObject`, `s3:ListBucket` on the transcript bucket/prefix.
 - `s3:PutObject` (with `x-amz-server-side-encryption = AES256`) on the results prefix.
 - `bedrock:InvokeAgent` for the chosen agent alias.
+- `cloudwatch:PutMetricData` for the metric namespace in use.
+- (Optional) `sns:Publish` to the configured topic if failure notifications are enabled.
 *** End Patch***

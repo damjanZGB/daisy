@@ -9,6 +9,7 @@ import json
 import os
 import uuid
 from dataclasses import dataclass
+from collections import defaultdict
 from typing import Iterable, List, Optional
 
 import boto3
@@ -33,9 +34,13 @@ DEFAULT_RESULTS_PREFIX = (
     else "replay-results"
 )
 RESULTS_PREFIX = os.environ.get("REPLAY_RESULTS_PREFIX", DEFAULT_RESULTS_PREFIX).strip("/")
+METRIC_NAMESPACE = os.environ.get("REPLAY_METRIC_NAMESPACE", "daisy/replay").strip() or "daisy/replay"
+SNS_TOPIC_ARN = os.environ.get("SNS_TOPIC_ARN", "").strip()
 
 S3 = boto3.client("s3", region_name=AWS_REGION)
 BEDROCK = boto3.client("bedrock-agent-runtime", region_name=AWS_REGION)
+CLOUDWATCH = boto3.client("cloudwatch", region_name=AWS_REGION)
+SNS = boto3.client("sns", region_name=AWS_REGION) if SNS_TOPIC_ARN else None
 
 
 def parse_alias_map(raw_map: str) -> dict:
@@ -73,15 +78,26 @@ def lambda_handler(event, context):
     target_date = resolve_target_date(event)
     transcripts = collect_transcripts(target_date)
     results = []
+    variant_stats = defaultdict(lambda: {"total": 0, "failed": 0})
     for transcript in transcripts:
         outcome = replay_transcript(transcript)
         results.append(outcome)
+        stats = variant_stats[outcome.get("variant", transcript.variant)]
+        stats["total"] += 1
+        if not outcome.get("success", False):
+            stats["failed"] += 1
+
+    variant_summary = {k: {"total": v["total"], "failed": v["failed"]} for k, v in variant_stats.items()}
+    if variant_summary:
+        publish_metrics(variant_summary)
+        maybe_publish_failure_alert(target_date, variant_summary, results)
 
     summary = {
         "runAt": dt.datetime.utcnow().isoformat() + "Z",
         "targetDate": target_date.isoformat(),
         "totalTranscripts": len(transcripts),
         "results": results,
+        "variantStats": variant_summary,
     }
     persist_summary(target_date, summary)
     print(json.dumps({"message": "Replay completed", **summary}, indent=2))
@@ -185,3 +201,68 @@ def persist_summary(target_date: dt.date, summary: dict) -> None:
         ContentType="application/json",
         ServerSideEncryption="AES256",
     )
+
+
+def publish_metrics(stats: dict) -> None:
+    if not stats:
+        return
+    metric_data = []
+    timestamp = dt.datetime.utcnow()
+    for variant, values in stats.items():
+        total = values.get("total", 0)
+        failed = values.get("failed", 0)
+        metric_data.append(
+            {
+                "MetricName": "ReplayTotal",
+                "Dimensions": [{"Name": "Variant", "Value": variant}],
+                "Timestamp": timestamp,
+                "Value": total,
+                "Unit": "Count",
+            }
+        )
+        metric_data.append(
+            {
+                "MetricName": "ReplayFailed",
+                "Dimensions": [{"Name": "Variant", "Value": variant}],
+                "Timestamp": timestamp,
+                "Value": failed,
+                "Unit": "Count",
+            }
+        )
+    for chunk in chunked(metric_data, 20):
+        CLOUDWATCH.put_metric_data(Namespace=METRIC_NAMESPACE, MetricData=chunk)
+
+
+def maybe_publish_failure_alert(target_date: dt.date, stats: dict, results: List[dict]) -> None:
+    if not SNS or not SNS_TOPIC_ARN:
+        return
+    failed_total = sum(v.get("failed", 0) for v in stats.values())
+    if failed_total == 0:
+        return
+    failed_results = [
+        {
+            "transcriptKey": r.get("transcriptKey"),
+            "variant": r.get("variant"),
+            "session": r.get("session"),
+            "aliasId": r.get("aliasId"),
+        }
+        for r in results
+        if not r.get("success")
+    ]
+    subject = f"dAisy replay failures {target_date.isoformat()} ({failed_total})"
+    payload = {
+        "targetDate": target_date.isoformat(),
+        "failures": failed_total,
+        "variantStats": stats,
+        "failedTranscripts": failed_results,
+    }
+    SNS.publish(
+        TopicArn=SNS_TOPIC_ARN,
+        Subject=subject[:100],
+        Message=json.dumps(payload, indent=2),
+    )
+
+
+def chunked(seq: List[dict], size: int) -> Iterable[List[dict]]:
+    for idx in range(0, len(seq), size):
+        yield seq[idx : idx + size]

@@ -12,7 +12,7 @@
 - [x] Build nightly/offline replay harness that feeds recorded turns back into the agent with varied phrasing to detect misunderstandings.
 - [ ] Implement reporting that highlights failed utterances with recommended instruction updates.
 - [ ] Create process for human review and controlled deployment of updated instructions/exemplars to Bedrock.
-- [ ] Surface replay telemetry via CloudWatch metrics/SNS to highlight regression spikes.
+- [x] Surface replay telemetry via CloudWatch metrics/SNS to highlight regression spikes.
 
 ## Bug Backlog
 - [ ] Monitor /tools/datetime/interpret coverage for additional phrase patterns.
