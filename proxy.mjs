@@ -40,6 +40,11 @@ const TRANSCRIPT_SCHEMA_VERSION = "2025-10-18";
 const transcriptS3Client = TRANSCRIPT_BUCKET
   ? new S3Client({ region: REGION, maxAttempts: 3 })
   : null;
+const AMADEUS_TIMEOUT_MS = (() => {
+  const raw = Number(process.env.AMADEUS_TIMEOUT_MS);
+  if (Number.isFinite(raw) && raw > 0) return raw;
+  return 12000;
+})();
 
 const missingEnv = [];
 if (!AGENT_ID) missingEnv.push("AGENT_ID");
@@ -959,7 +964,27 @@ const server = http.createServer(async (req, res) => {
       }
       const token = await amadeusToken();
       const query = buildSearchQuery(q);
-      const am = await fetch(`${AMADEUS_HOST}/v2/shopping/flight-offers?${query}`, { headers: { Authorization: `Bearer ${token}` } });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), AMADEUS_TIMEOUT_MS);
+      let am;
+      try {
+        am = await fetch(`${AMADEUS_HOST}/v2/shopping/flight-offers?${query}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+      } catch (error) {
+        clearTimeout(timer);
+        if (error && error.name === "AbortError") {
+          res.statusCode = 504;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ error: "amadeus_timeout" }));
+          logger.warn(`[${requestId}] Amadeus search aborted`, { timeoutMs: AMADEUS_TIMEOUT_MS });
+          return;
+        }
+        throw error;
+      } finally {
+        clearTimeout(timer);
+      }
       const json = await am.json();
       if (!am.ok) {
         res.statusCode = am.status;
