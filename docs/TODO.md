@@ -1,7 +1,7 @@
-# Lufthansa Agent Reliability TODO
+﻿# Lufthansa Agent Reliability TODO
 
 - [x] Build `scripts/run_stress_tests.ps1` that executes the ladder in `docs/agent_stress_testing.md`, captures Lambda outputs, and flags failures automatically.
-- [ ] Extend the proxy timeout or introduce streaming for long-haul Amadeus calls after measuring typical latency (FRA→SYD currently ~8 s; target new timeout ≥12 s).
+- [ ] Extend the proxy timeout or introduce streaming for long-haul Amadeus calls after measuring typical latency (FRAâ†’SYD currently ~8â€¯s; target new timeout â‰¥12â€¯s).
 - [x] Augment `_summarize_offers` to compute explicit per-segment durations for user-facing responses.
 - [ ] Coordinate with the Bedrock team to plan persona/memory updates once Lambda stability is verified.
 - [ ] (Continuous) After each deployment, run the automated stress suite and only promote when all scenarios pass and confidence is at least 95%; revert immediately on regression.
@@ -12,3 +12,8 @@
 - [ ] Build nightly/offline replay harness that feeds recorded turns back into the agent with varied phrasing to detect misunderstandings.
 - [ ] Implement reporting that highlights failed utterances with recommended instruction updates.
 - [ ] Create process for human review and controlled deployment of updated instructions/exemplars to Bedrock.
+
+## Bug Backlog
+- [ ] Monitor /tools/datetime/interpret coverage for additional phrase patterns.
+- [ ] Add automated conversation test ensuring inferred origin context reaches all personas.
+

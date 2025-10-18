@@ -1,0 +1,66 @@
+{
+  "timestamp": "2025-10-18T00:00:58.248Z",
+  "results": [
+    {
+      "input": {
+        "phrase": "next Saturday",
+        "referenceDate": "2025-10-17",
+        "timeZone": "Europe/Zagreb"
+      },
+      "output": {
+        "success": true,
+        "isoDate": "2025-10-25",
+        "confidence": 0.85,
+        "explanation": "Next occurrence of saturday"
+      }
+    },
+    {
+      "input": {
+        "phrase": "25th of October",
+        "referenceDate": "2025-10-10",
+        "timeZone": "Europe/Zagreb"
+      },
+      "output": {
+        "success": true,
+        "isoDate": "2025-10-25",
+        "confidence": 0.9,
+        "explanation": "Month and day interpreted"
+      }
+    },
+    {
+      "input": {
+        "phrase": "25.10.2025"
+      },
+      "output": {
+        "success": true,
+        "isoDate": "2025-10-25",
+        "confidence": 0.95,
+        "explanation": "Numeric date interpreted"
+      }
+    },
+    {
+      "input": {
+        "phrase": "December",
+        "referenceDate": "2025-10-17"
+      },
+      "output": {
+        "success": true,
+        "isoDate": "2025-12-01",
+        "confidence": 0.6,
+        "explanation": "Month interpreted as first day"
+      }
+    },
+    {
+      "input": {
+        "phrase": "tomorrow",
+        "referenceDate": "2025-10-17"
+      },
+      "output": {
+        "success": true,
+        "isoDate": "2025-10-18",
+        "confidence": 0.8,
+        "explanation": "Tomorrow"
+      }
+    }
+  ]
+}

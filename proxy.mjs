@@ -492,6 +492,260 @@ function iataLookup({ term, lat, lon, limit = 20 } = {}) {
   return scored.slice(0, limit).map(({ code, record }) => ({ code, ...record }));
 }
 
+const WEEKDAY_INDEX = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+};
+
+const MONTH_INDEX = {
+  january: 1,
+  jan: 1,
+  february: 2,
+  feb: 2,
+  march: 3,
+  mar: 3,
+  april: 4,
+  apr: 4,
+  may: 5,
+  june: 6,
+  jun: 6,
+  july: 7,
+  jul: 7,
+  august: 8,
+  aug: 8,
+  september: 9,
+  sept: 9,
+  sep: 9,
+  october: 10,
+  oct: 10,
+  november: 11,
+  nov: 11,
+  december: 12,
+  dec: 12,
+};
+
+const PAD = n => String(n).padStart(2, "0");
+
+function makeUtcDate(year, month, day) {
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function isoFromDate(date) {
+  return `${date.getUTCFullYear()}-${PAD(date.getUTCMonth() + 1)}-${PAD(date.getUTCDate())}`;
+}
+
+function addDays(date, days) {
+  const copy = new Date(date.getTime());
+  copy.setUTCDate(copy.getUTCDate() + days);
+  return copy;
+}
+
+function diffInDays(a, b) {
+  const ms = a.getTime() - b.getTime();
+  return Math.round(ms / 86400000);
+}
+
+function parseNumericDate(text) {
+  const dotMatch = text.match(/^(\d{1,2})[.\-/ ](\d{1,2})[.\-/ ](\d{2,4})$/);
+  if (!dotMatch) return null;
+  let [ , dStr, mStr, yStr ] = dotMatch;
+  let year = parseInt(yStr, 10);
+  const day = parseInt(dStr, 10);
+  const month = parseInt(mStr, 10);
+  if (year < 100) {
+    year += year >= 70 ? 1900 : 2000;
+  }
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return makeUtcDate(year, month, day);
+}
+
+function getReferenceDate(referenceDate, timeZone) {
+  if (referenceDate) {
+    const trimmed = referenceDate.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      const parsed = new Date(`${trimmed}T00:00:00Z`);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    const numeric = parseNumericDate(trimmed);
+    if (numeric) return numeric;
+  }
+  const now = new Date();
+  if (timeZone) {
+    try {
+      const formatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+      const formatted = formatter.format(now); // YYYY-MM-DD
+      const parts = formatted.split("-");
+      if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        const day = parseInt(parts[2], 10);
+        if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+          return makeUtcDate(year, month, day);
+        }
+      }
+    } catch (_) {
+      logger.warn("Invalid timezone supplied to datetime interpret", { timeZone });
+    }
+  }
+  return makeUtcDate(now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate());
+}
+
+function parseIsoDatePhrase(phrase) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(phrase)) {
+    const parsed = new Date(`${phrase}T00:00:00Z`);
+    if (!Number.isNaN(parsed.getTime())) {
+      return { date: parsed, explanation: "ISO date provided", confidence: 1 };
+    }
+  }
+  return null;
+}
+
+function parseNumericPhrase(phrase) {
+  const parsed = parseNumericDate(phrase);
+  if (!parsed) return null;
+  return { date: parsed, explanation: "Numeric date interpreted", confidence: 0.95 };
+}
+
+function parseMonthPhrase(phrase, referenceDate) {
+  const monthMatch = phrase.match(/^(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?(?:\s+of)?\s+([A-Za-z]+)(?:\s+(\d{4}))?$/i)
+    || phrase.match(/^([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,\s*(\d{4}))?$/i);
+  if (monthMatch) {
+    const parts = monthMatch.slice(1).map(p => p ? p.trim() : p);
+    const hasLeadingDay = /^\d/.test(parts[0]);
+    const day = parseInt(hasLeadingDay ? parts[0] : parts[1], 10);
+    const monthToken = hasLeadingDay ? parts[1] : parts[0];
+    const yearToken = hasLeadingDay ? parts[2] : parts[2];
+    const month = MONTH_INDEX[monthToken?.toLowerCase() || ""];
+    if (!month || Number.isNaN(day) || day < 1 || day > 31) return null;
+    let year = yearToken ? parseInt(yearToken, 10) : referenceDate.getUTCFullYear();
+    if (!Number.isFinite(year)) year = referenceDate.getUTCFullYear();
+    let candidate = makeUtcDate(year, month, Math.min(day, 31));
+    if (diffInDays(candidate, referenceDate) < 0) {
+      candidate = makeUtcDate(year + 1, month, Math.min(day, 31));
+    }
+    return { date: candidate, explanation: "Month and day interpreted", confidence: 0.9 };
+  }
+  const monthOnly = phrase.match(/^([A-Za-z]+)$/i);
+  if (monthOnly) {
+    const month = MONTH_INDEX[monthOnly[1].toLowerCase()];
+    if (!month) return null;
+    let year = referenceDate.getUTCFullYear();
+    let candidate = makeUtcDate(year, month, 1);
+    if (diffInDays(candidate, referenceDate) < 0) {
+      candidate = makeUtcDate(year + 1, month, 1);
+    }
+    return { date: candidate, explanation: "Month interpreted as first day", confidence: 0.6 };
+  }
+  return null;
+}
+
+function parseWeekdayPhrase(phrase, referenceDate) {
+  const tokens = phrase.split(/\s+/).map(t => t.toLowerCase());
+  const weekdayToken = tokens.find(t => WEEKDAY_INDEX.hasOwnProperty(t));
+  if (!weekdayToken) return null;
+  const targetIndex = WEEKDAY_INDEX[weekdayToken];
+  const hasNext = tokens.includes("next") || tokens.includes("upcoming") || tokens.includes("following");
+  const hasThis = tokens.includes("this");
+  const referenceDow = referenceDate.getUTCDay();
+  let delta = (targetIndex - referenceDow + 7) % 7;
+  if (hasNext || delta === 0) {
+    delta += 7;
+  } else if (hasThis && delta !== 0) {
+    // keep delta as-is (within the same week)
+  } else if (!hasNext && delta === 0) {
+    delta = 7;
+  }
+  const candidate = addDays(referenceDate, delta);
+  return { date: candidate, explanation: `Next occurrence of ${weekdayToken}`, confidence: 0.85 };
+}
+
+function parseRelativePhrase(phrase, referenceDate) {
+  const lower = phrase.toLowerCase();
+  if (lower === "today") {
+    return { date: referenceDate, explanation: "Today", confidence: 0.8 };
+  }
+  if (lower === "tomorrow") {
+    return { date: addDays(referenceDate, 1), explanation: "Tomorrow", confidence: 0.8 };
+  }
+  if (lower === "day after tomorrow") {
+    return { date: addDays(referenceDate, 2), explanation: "Day after tomorrow", confidence: 0.8 };
+  }
+  const inDays = lower.match(/^in\s+(\d{1,2})\s+days?$/);
+  if (inDays) {
+    const offset = parseInt(inDays[1], 10);
+    if (Number.isFinite(offset)) {
+      return { date: addDays(referenceDate, offset), explanation: `In ${offset} days`, confidence: 0.75 };
+    }
+  }
+  return null;
+}
+
+function rollForwardRecentPast(candidate, referenceDate, threshold = 6) {
+  if (diffInDays(candidate, referenceDate) < 0) {
+    const delta = diffInDays(referenceDate, candidate);
+    if (delta > 0 && delta <= threshold) {
+      return { date: addDays(candidate, 7), explanation: "Rolled forward to upcoming week" };
+    }
+  }
+  return null;
+}
+
+function interpretDatePhrase({ phrase, referenceDate, timeZone }) {
+  const original = typeof phrase === "string" ? phrase.trim() : "";
+  if (!original) {
+    return { success: false, reason: "empty_phrase" };
+  }
+  const reference = getReferenceDate(referenceDate ? String(referenceDate) : null, timeZone ? String(timeZone) : undefined);
+
+  const attempts = [
+    parseIsoDatePhrase,
+    parseNumericPhrase,
+    (p) => parseMonthPhrase(p, reference),
+    (p) => parseWeekdayPhrase(p, reference),
+    (p) => parseRelativePhrase(p, reference),
+  ];
+
+  let best = null;
+  for (const attempt of attempts) {
+    const result = attempt(original);
+    if (result && result.date) {
+      best = result;
+      break;
+    }
+  }
+
+  if (!best) {
+    return { success: false, reason: "unrecognised_phrase" };
+  }
+
+  let candidate = best.date;
+  const rollForward = rollForwardRecentPast(candidate, reference);
+  let explanation = best.explanation;
+  if (rollForward) {
+    candidate = rollForward.date;
+    explanation = `${explanation}; ${rollForward.explanation}`;
+  }
+
+  const isoDate = isoFromDate(candidate);
+  return {
+    success: true,
+    isoDate,
+    confidence: best.confidence ?? 0.7,
+    explanation,
+  };
+}
+
 const server = http.createServer(async (req, res) => {
   const requestId = crypto.randomUUID();
   const startedAt = Date.now();
@@ -617,6 +871,48 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "POST" && pathname === "/tools/datetime/interpret") {
+      let body;
+      try {
+        body = await readBody(req);
+      } catch (error) {
+        res.statusCode = 400;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: error.message }));
+        logger.warn(`[${requestId}] Invalid datetime interpret payload`, { message: error.message });
+        return;
+      }
+      const phrase = typeof body.phrase === "string" ? body.phrase : "";
+      const referenceDate = typeof body.referenceDate === "string" ? body.referenceDate : undefined;
+      const timeZone = typeof body.timeZone === "string" ? body.timeZone : (typeof body.timezone === "string" ? body.timezone : undefined);
+      if (!phrase.trim()) {
+        res.statusCode = 400;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: "phrase_required" }));
+        logger.warn(`[${requestId}] datetime interpret missing phrase`);
+        return;
+      }
+      const result = interpretDatePhrase({ phrase, referenceDate, timeZone });
+      if (!result.success) {
+        res.statusCode = 422;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: result.reason || "unrecognised_phrase" }));
+        logger.warn(`[${requestId}] datetime interpret failed`, { phrase, reason: result.reason });
+        return;
+      }
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({
+        phrase,
+        referenceDate: referenceDate || null,
+        timeZone: timeZone || null,
+        isoDate: result.isoDate,
+        confidence: result.confidence,
+        explanation: result.explanation,
+      }));
+      logger.info(`[${requestId}] datetime interpret succeeded`, { phrase, isoDate: result.isoDate });
+      return;
+    }
+
     if (req.method === "GET" && pathname === "/health") {
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify({ ok: true, time: new Date().toISOString() }));
@@ -652,5 +948,5 @@ if (shouldStartServer) {
   logger.info("Proxy server initialization skipped (module import mode)");
 }
 
-export { iataLookup, loadIata };
+export { iataLookup, loadIata, interpretDatePhrase };
 
