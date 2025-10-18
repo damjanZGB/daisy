@@ -1,0 +1,6 @@
+{
+  "apiUrl": "https://origin-daisy.onrender.com/invoke",
+  "variant": "origin",
+  "headerSubtitle": "Agent Chat · UI Test",
+  "initialAssistantText": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!"
+}

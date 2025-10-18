@@ -25,9 +25,6 @@
 
     <!-- Inter font as clean, modern fallback -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <script>
-      window.__DAISY_CONFIG = { apiUrl: 'https://gina-daisy.onrender.com/invoke' };
-    </script>
     <style>
       :root {
         --lh-blue: #0B1F55;
@@ -56,9 +53,22 @@
     <div id="root"></div>
 
     <script type="text/babel">
+      const CONFIG = (() => {
+        try {
+          const request = new XMLHttpRequest();
+          request.open('GET', './config.json', false);
+          request.send(null);
+          if (request.status >= 200 && request.status < 300) {
+            return JSON.parse(request.responseText);
+          }
+        } catch (error) {
+          console.warn('Config load failed', error);
+        }
+        return {};
+      })();
+
       const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
-      const CONFIG = window.__DAISY_CONFIG || {};
       const sanitizeUrl = (value) => {
         if (typeof value !== 'string') return null;
         const trimmed = value.trim();
@@ -107,13 +117,14 @@
           return 'default';
         }
       };
-      const FRONTEND_VARIANT = deriveVariantFromApi(DEFAULTS.API_URL);
-      const TRANSCRIPT_UPLOAD_ENABLED = true;
-      const TRANSCRIPT_SCHEMA_VERSION = '2025-10-18';
-      const SETTINGS_VISIBLE = false;
-      const MAX_COL = 250; // hard wrap width for logs
+      const FRONTEND_VARIANT = sanitizeUrl(CONFIG.variant) || deriveVariantFromApi(DEFAULTS.API_URL);
+      const TRANSCRIPT_UPLOAD_ENABLED = CONFIG.transcriptUpload !== false;
+      const TRANSCRIPT_SCHEMA_VERSION = CONFIG.transcriptSchemaVersion || '2025-10-18';
+      const MAX_COL = Number.isFinite(CONFIG.maxColumnWidth) ? CONFIG.maxColumnWidth : 250; // hard wrap width for logs
+      const HEADER_SUBTITLE = CONFIG.headerSubtitle || 'Agent Chat · UI Test';
+      const INITIAL_ASSISTANT_TEXT = CONFIG.initialAssistantText || 'Lufthansa Group Inspirational AI flight assistant. Nice to meet you!';
 
-      function Header({ apiUrl, onOpenSettings, locationInfo, proxyOnline }) {
+      function Header({ apiUrl, locationInfo, proxyOnline }) {
         const formattedTime = (() => {
           const reference = locationInfo?.localTime instanceof Date ? locationInfo.localTime : new Date(locationInfo?.localTime || Date.now());
           try {
@@ -133,7 +144,7 @@
                 <img src="../img/imgbin_13fe065efcd84210aac1c831b51682b8.png" alt="Lufthansa Group" className="h-8 w-auto shrink-0" />
                 <div>
                   <h1 className="text-sm font-semibold leading-tight tracking-wide text-white/90">Lufthansa Group</h1>
-                  <p className="text-[11px] leading-tight text-white/60">Agent Chat · UI Test</p>
+                  <p className="text-[11px] leading-tight text-white/60">{HEADER_SUBTITLE}</p>
                 </div>
               </div>
 
@@ -143,12 +154,7 @@
                   <div>{locationLabel}</div>
                   <div className="text-white/50">{formattedTime}{originLabel}</div>
                 </div>
-                {SETTINGS_VISIBLE && (
-                  <button onClick={onOpenSettings} className="ml-2 text-sm px-3 py-1.5 rounded-lg bg-lhYellow text-lhBlue font-semibold hover:brightness-95 active:brightness-90 focus:outline-none focus:ring-2 focus:ring-white/40">
-                    Settings
-                  </button>
-                )}
-              </div>
+                              </div>
             </div>
           </header>
         );
@@ -183,7 +189,7 @@
         const [busy, setBusy] = useState(false);
         const [input, setInput] = useState('');
         const [messages, setMessages] = useState([
-          { id: uid(), role: 'assistant', text: 'Lufthansa Group Inspirational AI flight assistant. Nice to meet you!', ts: new Date().toISOString() }
+          { id: uid(), role: 'assistant', text: INITIAL_ASSISTANT_TEXT, ts: new Date().toISOString() }
         ]);
         const transcriptSentRef = useRef(0);
 
@@ -619,7 +625,7 @@
 
         return (
           <div className="min-h-screen grid grid-rows-[auto,1fr,auto] bg-gradient-to-b from-lhBlueDark to-[#0b1229]">
-            <Header apiUrl={apiUrl} onOpenSettings={() => {}} locationInfo={locationInfo} proxyOnline={proxyOnline} />
+            <Header apiUrl={apiUrl} locationInfo={locationInfo} proxyOnline={proxyOnline} />
 
             <main className="max-w-5xl mx-auto w-full px-4 py-6">
               <div ref={scrollRef} className="scroll-area h-[66vh] sm:h-[70vh] rounded-2xl bg-slate-900/60 border border-white/10 p-4 overflow-y-auto space-y-3">
@@ -673,3 +679,7 @@
     </script>
   </body>
 </html>
+
+
+
+
