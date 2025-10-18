@@ -5,6 +5,8 @@ import path from "node:path";
 import url from "node:url";
 import crypto from "node:crypto";
 
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+
 const logger = {
   info: (...args) => console.log(new Date().toISOString(), "[INFO]", ...args),
   warn: (...args) => console.warn(new Date().toISOString(), "[WARN]", ...args),
@@ -32,6 +34,12 @@ const ALLOW_ORIGINS = String(rawOrigin)
   .filter(Boolean);
 const ALLOW_ORIGIN_SET = new Set(ALLOW_ORIGINS);
 const MAX_BODY_SIZE = 1024 * 1024; // 1 MiB
+const TRANSCRIPT_BUCKET = (process.env.TRANSCRIPT_BUCKET || "").trim();
+const TRANSCRIPT_PREFIX = (process.env.TRANSCRIPT_PREFIX || "").trim();
+const TRANSCRIPT_SCHEMA_VERSION = "2025-10-18";
+const transcriptS3Client = TRANSCRIPT_BUCKET
+  ? new S3Client({ region: REGION, maxAttempts: 3 })
+  : null;
 
 const missingEnv = [];
 if (!AGENT_ID) missingEnv.push("AGENT_ID");
@@ -98,6 +106,87 @@ async function readBody(req) {
       reject(error);
     });
   });
+}
+
+const SLUG_PATTERN = /[^a-z0-9-]+/g;
+const MAX_SESSION_SEGMENT = 64;
+
+const toSlug = (value, fallback) => {
+  const base = String(value || "").trim().toLowerCase() || fallback || "unknown";
+  const slug = base.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(SLUG_PATTERN, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+  return slug || (fallback || "unknown");
+};
+
+const toIsoString = (input, fallbackDate = new Date()) => {
+  try {
+    const parsed = input ? new Date(input) : null;
+    if (parsed && !Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString();
+    }
+  } catch (error) {
+    // ignore invalid dates
+  }
+  return fallbackDate.toISOString();
+};
+
+function validateTranscriptPayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return { ok: false, error: "invalid_payload" };
+  }
+  const schemaVersion = String(payload.schemaVersion || "").trim() || TRANSCRIPT_SCHEMA_VERSION;
+  const persona = toSlug(payload.persona, "unknown");
+  const variant = toSlug(payload.variant, persona);
+  const sessionId = String(payload.sessionId || payload.session || "").trim();
+  if (!sessionId) {
+    return { ok: false, error: "session_required" };
+  }
+  if (!Array.isArray(payload.messages) || payload.messages.length === 0) {
+    return { ok: false, error: "messages_required" };
+  }
+  const messages = payload.messages
+    .slice(0, 1000)
+    .map(msg => ({
+      role: String(msg.role || "").trim().toLowerCase() || "assistant",
+      text: String(msg.text ?? ""),
+      meta: msg.meta === undefined ? null : msg.meta,
+      ts: toIsoString(msg.ts),
+    }));
+  const startedAt = toIsoString(payload.startedAt, new Date(messages[0]?.ts || Date.now()));
+  const completedAt = toIsoString(payload.completedAt, new Date());
+  const flight = String(payload.flight || payload.flightNumber || "").trim();
+  const location = payload.location && typeof payload.location === "object"
+    ? {
+        label: String(payload.location.label ?? ""),
+        tz: String(payload.location.tz ?? ""),
+        inferredOrigin: String(payload.location.inferredOrigin ?? ""),
+      }
+    : null;
+  return {
+    ok: true,
+    schemaVersion,
+    persona,
+    variant,
+    sessionId,
+    startedAt,
+    completedAt,
+    flight,
+    location,
+    messages,
+    raw: payload,
+  };
+}
+
+function buildTranscriptKey({ persona, variant, sessionId, startedAt }) {
+  const started = new Date(startedAt);
+  const year = started.getUTCFullYear();
+  const month = String(started.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(started.getUTCDate()).padStart(2, "0");
+  const timestamp = started.toISOString().replace(/[:.]/g, "-");
+  const sessionSegment = toSlug(sessionId, "session").slice(0, MAX_SESSION_SEGMENT);
+  const personaSegment = toSlug(persona, "unknown");
+  const variantSegment = toSlug(variant, personaSegment);
+  const prefix = TRANSCRIPT_PREFIX ? `${TRANSCRIPT_PREFIX.replace(/\/+$/, "")}/` : "";
+  return `${prefix}${year}/${month}/${day}/${variantSegment}/${timestamp}_${sessionSegment}.json`;
 }
 
 // ---- Minimal SigV4 for Bedrock Agent Runtime ----
@@ -883,6 +972,73 @@ const server = http.createServer(async (req, res) => {
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify(normalized));
       logger.info(`[${requestId}] Amadeus search succeeded`);
+      return;
+    }
+
+    if (req.method === "POST" && pathname === "/log/transcript") {
+      if (!transcriptS3Client || !TRANSCRIPT_BUCKET) {
+        res.statusCode = 503;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: "transcript_logging_disabled" }));
+        logger.warn(`[${requestId}] Transcript upload attempted without S3 configuration`);
+        return;
+      }
+      let payload;
+      try {
+        payload = await readBody(req);
+      } catch (error) {
+        const status = error.message === "Payload too large" ? 413 : 400;
+        res.statusCode = status;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: error.message }));
+        logger.warn(`[${requestId}] Invalid transcript payload`, { message: error.message });
+        return;
+      }
+      const validated = validateTranscriptPayload(payload);
+      if (!validated.ok) {
+        res.statusCode = 400;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: validated.error }));
+        logger.warn(`[${requestId}] Transcript validation failed`, { reason: validated.error });
+        return;
+      }
+      const key = buildTranscriptKey(validated);
+      const objectBody = JSON.stringify({
+        schemaVersion: validated.schemaVersion,
+        persona: validated.persona,
+        variant: validated.variant,
+        sessionId: validated.sessionId,
+        flight: validated.flight || null,
+        startedAt: validated.startedAt,
+        completedAt: validated.completedAt,
+        location: validated.location,
+        messages: validated.messages,
+        extra: validated.raw.extra ?? null,
+      });
+      const metadata = {
+        persona: validated.persona,
+        variant: validated.variant,
+        sessionid: validated.sessionId.slice(0, MAX_SESSION_SEGMENT),
+        schemaversion: validated.schemaVersion,
+      };
+      try {
+        await transcriptS3Client.send(new PutObjectCommand({
+          Bucket: TRANSCRIPT_BUCKET,
+          Key: key,
+          Body: objectBody,
+          ContentType: "application/json",
+          ServerSideEncryption: "AES256",
+          Metadata: metadata,
+        }));
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ ok: true, key }));
+        logger.info(`[${requestId}] Transcript stored`, { key, persona: validated.persona });
+      } catch (error) {
+        logger.error(`[${requestId}] Transcript upload failed`, { message: error.message });
+        res.statusCode = 502;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: "transcript_upload_failed" }));
+      }
       return;
     }
 

@@ -53,7 +53,42 @@
     <div id="root"></div>
 
     <script type="text/babel">
-      const { useState, useEffect, useRef } = React;
+      const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+      const FRONTEND_VARIANT = 'paul';
+      const DEFAULT_PERSONA_ID = FRONTEND_VARIANT;
+      const TRANSCRIPT_UPLOAD_ENABLED = true;
+      const TRANSCRIPT_SCHEMA_VERSION = '2025-10-18';
+
+      const resolvePersonaId = (fallback) => {
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const personaParam = params.get('persona');
+          if (personaParam) {
+            localStorage.setItem('persona_id', personaParam);
+            return personaParam.trim();
+          }
+        } catch (_) {}
+        const stored = localStorage.getItem('persona_id');
+        if (stored) return stored;
+        return fallback;
+      };
+
+      const deriveTranscriptUrl = (invokeUrl) => {
+        try {
+          const derived = new URL(invokeUrl);
+          if (derived.pathname.endsWith('/invoke')) {
+            derived.pathname = derived.pathname.replace(/\/invoke$/, '/log/transcript');
+          } else {
+            derived.pathname = '/log/transcript';
+          }
+          derived.search = '';
+          derived.hash = '';
+          return derived.toString();
+        } catch (_) {
+          return null;
+        }
+      };
 
       // ---- Utilities ----
       const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
@@ -161,6 +196,8 @@
         const [messages, setMessages] = useState([
           { id: uid(), role: 'assistant', text: 'Lufthansa Group Inspirational AI flight assistant. Nice to meet you!”', ts: new Date().toISOString() }
         ]);
+        const personaIdRef = useRef(resolvePersonaId(DEFAULT_PERSONA_ID));
+        const transcriptSentRef = useRef(0);
 
         const deriveLookupUrl = (base) => {
           try {
@@ -178,6 +215,7 @@
         };
 
         const lookupUrl = deriveLookupUrl(apiUrl);
+        const transcriptUrl = useMemo(() => deriveTranscriptUrl(apiUrl), [apiUrl]);
         const [locationInfo, setLocationInfo] = useState({
           label: 'Detecting location...',
           tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -199,6 +237,11 @@
 
         // Tests
         useEffect(() => { console.assert(/^LH \d{4}$/.test(flightNo), 'Flight number format invalid', flightNo); }, [flightNo]);
+
+        useEffect(() => {
+          const persona = personaIdRef.current;
+          if (persona) localStorage.setItem('persona_id', persona);
+        }, []);
 
         useEffect(() => {
           const timer = setInterval(() => {
@@ -447,6 +490,53 @@
           return lines.join('\n') + '\n';
         };
 
+        const uploadTranscript = useCallback(async (currentMessages) => {
+          if (!TRANSCRIPT_UPLOAD_ENABLED) return;
+          if (!transcriptUrl) return;
+          if (!Array.isArray(currentMessages) || currentMessages.length === 0) return;
+          const already = transcriptSentRef.current;
+          if (currentMessages.length <= already) return;
+          const locationSnapshot = locationInfo && typeof locationInfo === 'object'
+            ? {
+                label: locationInfo.label || '',
+                tz: locationInfo.tz || '',
+                inferredOrigin: locationInfo.inferredOrigin || '',
+              }
+            : null;
+          const payload = {
+            schemaVersion: TRANSCRIPT_SCHEMA_VERSION,
+            persona: personaIdRef.current || DEFAULT_PERSONA_ID,
+            variant: FRONTEND_VARIANT,
+            sessionId,
+            flight: flightNo,
+            startedAt: startedAt.toISOString(),
+            completedAt: new Date().toISOString(),
+            location: locationSnapshot,
+            messages: currentMessages.map(msg => ({
+              role: msg.role,
+              text: msg.text,
+              meta: msg.meta ?? null,
+              ts: msg.ts || new Date().toISOString(),
+            })),
+            extra: {
+              apiUrl,
+              frontend: FRONTEND_VARIANT,
+              proxyOnline,
+            },
+          };
+          try {
+            const res = await fetch(transcriptUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            transcriptSentRef.current = currentMessages.length;
+          } catch (error) {
+            console.warn('Transcript upload failed', error);
+          }
+        }, [transcriptUrl, flightNo, sessionId, startedAt, locationInfo, apiUrl, proxyOnline]);
+
         // ---- Append to server (/log.php) ----
         const appendToServer = async () => {
           try {
@@ -461,12 +551,16 @@
               if (news) chunk += news + '\n';
               savedCountRef.current = messages.length;
             }
-            if (!chunk) return;
+            if (!chunk) {
+              await uploadTranscript(messages);
+              return;
+            }
             await fetch('/log.php', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ filename, chunk })
             });
+            await uploadTranscript(messages);
           } catch (e) {
             console.warn('Server log append failed', e);
           }
