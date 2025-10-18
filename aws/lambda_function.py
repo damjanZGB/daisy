@@ -63,6 +63,28 @@ _WEEKDAY_LOOKUP = {
 }
 
 _STOPWORDS = {"in", "on", "the", "of"}
+_PUNCT_TRAILING_RE = re.compile(r"[.!?]+$")
+_NON_WORD_RE = re.compile(r"[^\w\s]")
+
+
+def _strip_trailing_punctuation(text: str) -> str:
+    if not text:
+        return ""
+    return _PUNCT_TRAILING_RE.sub("", text.strip())
+
+
+def _normalise_phrase_tokens(raw: str) -> List[str]:
+    if not raw:
+        return []
+    text = _strip_trailing_punctuation(raw)
+    # Replace unicode dashes with spaces before stripping separators so “next–Saturday” works.
+    text = text.replace("–", " ").replace("—", " ")
+    text = text.replace("’", "'")
+    text = re.sub(r"[,\-/]", " ", text)
+    text = re.sub(r"[()]", " ", text)
+    text = _NON_WORD_RE.sub(" ", text)
+    tokens = [tok for tok in text.lower().split() if tok]
+    return tokens
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -273,7 +295,8 @@ def _parse_iso_date(val: str) -> Optional[date]:
 def _parse_numeric_date(raw: str) -> Optional[date]:
     if not raw:
         return None
-    match = re.match(r"^(\d{1,2})[.\-/ ](\d{1,2})[.\-/ ](\d{2,4})$", raw.strip())
+    cleaned = _strip_trailing_punctuation(raw)
+    match = re.match(r"^(\d{1,2})[.\-/ ](\d{1,2})[.\-/ ](\d{2,4})$", cleaned.strip())
     if not match:
         return None
     day = int(match.group(1))
@@ -310,15 +333,18 @@ def _current_reference_date(reference: Optional[str], time_zone: Optional[str]) 
 def _parse_weekday_phrase(raw: str, *, reference: date) -> Optional[date]:
     if not raw:
         return None
-    text = re.sub(r"[,\-/]+", " ", raw.lower()).strip()
-    tokens = [tok for tok in text.split() if tok]
+    tokens = _normalise_phrase_tokens(raw)
     weekday_token = next((tok for tok in tokens if tok in _WEEKDAY_LOOKUP), None)
     if weekday_token is None:
         return None
     target = _WEEKDAY_LOOKUP[weekday_token]
     reference_idx = reference.weekday()
     delta = (target - reference_idx + 7) % 7
-    if "next" in tokens or "upcoming" in tokens or "following" in tokens or delta == 0:
+    has_future_modifier = any(
+        tok in {"next", "upcoming", "following", "after"} for tok in tokens
+    )
+    has_explicit_this = "this" in tokens or "current" in tokens
+    if has_future_modifier or (delta == 0 and not has_explicit_this):
         delta += 7
     elif "this" in tokens and delta != 0:
         delta = delta
@@ -327,7 +353,9 @@ def _parse_weekday_phrase(raw: str, *, reference: date) -> Optional[date]:
 
 
 def _parse_relative_phrase(raw: str, *, reference: date) -> Optional[date]:
-    text = raw.strip().lower()
+    text = " ".join(_normalise_phrase_tokens(raw))
+    if not text:
+        return None
     if text == "today":
         return reference
     if text == "tomorrow":
@@ -344,23 +372,24 @@ def _interpret_date_phrase(phrase: str, *, reference: Optional[str] = None, time
     clean = phrase.strip() if phrase else ""
     if not clean:
         return {"success": False, "reason": "empty_phrase"}
+    normalised = _strip_trailing_punctuation(clean)
     ref_date = _current_reference_date(reference, time_zone)
-    if re.match(r"^\d{4}-\d{2}-\d{2}$", clean):
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", normalised):
         try:
-            parsed = datetime.strptime(clean, "%Y-%m-%d").date()
+            parsed = datetime.strptime(normalised, "%Y-%m-%d").date()
             return {"success": True, "isoDate": parsed.strftime("%Y-%m-%d"), "confidence": 1.0, "explanation": "ISO date provided"}
         except Exception:
             pass
-    parsed_numeric = _parse_numeric_date(clean)
+    parsed_numeric = _parse_numeric_date(normalised)
     if parsed_numeric:
         return {"success": True, "isoDate": parsed_numeric.strftime("%Y-%m-%d"), "confidence": 0.95, "explanation": "Numeric date interpreted"}
-    parsed_month = _parse_month_phrase(clean, reference=ref_date)
+    parsed_month = _parse_month_phrase(normalised, reference=ref_date)
     if parsed_month is not None:
         return {"success": True, "isoDate": parsed_month.strftime("%Y-%m-%d"), "confidence": 0.9, "explanation": "Month and day interpreted"}
-    parsed_weekday = _parse_weekday_phrase(clean, reference=ref_date)
+    parsed_weekday = _parse_weekday_phrase(normalised, reference=ref_date)
     if parsed_weekday is not None:
-        return {"success": True, "isoDate": parsed_weekday.strftime("%Y-%m-%d"), "confidence": 0.85, "explanation": f"Next occurrence of {clean}"}
-    parsed_relative = _parse_relative_phrase(clean, reference=ref_date)
+        return {"success": True, "isoDate": parsed_weekday.strftime("%Y-%m-%d"), "confidence": 0.85, "explanation": f"Next occurrence of {normalised}"}
+    parsed_relative = _parse_relative_phrase(normalised, reference=ref_date)
     if parsed_relative is not None:
         return {"success": True, "isoDate": parsed_relative.strftime("%Y-%m-%d"), "confidence": 0.8, "explanation": "Relative date interpreted"}
     return {"success": False, "reason": "unrecognised_phrase"}
@@ -369,25 +398,28 @@ def _interpret_date_phrase(phrase: str, *, reference: Optional[str] = None, time
 def _parse_month_phrase(raw: str, *, reference: date) -> Optional[date]:
     if not raw:
         return None
-    text = raw.lower()
+    text = _strip_trailing_punctuation(raw.lower())
+    text = text.replace("–", " ").replace("—", " ")
     text = re.sub(r"[,\-/]+", " ", text)
     text = re.sub(r"(st|nd|rd|th)\b", "", text)
-    tokens = [tok for tok in text.split() if tok and tok not in _STOPWORDS]
+    tokens = [tok for tok in re.sub(r"[()]", " ", text).split() if tok]
+    tokens = [tok for tok in tokens if tok.lower() not in _STOPWORDS]
     if not tokens:
         return None
     prefix_next = False
-    if tokens and tokens[0] in {"next", "upcoming"}:
+    if tokens and tokens[0].lower() in {"next", "upcoming", "following"}:
         prefix_next = True
-        tokens = tokens[1:]
+        tokens = [tok for tok in tokens[1:] if tok]
     month = None
     day = None
     year = None
     for token in tokens:
-        if token in _MONTH_LOOKUP:
-            month = _MONTH_LOOKUP[token]
+        token_lower = token.lower()
+        if token_lower in _MONTH_LOOKUP:
+            month = _MONTH_LOOKUP[token_lower]
             continue
-        if token.isdigit():
-            num = int(token)
+        if token_lower.isdigit():
+            num = int(token_lower)
             if num >= 1900:
                 year = num
             elif 1 <= num <= 31 and day is None:
@@ -451,7 +483,7 @@ def _validate_booking_window(
         return "Provide 'departureDate' in YYYY-MM-DD."
     if dep < today:
         _log("Validate booking window failed", reason="departure_in_past", departure=departure)
-        return "Departure date must be today or later."
+        return "Departure date must be today or later. Re-run `/tools/datetime/interpret` with the traveller's phrasing to confirm the correct year."
     if dep > max_date:
         _log("Validate booking window failed", reason="departure_too_far", departure=departure)
         return "Departure date must be within the next 12 months."
