@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "2025-10-18",
+  "persona": "origin",
+  "variant": "origin",
+  "sessionId": "cab30494-7386-48e5-8649-fb4fa929e282",
+  "flight": "LH3203",
+  "startedAt": "2025-10-18T22:49:30.591743Z",
+  "completedAt": "2025-10-18T22:49:30.591743Z",
+  "location": {
+    "label": "Zurich, Switzerland",
+    "tz": "Europe/Zurich",
+    "inferredOrigin": "ZRH"
+  },
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+      "meta": null,
+      "ts": "2025-10-18T22:49:30.591743Z"
+    },
+    {
+      "role": "user",
+      "text": "Hello team!",
+      "meta": null,
+      "ts": "2025-10-18T22:49:30.591743Z"
+    },
+    {
+      "role": "assistant",
+      "text": "To get started, please confirm your departure airport, the destination, and the travel dates.",
+      "meta": null,
+      "ts": "2025-10-18T22:49:30.591743Z"
+    },
+    {
+      "role": "user",
+      "text": "I'm planning a business-class trip for 1 adult, departing from Zurich (ZRH) to Sydney (SYD). Please depart on 2025-11-20 and return on 2025-12-05, priced in CHF, and stick to Lufthansa Group airlines.",
+      "meta": null,
+      "ts": "2025-10-18T22:49:30.591743Z"
+    }
+  ],
+  "extra": {
+    "source": "synthetic-replay-seed"
+  }
+}
