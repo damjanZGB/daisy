@@ -72,7 +72,7 @@
             return reference.toLocaleString();
           }
         })();
-        const locationLabel = locationInfo?.label || "Detecting location…";
+        const locationLabel = locationInfo?.label || "Detecting location...";
         const originLabel = locationInfo?.inferredOrigin ? ` · Default origin: ${locationInfo.inferredOrigin}` : '';
         const statusClass = proxyOnline ? 'bg-emerald-400' : 'bg-red-500';
         const statusTitle = proxyOnline ? 'Proxy online' : 'Proxy offline';
@@ -179,7 +179,7 @@
 
         const lookupUrl = deriveLookupUrl(apiUrl);
         const [locationInfo, setLocationInfo] = useState({
-          label: 'Detecting location�?�',
+          label: 'Detecting location...',
           tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
           localTime: new Date(),
           inferredOrigin: localStorage.getItem('inferred_origin') || null,

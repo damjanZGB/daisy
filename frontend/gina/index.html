@@ -72,7 +72,7 @@
             return reference.toLocaleString();
           }
         })();
-        const locationLabel = locationInfo?.label || "Detecting location…";
+        const locationLabel = locationInfo?.label || "Detecting location...";
         const originLabel = locationInfo?.inferredOrigin ? ` · Default origin: ${locationInfo.inferredOrigin}` : '';
         const statusClass = proxyOnline ? 'bg-emerald-400' : 'bg-red-500';
         const statusTitle = proxyOnline ? 'Proxy online' : 'Proxy offline';
