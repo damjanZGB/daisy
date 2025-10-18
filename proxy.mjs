@@ -312,11 +312,28 @@ function decodeAgentEventStream(buffer) {
   if (finalResponse) result.finalResponse = finalResponse;
   return result;
 }
-async function awsInvokeAgent({ aliasId, sessionId, inputText }) {
+async function awsInvokeAgent({
+  aliasId,
+  sessionId,
+  inputText,
+  sessionAttributes,
+  promptSessionAttributes,
+}) {
   const service = "bedrock";
   const hostname = `bedrock-agent-runtime.${REGION}.amazonaws.com`;
   const path = `/agents/${encodeURIComponent(AGENT_ID)}/agentAliases/${encodeURIComponent(aliasId)}/sessions/${encodeURIComponent(sessionId)}/text`;
-  const body = JSON.stringify({ inputText });
+  const payload = { inputText };
+  const sessionState = {};
+  if (sessionAttributes && Object.keys(sessionAttributes).length > 0) {
+    sessionState.sessionAttributes = sessionAttributes;
+  }
+  if (promptSessionAttributes && Object.keys(promptSessionAttributes).length > 0) {
+    sessionState.promptSessionAttributes = promptSessionAttributes;
+  }
+  if (Object.keys(sessionState).length > 0) {
+    payload.sessionState = sessionState;
+  }
+  const body = JSON.stringify(payload);
   const headers = { "content-type": "application/json", "host": hostname };
   const { amzDate, authorization, payloadHash } = signV4({
     service,
@@ -791,7 +808,25 @@ const server = http.createServer(async (req, res) => {
       }
       const sessionId = body.sessionId || `sess-${crypto.randomUUID()}`;
       const inputText = typeof body.inputText === "string" ? body.inputText : String(body.inputText ?? "");
-      const data = await awsInvokeAgent({ aliasId: AGENT_ALIAS_ID, sessionId, inputText });
+      const defaultOriginRaw = typeof body.defaultOrigin === "string" ? body.defaultOrigin.trim() : "";
+      const defaultOrigin = defaultOriginRaw.toUpperCase();
+      const locationLabel = typeof body.locationLabel === "string" ? body.locationLabel.trim() : "";
+      const promptAttributes = {};
+      const sessionAttributes = {};
+      if (defaultOrigin) {
+        sessionAttributes.default_origin = defaultOrigin;
+        promptAttributes.default_origin = defaultOrigin;
+      }
+      if (locationLabel) {
+        promptAttributes.default_origin_label = locationLabel;
+      }
+      const data = await awsInvokeAgent({
+        aliasId: AGENT_ALIAS_ID,
+        sessionId,
+        inputText,
+        sessionAttributes: Object.keys(sessionAttributes).length > 0 ? sessionAttributes : undefined,
+        promptSessionAttributes: Object.keys(promptAttributes).length > 0 ? promptAttributes : undefined,
+      });
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify(data));
       logger.info(`[${requestId}] Agent invocation succeeded`, { sessionId });
