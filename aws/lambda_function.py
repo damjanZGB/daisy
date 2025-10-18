@@ -1,4 +1,4 @@
-# lambda_function.py
+﻿# lambda_function.py
 # AWS Lambda for Agents for Amazon Bedrock (Action Group).
 # Searches real flight offers via Amadeus Self-Service API and returns simplified offers.
 # Default filters to Lufthansa Group carriers unless overridden.
@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib import error as _urlerr
 from urllib import parse as _urlparse
 from urllib import request as _urlreq
+from zoneinfo import ZoneInfo
 
 
 LH_GROUP_CODES = ["LH", "LX", "OS", "SN", "EW", "4Y", "EN"]
@@ -51,6 +52,16 @@ _MONTH_LOOKUP = {
     "dec": 12,
     "december": 12,
 }
+_WEEKDAY_LOOKUP = {
+    "monday": 0,
+    "tuesday": 1,
+    "wednesday": 2,
+    "thursday": 3,
+    "friday": 4,
+    "saturday": 5,
+    "sunday": 6,
+}
+
 _STOPWORDS = {"in", "on", "the", "of"}
 
 
@@ -245,6 +256,9 @@ def _iso_date(val: str) -> Optional[str]:
     parsed_month = _parse_month_phrase(text, reference=datetime.utcnow().date())
     if parsed_month is not None:
         return parsed_month.strftime("%Y-%m-%d")
+    interpreted = _interpret_date_phrase(text)
+    if interpreted.get("success"):
+        return interpreted["isoDate"]
     return None
 
 
@@ -253,6 +267,103 @@ def _parse_iso_date(val: str) -> Optional[date]:
         return datetime.strptime(val, "%Y-%m-%d").date()
     except Exception:
         return None
+
+
+
+def _parse_numeric_date(raw: str) -> Optional[date]:
+    if not raw:
+        return None
+    match = re.match(r"^(\d{1,2})[.\-/ ](\d{1,2})[.\-/ ](\d{2,4})$", raw.strip())
+    if not match:
+        return None
+    day = int(match.group(1))
+    month = int(match.group(2))
+    year = int(match.group(3))
+    if month < 1 or month > 12 or day < 1 or day > 31:
+        return None
+    if year < 100:
+        year += 1900 if year >= 70 else 2000
+    last_day = calendar.monthrange(year, month)[1]
+    return date(year, month, min(day, last_day))
+
+
+def _current_reference_date(reference: Optional[str], time_zone: Optional[str]) -> date:
+    if reference:
+        reference = reference.strip()
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", reference):
+            try:
+                return datetime.strptime(reference, "%Y-%m-%d").date()
+            except Exception:
+                pass
+        parsed_numeric = _parse_numeric_date(reference)
+        if parsed_numeric:
+            return parsed_numeric
+    if time_zone and ZoneInfo is not None:
+        try:
+            now = datetime.now(ZoneInfo(time_zone))
+            return now.date()
+        except Exception:
+            _log("Unable to use provided timezone for reference date", time_zone=time_zone)
+    return datetime.utcnow().date()
+
+
+def _parse_weekday_phrase(raw: str, *, reference: date) -> Optional[date]:
+    if not raw:
+        return None
+    text = re.sub(r"[,\-/]+", " ", raw.lower()).strip()
+    tokens = [tok for tok in text.split() if tok]
+    weekday_token = next((tok for tok in tokens if tok in _WEEKDAY_LOOKUP), None)
+    if weekday_token is None:
+        return None
+    target = _WEEKDAY_LOOKUP[weekday_token]
+    reference_idx = reference.weekday()
+    delta = (target - reference_idx + 7) % 7
+    if "next" in tokens or "upcoming" in tokens or "following" in tokens or delta == 0:
+        delta += 7
+    elif "this" in tokens and delta != 0:
+        delta = delta
+    candidate = reference + timedelta(days=delta)
+    return candidate
+
+
+def _parse_relative_phrase(raw: str, *, reference: date) -> Optional[date]:
+    text = raw.strip().lower()
+    if text == "today":
+        return reference
+    if text == "tomorrow":
+        return reference + timedelta(days=1)
+    if text == "day after tomorrow":
+        return reference + timedelta(days=2)
+    match = re.match(r"^in\s+(\d{1,2})\s+days?$", text)
+    if match:
+        return reference + timedelta(days=int(match.group(1)))
+    return None
+
+
+def _interpret_date_phrase(phrase: str, *, reference: Optional[str] = None, time_zone: Optional[str] = None) -> Dict[str, Any]:
+    clean = phrase.strip() if phrase else ""
+    if not clean:
+        return {"success": False, "reason": "empty_phrase"}
+    ref_date = _current_reference_date(reference, time_zone)
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", clean):
+        try:
+            parsed = datetime.strptime(clean, "%Y-%m-%d").date()
+            return {"success": True, "isoDate": parsed.strftime("%Y-%m-%d"), "confidence": 1.0, "explanation": "ISO date provided"}
+        except Exception:
+            pass
+    parsed_numeric = _parse_numeric_date(clean)
+    if parsed_numeric:
+        return {"success": True, "isoDate": parsed_numeric.strftime("%Y-%m-%d"), "confidence": 0.95, "explanation": "Numeric date interpreted"}
+    parsed_month = _parse_month_phrase(clean, reference=ref_date)
+    if parsed_month is not None:
+        return {"success": True, "isoDate": parsed_month.strftime("%Y-%m-%d"), "confidence": 0.9, "explanation": "Month and day interpreted"}
+    parsed_weekday = _parse_weekday_phrase(clean, reference=ref_date)
+    if parsed_weekday is not None:
+        return {"success": True, "isoDate": parsed_weekday.strftime("%Y-%m-%d"), "confidence": 0.85, "explanation": f"Next occurrence of {clean}"}
+    parsed_relative = _parse_relative_phrase(clean, reference=ref_date)
+    if parsed_relative is not None:
+        return {"success": True, "isoDate": parsed_relative.strftime("%Y-%m-%d"), "confidence": 0.8, "explanation": "Relative date interpreted"}
+    return {"success": False, "reason": "unrecognised_phrase"}
 
 
 def _parse_month_phrase(raw: str, *, reference: date) -> Optional[date]:
@@ -884,6 +995,28 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             return _wrap_openapi(event, 502, {"error": f"IATA lookup failed: {exc}"})
         _log("OpenAPI proxy IATA lookup success", term=term, matches=len(matches))
         return _wrap_openapi(event, 200, {"matches": matches})
+
+    if api_path == "/tools/datetime/interpret":
+        phrase = body.get("phrase")
+        if not phrase or not str(phrase).strip():
+            _log("OpenAPI validation error", reason="missing_phrase")
+            return _wrap_openapi(event, 400, {"error": "Provide 'phrase' describing the date."})
+        reference = body.get("referenceDate") or body.get("reference_date")
+        time_zone = body.get("timeZone") or body.get("timezone")
+        result = _interpret_date_phrase(str(phrase), reference=str(reference) if reference is not None else None, time_zone=str(time_zone) if time_zone is not None else None)
+        if not result.get("success"):
+            _log("Datetime interpret failed", phrase=phrase, reason=result.get("reason"))
+            return _wrap_openapi(event, 422, {"error": result.get("reason", "unrecognised_phrase")})
+        payload = {
+            "phrase": str(phrase),
+            "referenceDate": reference,
+            "timeZone": time_zone,
+            "isoDate": result.get("isoDate"),
+            "confidence": result.get("confidence"),
+            "explanation": result.get("explanation"),
+        }
+        _log("Datetime interpret success", phrase=phrase, iso=result.get("isoDate"))
+        return _wrap_openapi(event, 200, payload)
     raw_origin = normalized.get("origin")
     raw_destination = normalized.get("destination")
     origin, origin_suggestions = _resolve_iata_code(raw_origin)
@@ -1022,6 +1155,27 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
         except Exception as e:
             _log("Function IATA lookup error", term=term, error=str(e))
             return _wrap_function(event, 502, {"error": str(e)[:1200]})
+
+    if func_name == "datetime_interpret":
+        _log("Handling function event", function=func_name)
+        params = event.get("parameters", [])
+        phrase = _get_param(params, "phrase") or _get_param(params, "text")
+        reference = _get_param(params, "referenceDate") or _get_param(params, "reference_date")
+        time_zone = _get_param(params, "timeZone") or _get_param(params, "timezone")
+        if not phrase or not str(phrase).strip():
+            return _wrap_function(event, 400, {"error": "Provide 'phrase' describing the date."})
+        result = _interpret_date_phrase(str(phrase), reference=str(reference) if reference is not None else None, time_zone=str(time_zone) if time_zone is not None else None)
+        if not result.get("success"):
+            return _wrap_function(event, 422, {"error": result.get("reason", "unrecognised_phrase")})
+        payload = {
+            "phrase": str(phrase),
+            "referenceDate": reference,
+            "timeZone": time_zone,
+            "isoDate": result.get("isoDate"),
+            "confidence": result.get("confidence"),
+            "explanation": result.get("explanation"),
+        }
+        return _wrap_function(event, 200, payload)
 
     # (existing flight-search code continues below)
     _log("Handling function event", function=func_name or "search_flights")
@@ -1172,3 +1326,7 @@ def lambda_handler(event, context):
         raise
     finally:
         _CURRENT_LOGGER.reset(token)
+
+
+
+
