@@ -25,6 +25,9 @@
 
     <!-- Inter font as clean, modern fallback -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      window.__DAISY_CONFIG = { apiUrl: 'https://bianca-daisy.onrender.com/invoke' };
+    </script>
     <style>
       :root {
         --lh-blue: #0B1F55;
@@ -55,24 +58,13 @@
     <script type="text/babel">
       const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
-      const FRONTEND_VARIANT = 'bianca';
-      const DEFAULT_PERSONA_ID = FRONTEND_VARIANT;
-      const TRANSCRIPT_UPLOAD_ENABLED = true;
-      const TRANSCRIPT_SCHEMA_VERSION = '2025-10-18';
-
-      const resolvePersonaId = (fallback) => {
-        try {
-          const params = new URLSearchParams(window.location.search);
-          const personaParam = params.get('persona');
-          if (personaParam) {
-            localStorage.setItem('persona_id', personaParam);
-            return personaParam.trim();
-          }
-        } catch (_) {}
-        const stored = localStorage.getItem('persona_id');
-        if (stored) return stored;
-        return fallback;
+      const CONFIG = window.__DAISY_CONFIG || {};
+      const sanitizeUrl = (value) => {
+        if (typeof value !== 'string') return null;
+        const trimmed = value.trim();
+        return trimmed.length > 0 ? trimmed : null;
       };
+      const FALLBACK_API_URL = 'https://proxy.invalid/invoke';
 
       const deriveTranscriptUrl = (invokeUrl) => {
         try {
@@ -93,13 +85,12 @@
       const resolveInitialApiUrl = () => {
         try {
           const params = new URLSearchParams(window.location.search);
-          const apiParam = params.get('api');
-          if (apiParam) {
-            localStorage.setItem('api_url', apiParam);
-            return apiParam;
-          }
+          const apiParam = sanitizeUrl(params.get('api'));
+          if (apiParam) return apiParam;
         } catch (_) {}
-        return localStorage.getItem('api_url') || 'https://bianca-daisy.onrender.com/invoke';
+        const configUrl = sanitizeUrl(CONFIG.apiUrl);
+        if (configUrl) return configUrl;
+        return FALLBACK_API_URL;
       };
 
       // ---- Utilities ----
@@ -107,6 +98,18 @@
       const DEFAULTS = {
         API_URL: resolveInitialApiUrl(),
       };
+      const deriveVariantFromApi = (api) => {
+        try {
+          const host = new URL(api).hostname;
+          const first = host.split('.')[0];
+          return first || 'default';
+        } catch (_) {
+          return 'default';
+        }
+      };
+      const FRONTEND_VARIANT = deriveVariantFromApi(DEFAULTS.API_URL);
+      const TRANSCRIPT_UPLOAD_ENABLED = true;
+      const TRANSCRIPT_SCHEMA_VERSION = '2025-10-18';
       const SETTINGS_VISIBLE = false;
       const MAX_COL = 250; // hard wrap width for logs
 
@@ -151,31 +154,6 @@
         );
       }
 
-      function SettingsModal({ open, onClose, apiUrl }) {
-        if (!SETTINGS_VISIBLE || !open) return null;
-        return (
-          <div className="fixed inset-0 z-20 bg-black/60 grid place-items-center p-4">
-            <div className="w-full max-w-xl rounded-2xl bg-slate-900 border border-white/10 shadow-xl">
-              <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                <h2 className="text-base font-semibold">Connection</h2>
-                <button onClick={onClose} className="text-white/70 hover:text-white">✕</button>
-              </div>
-              <div className="p-4 space-y-4">
-                <label className="block text-sm">
-                  <span className="block mb-1 text-white/70">Proxy URL (signs & forwards to Bedrock Agent)</span>
-                  <input value={apiUrl} readOnly placeholder="https://bianca-daisy.onrender.com/invoke" className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lhYellow/50 opacity-60 cursor-not-allowed" />
-                </label>
-                <p className="text-xs text-white/60">Tip: The UI POSTs <code>{"{ inputText, sessionId }"}</code> to the proxy and appends logs server-side.</p>
-              </div>
-              <div className="p-4 border-t border-white/10 flex justify-end gap-2">
-                <button onClick={onClose} className="px-3 py-1.5 text-sm rounded-lg bg-white/10 hover:bg-white/15">Close</button>
-                <button onClick={() => { localStorage.setItem('api_url', apiUrl); onClose(); }} className="px-3 py-1.5 text-sm rounded-lg bg-lhYellow text-lhBlue font-semibold hover:brightness-95">Save</button>
-              </div>
-            </div>
-          </div>
-        );
-      }
-
       function Bubble({ role, text, meta }) {
         const isUser = role === 'user';
         return (
@@ -199,7 +177,6 @@
 
         // State
         const [apiUrl] = useState(DEFAULTS.API_URL);
-        const [openSettings, setOpenSettings] = useState(false);
         const [sessionId] = useState(uid());
         const [startedAt] = useState(() => new Date());
         const [flightNo] = useState(genFlightNo()); // fixed per session; new on refresh
@@ -208,7 +185,6 @@
         const [messages, setMessages] = useState([
           { id: uid(), role: 'assistant', text: 'Lufthansa Group Inspirational AI flight assistant. Nice to meet you!', ts: new Date().toISOString() }
         ]);
-        const personaIdRef = useRef(resolvePersonaId(DEFAULT_PERSONA_ID));
         const transcriptSentRef = useRef(0);
 
         const deriveLookupUrl = (base) => {
@@ -249,11 +225,6 @@
 
         // Tests
         useEffect(() => { console.assert(/^LH \d{4}$/.test(flightNo), 'Flight number format invalid', flightNo); }, [flightNo]);
-
-        useEffect(() => {
-          const persona = personaIdRef.current;
-          if (persona) localStorage.setItem('persona_id', persona);
-        }, []);
 
         useEffect(() => {
           const timer = setInterval(() => {
@@ -517,7 +488,7 @@
             : null;
           const payload = {
             schemaVersion: TRANSCRIPT_SCHEMA_VERSION,
-            persona: personaIdRef.current || DEFAULT_PERSONA_ID,
+            persona: FRONTEND_VARIANT,
             variant: FRONTEND_VARIANT,
             sessionId,
             flight: flightNo,
@@ -648,7 +619,7 @@
 
         return (
           <div className="min-h-screen grid grid-rows-[auto,1fr,auto] bg-gradient-to-b from-lhBlueDark to-[#0b1229]">
-            <Header apiUrl={apiUrl} onOpenSettings={SETTINGS_VISIBLE ? () => setOpenSettings(true) : () => {}} locationInfo={locationInfo} proxyOnline={proxyOnline} />
+            <Header apiUrl={apiUrl} onOpenSettings={() => {}} locationInfo={locationInfo} proxyOnline={proxyOnline} />
 
             <main className="max-w-5xl mx-auto w-full px-4 py-6">
               <div ref={scrollRef} className="scroll-area h-[66vh] sm:h-[70vh] rounded-2xl bg-slate-900/60 border border-white/10 p-4 overflow-y-auto space-y-3">
@@ -694,7 +665,6 @@
               </div>
             </footer>
 
-            <SettingsModal open={openSettings} onClose={() => setOpenSettings(false)} apiUrl={apiUrl} />
           </div>
         );
       }
