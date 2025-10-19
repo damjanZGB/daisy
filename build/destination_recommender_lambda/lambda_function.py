@@ -1146,7 +1146,7 @@ def search_best_itineraries(
     currency: Optional[str] = None,
     lh_group_only: bool = True,
     max_per_destination: int = 2,
-    timeout: float = 8.0,
+    timeout: float = 6.0,
 ) -> List[Dict[str, Any]]:
     """Search several dates per destination and return Good-Better-Best.
 
@@ -1176,47 +1176,78 @@ def search_best_itineraries(
     mid = 15
     dates: List[str] = []
     ml = _month_len(start_y, start_m)
-    d1 = _iso(start_y, start_m, min(mid, ml))
-    d2 = _iso(start_y, start_m, _nearest_saturday(start_y, start_m, mid))
-    d3 = _iso(start_y, start_m, min(mid + 3, ml))
-    d4 = _iso(start_y, start_m, min(mid + 7, ml))
-    d5 = _iso(start_y, start_m, min(_nearest_saturday(start_y, start_m, mid) + 7, ml))
-    for d in (d1, d2, d3, d4, d5):
+    # Weekend-biased ±14d elasticity around mid-month
+    cands_days = [
+        max(1, mid - 14),
+        max(1, mid - 7),
+        _nearest_saturday(start_y, start_m, max(1, mid - 7)),
+        max(1, mid - 3),
+        min(ml, mid),
+        _nearest_saturday(start_y, start_m, mid),
+        min(ml, mid + 3),
+        min(ml, mid + 7),
+        min(ml, _nearest_saturday(start_y, start_m, min(ml, mid + 7))),
+        min(ml, mid + 14),
+    ]
+    for day in cands_days:
+        d = _iso(start_y, start_m, min(ml, max(1, int(day))))
         if d not in dates:
             dates.append(d)
 
     results: List[Dict[str, Any]] = []
-    for dest in candidates:
-        code = dest.get("code")
-        if not code:
-            continue
-        for dep_date in dates:
-            try:
-                raw = amadeus_search_flight_offers(
-                    origin,
-                    code,
-                    dep_date,
-                    None,
-                    adults=1,
-                    cabin="ECONOMY",
-                    nonstop=False,
-                    currency=currency,
-                    lh_group_only=lh_group_only,
-                    max_results=10,
-                    timeout=timeout,
-                )
-                offers = _summarize_offers(raw, currency)
-                if offers:
-                    top = offers[: max(1, max_per_destination)]
-                    results.append({"destination": code, "date": dep_date, "offers": top})
-            except Exception as exc:
-                _log(
-                    "Aggregator search failed for destination",
-                    destination=code,
-                    date=dep_date,
-                    error=str(exc),
-                )
-                continue
+    from datetime import datetime
+    started = datetime.utcnow()
+    time_budget_s = float(os.getenv("AGGR_TIME_BUDGET_S", "75") or 75)
+    api_calls = 0
+    max_calls = int(os.getenv("AGGR_MAX_CALLS", "30") or 30)
+
+    def time_left() -> bool:
+        return (datetime.utcnow() - started).total_seconds() < time_budget_s
+
+    # Two-phase sampling: first pass on the main weekend date for each destination
+    date_indices = list(range(len(dates)))
+    for phase in (0, 1):
+        idxs = [0] if phase == 0 else date_indices[1:]
+        for di in idxs:
+            if not time_left():
+                break
+            for dest in candidates:
+                if not time_left() or api_calls >= max_calls:
+                    break
+                code = dest.get("code")
+                if not code:
+                    continue
+                dep_date = dates[di]
+                try:
+                    raw = amadeus_search_flight_offers(
+                        origin,
+                        code,
+                        dep_date,
+                        None,
+                        adults=1,
+                        cabin="ECONOMY",
+                        nonstop=False,
+                        currency=currency,
+                        lh_group_only=lh_group_only,
+                        max_results=10,
+                        timeout=timeout,
+                    )
+                    api_calls += 1
+                    offers = _summarize_offers(raw, currency)
+                    if offers:
+                        top = offers[: max(1, max_per_destination)]
+                        results.append({"destination": code, "date": dep_date, "offers": top})
+                except Exception as exc:
+                    _log(
+                        "Aggregator search failed for destination",
+                        destination=code,
+                        date=dep_date,
+                        error=str(exc),
+                    )
+                    continue
+            # Early exit if we already have enough pools
+            if sum(len(b.get("offers") or []) for b in results) >= 5:
+                break
 
     # Build pool and destination availability counts
     pool: List[Dict[str, Any]] = []
@@ -1267,8 +1298,15 @@ def search_best_itineraries(
         except Exception:
             return 0
 
-    # Rankers (availability-first bias and nonstop boost)
-    by_price = sorted(pool, key=lambda o: (_price(o), _stops(o), -(dest_hits.get(str(o.get("destination") or ""), 0))))
+    # Rankers (availability-first bias and gentle nonstop boost)
+    by_price = sorted(
+        pool,
+        key=lambda o: (
+            _price(o),
+            _stops(o),
+            -(dest_hits.get(str(o.get("destination") or ""), 0)),
+        ),
+    )
     with_dur = [o for o in pool if _duration_minutes(o.get("duration")) is not None]
     by_dur = sorted(with_dur, key=lambda o: _duration_minutes(o.get("duration")) or 10**9)
     by_flex = sorted(pool, key=lambda o: (_stops(o), _price(o), -(dest_hits.get(str(o.get("destination") or ""), 0))))
@@ -1757,6 +1795,16 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     except Exception:
                         return str(val)
                 lines: List[str] = []
+                def _hhmm(ts: Optional[str]) -> str:
+                    try:
+                        if not ts:
+                            return "?"
+                        # Accept 'YYYY-MM-DDTHH:MM' or 'YYYY-MM-DD HH:MM'
+                        t = ts.replace("T", " ").replace("Z", "").split(" ")[1]
+                        return t[:5]
+                    except Exception:
+                        return "?"
+
                 for idx, opt in enumerate(options, start=1):
                     offer = opt.get("offer") or {}
                     price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
@@ -1768,9 +1816,25 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     pitch = opt.get("pitch") or ""
                     stops = opt.get("stops")
                     stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
-                    lines.append(
-                        f"{idx}) {label} - {dep} → {arr} • {opt.get('date')} • {stops_txt} • {dur} • {price}\n    - {pitch}"
-                    )
+                    carriers = offer.get("carriers") or []
+                    carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
+                    # Header line with bold price
+                    header = f"{idx}) {label} - {dep} → {arr} • {opt.get('date')} • {stops_txt} • {dur} • **{price}**"
+                    lines.append(header)
+                    if carriers_txt:
+                        lines.append(f"    - Carriers: {carriers_txt}")
+                    if isinstance(offer.get("segments"), list) and offer["segments"]:
+                        # Show up to 3 segments as THEN lines
+                        for s in offer["segments"][:3]:
+                            c = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
+                            fn = s.get("flightNumber") or ""
+                            s_dep = s.get("from") or "?"
+                            s_arr = s.get("to") or "?"
+                            s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
+                            s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
+                            lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} → {s_arr} {s_at}")
+                    if pitch:
+                        lines.append(f"    - {pitch}")
                 if lines:
                     closing = "Shall I hold Option 1 for 15 minutes or adjust dates?"
                     payload["message"] = "\n".join(lines + ["", closing])
