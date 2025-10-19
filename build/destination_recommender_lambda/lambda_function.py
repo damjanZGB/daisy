@@ -197,14 +197,15 @@ def _score_destination(dest: dict, theme_tags: set[str], target_month: int, orig
         score += 0.1
         if any(b in brands for b in ("EW","4Y")):
             score += 0.1
-    # Distance penalty
+    # Distance penalty (heavier for short city breaks)
     if origin_code:
         coords = _load_iata_coords()
         o = coords.get(origin_code.upper())
         d = coords.get(str(dest.get("code", "")).upper())
         if o and d:
             km = _haversine_km(o[0], o[1], d[0], d[1])
-            penalty = min(0.4, max(0.0, km / 5000.0 * 0.4))
+            penalty_cap = 0.6 if ("city_break" in theme_tags) else 0.4
+            penalty = min(penalty_cap, max(0.0, km / 5000.0 * penalty_cap))
             score -= penalty
             reasons.append(f"dist~{int(km)}km")
     reason = ", ".join(reasons) if reasons else "tag match"
@@ -1178,7 +1179,9 @@ def search_best_itineraries(
     d1 = _iso(start_y, start_m, min(mid, ml))
     d2 = _iso(start_y, start_m, _nearest_saturday(start_y, start_m, mid))
     d3 = _iso(start_y, start_m, min(mid + 3, ml))
-    for d in (d1, d2, d3):
+    d4 = _iso(start_y, start_m, min(mid + 7, ml))
+    d5 = _iso(start_y, start_m, min(_nearest_saturday(start_y, start_m, mid) + 7, ml))
+    for d in (d1, d2, d3, d4, d5):
         if d not in dates:
             dates.append(d)
 
@@ -1215,11 +1218,14 @@ def search_best_itineraries(
                 )
                 continue
 
-    # Build pool
+    # Build pool and destination availability counts
     pool: List[Dict[str, Any]] = []
+    dest_hits: Dict[str, int] = {}
     for block in results:
         dest_code = block.get("destination")
         date_used = block.get("date")
+        if dest_code:
+            dest_hits[dest_code] = dest_hits.get(dest_code, 0) + len(block.get("offers") or [])
         for offer in block.get("offers") or []:
             o = dict(offer)
             o["destination"] = dest_code
@@ -1261,11 +1267,21 @@ def search_best_itineraries(
         except Exception:
             return 0
 
-    # Rankers
-    by_price = sorted(pool, key=_price)
+    # Rankers (availability-first bias and nonstop boost)
+    by_price = sorted(pool, key=lambda o: (_price(o), _stops(o), -(dest_hits.get(str(o.get("destination") or ""), 0))))
     with_dur = [o for o in pool if _duration_minutes(o.get("duration")) is not None]
     by_dur = sorted(with_dur, key=lambda o: _duration_minutes(o.get("duration")) or 10**9)
-    by_flex = sorted(pool, key=lambda o: (_stops(o), _price(o)))
+    by_flex = sorted(pool, key=lambda o: (_stops(o), _price(o), -(dest_hits.get(str(o.get("destination") or ""), 0))))
+
+    # Composite "best" rank: price + stops*50 + duration*0.1 - dest_hits*10
+    def _rank(o: Dict[str, Any]) -> float:
+        pr = _price(o)
+        st = _stops(o)
+        dm = _duration_minutes(o.get("duration")) or 0
+        avail = dest_hits.get(str(o.get("destination") or ""), 0)
+        return pr + st * 50 + dm * 0.1 - avail * 10
+
+    by_best = sorted(pool, key=_rank)
 
     # Select Good-Better-Best ensuring uniqueness
     picked: List[Dict[str, Any]] = []
@@ -1282,11 +1298,11 @@ def search_best_itineraries(
                 picked.append(o)
                 return
 
-    _pick_from(by_price)
+    _pick_from(by_best)
     _pick_from(by_dur)
     _pick_from(by_flex)
     # Fill up to 5
-    for o in by_price:
+    for o in by_best:
         if len(picked) >= 5:
             break
         if _key(o) not in seen:
@@ -1318,6 +1334,7 @@ def search_best_itineraries(
             "destination": code,
             "date": o.get("date"),
             "offer": o,
+            "stops": _stops(o),
         })
 
     return options
@@ -1642,7 +1659,8 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
         theme_raw = _get_param(params, "themeTags")
         min_avg_high = _get_param(params, "minAvgHighC")
         max_candidates = _to_int(_get_param(params, "maxCandidates", 8), 8)
-        with_itins = _to_bool(_get_param(params, "withItineraries", False), False)
+        # Default to True so suggestions always include flight options.
+        with_itins = _to_bool(_get_param(params, "withItineraries", True), True)
         currency = _get_param(params, "currency") or (os.getenv("DEFAULT_CURRENCY") or "EUR")
 
         # Accept JSON array or comma-separated string for themeTags
@@ -1732,6 +1750,50 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     lh_group_only=True,
                 )
                 payload["options"] = options
+                # Build a concise message with flights so the agent surfaces concrete options.
+                def _fmt_price(val: Any, curr: Optional[str]) -> str:
+                    try:
+                        return f"{float(val):.0f} {curr or ''}".strip()
+                    except Exception:
+                        return str(val)
+                lines: List[str] = []
+                for idx, opt in enumerate(options, start=1):
+                    offer = opt.get("offer") or {}
+                    price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
+                    dep = offer.get("departureAirport") or "?"
+                    arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
+                    dep_time = offer.get("departureTime") or "?"
+                    dur = offer.get("duration") or "?"
+                    label = opt.get("label") or "Option"
+                    pitch = opt.get("pitch") or ""
+                    stops = opt.get("stops")
+                    stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                    lines.append(
+                        f"{idx}) {label} - {dep} → {arr} • {opt.get('date')} • {stops_txt} • {dur} • {price}\n    - {pitch}"
+                    )
+                if lines:
+                    closing = "Shall I hold Option 1 for 15 minutes or adjust dates?"
+                    payload["message"] = "\n".join(lines + ["", closing])
+                    # Cache a minimal selection map in session for smoother follow-ups.
+                    try:
+                        sess = event.setdefault("sessionAttributes", {})
+                        sess["last_recommendation"] = {
+                            "origin": origin_code,
+                            "month": month_text or month_range_text,
+                            "options": [
+                                {
+                                    "label": o.get("label"),
+                                    "destination": o.get("destination"),
+                                    "date": o.get("date"),
+                                    "id": (o.get("offer") or {}).get("id"),
+                                    "price": (o.get("offer") or {}).get("totalPrice"),
+                                    "currency": (o.get("offer") or {}).get("currency") or currency,
+                                }
+                                for o in options
+                            ],
+                        }
+                    except Exception:
+                        pass
             except Exception as exc:
                 _log("Itinerary aggregator failed", error=str(exc))
         _log(
