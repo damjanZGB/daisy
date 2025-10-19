@@ -38,7 +38,7 @@ const BASE_STATE = {
 };
 
 const SCENARIO = [
-  "Hi! I'm planning a short-notice escape for two adults: your system already inferred Zapresic's default origin as ZAG, so please use that (or the nearest Lufthansa airport within 100 km) next Saturday evening, returning the following Monday around noon, Lufthansa Group flights only.",
+  "Hi! I'm planning a short-notice escape for two adults from Zapresic (default origin ZAG) to Zurich next Saturday evening, returning the following Monday around noon, Lufthansa Group flights only—use the nearest LH airport within 100 km if that helps.",
   "One more time: keep that default origin without asking for an IATA code, call the time tool for those dates, and move straight to itineraries.",
   "If Zurich is sold out, pivot to another Central European city that fits those dates and show the ISO-formatted dates you used.",
   "Please flag if any overnight return involves a layover longer than four hours so I can plan accordingly.",

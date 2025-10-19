@@ -1,0 +1,9 @@
+[
+  {
+    "alias": "paul",
+    "sessionId": "paul-hard-199fcd01586",
+    "ok": false,
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\hard_tests\\paul_paul-hard-199fcd01586.json",
+    "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+  }
+]
