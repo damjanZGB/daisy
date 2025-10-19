@@ -9,6 +9,7 @@
 6. Seeded S3 with the 2025-10-18 synthetic transcripts for all personas and replayed the full set (13 transcripts total); every run completed via the direct Lambda path with zero failures.
 7. Added `scripts/report_replay_failures.py` to summarise replay failures (latest-only) so instruction deltas surface quickly after nightly runs.
 8. Updated `aws/replay_lambda.py` to force `lhGroupOnly` to `"true"` for every direct Lambda invocation, guaranteeing searches stay within the Lufthansa Group network.
+9. Removed date-phrase parsing from `aws/lambda_function.py`, redeployed the flight action Lambda, and registered the standalone `TimePhraseParser` Lambda as a new Bedrock action group.
 
 ## Findings
 - The transcript does not store the OpenAPI payload verbatim, but the message stream consistently exposes enough structured hints (`(ZAG)`, `(BRU)`, ISO-like travel date) to rebuild a working request.
