@@ -41,18 +41,7 @@ def main():
 
     end = int(time.time()*1000)
     start = end - args.minutes*60*1000
-    patterns = [
-        'Proxy POST request',
-        'Proxy POST response received',
-        'Proxy GET request',
-        'Proxy GET response received',
-        'IATA lookup via proxy',
-        'OpenAPI proxy IATA lookup success',
-        'Amadeus search request prepared',
-        'Amadeus search completed',
-        'Summarizing offers',
-        'OpenAPI flight search success',
-    ]
+    patterns = ['Proxy POST request','Proxy POST response received','Proxy GET request','Proxy GET response received','IATA lookup via proxy','OpenAPI proxy IATA lookup success','Amadeus search request prepared','Amadeus search completed','Summarizing offers','OpenAPI flight search success','OpenAPI normalized flight fields','OpenAPI flight request prepared']
 
     records: List[Dict[str, Any]] = []
     for pat in patterns:
@@ -93,3 +82,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+

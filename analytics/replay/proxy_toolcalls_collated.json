@@ -1,0 +1,1460 @@
+{
+  "generatedAt": "2025-10-19T19:54:21.120768Z",
+  "windowMinutes": 180,
+  "sessions": [
+    {
+      "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+      "events": [
+        {
+          "time": 1760892973630,
+          "type": "IATA lookup via proxy",
+          "term": "Zagreb"
+        },
+        {
+          "time": 1760892973631,
+          "type": "Proxy GET request",
+          "path": "/tools/iata/lookup",
+          "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zagreb&limit=20",
+          "params": "{\"term\": \"Zagreb\", \"limit\": \"20\"}"
+        },
+        {
+          "time": 1760892974608,
+          "type": "Proxy GET response received",
+          "path": "/tools/iata/lookup",
+          "status": "200",
+          "bytes": "177"
+        },
+        {
+          "time": 1760892974608,
+          "type": "OpenAPI proxy IATA lookup success",
+          "term": "Zagreb",
+          "matches": "1"
+        },
+        {
+          "time": 1760892977551,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760892977551,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760892977554,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-10-25",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760892977554,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-10-25",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760892979645,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "33988"
+        },
+        {
+          "time": 1760892979646,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760892979646,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760892979659,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760892992458,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-10-25",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760892992458,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-10-25",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760892992458,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760892992458,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760892994557,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "34014"
+        },
+        {
+          "time": 1760892994557,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760892994557,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760892994558,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760893037479,
+          "type": "Proxy GET request",
+          "path": "/tools/iata/lookup",
+          "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+          "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+        },
+        {
+          "time": 1760893037479,
+          "type": "IATA lookup via proxy",
+          "term": "Zurich"
+        },
+        {
+          "time": 1760893037735,
+          "type": "Proxy GET response received",
+          "path": "/tools/iata/lookup",
+          "status": "200",
+          "bytes": "142"
+        },
+        {
+          "time": 1760893037735,
+          "type": "OpenAPI proxy IATA lookup success",
+          "term": "Zurich",
+          "matches": "1"
+        },
+        {
+          "time": 1760893038960,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-10-25",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760893038960,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-10-25",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760893038960,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760893038960,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760893041015,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "34014"
+        },
+        {
+          "time": 1760893041015,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760893041015,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760893041016,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760893067393,
+          "type": "Proxy GET request",
+          "path": "/tools/iata/lookup",
+          "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+          "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+        },
+        {
+          "time": 1760893067393,
+          "type": "IATA lookup via proxy",
+          "term": "Zurich"
+        },
+        {
+          "time": 1760893067621,
+          "type": "Proxy GET response received",
+          "path": "/tools/iata/lookup",
+          "status": "200",
+          "bytes": "142"
+        },
+        {
+          "time": 1760893067621,
+          "type": "OpenAPI proxy IATA lookup success",
+          "term": "Zurich",
+          "matches": "1"
+        },
+        {
+          "time": 1760893069116,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-10-25",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760893069116,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-10-25",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760893069116,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760893069116,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760893071549,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "33988"
+        },
+        {
+          "time": 1760893071549,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760893071549,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760893071549,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760893078077,
+          "type": "Proxy GET request",
+          "path": "/tools/iata/lookup",
+          "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zagreb&limit=20",
+          "params": "{\"term\": \"Zagreb\", \"limit\": \"20\"}"
+        },
+        {
+          "time": 1760893078077,
+          "type": "IATA lookup via proxy",
+          "term": "Zagreb"
+        },
+        {
+          "time": 1760893078279,
+          "type": "Proxy GET response received",
+          "path": "/tools/iata/lookup",
+          "status": "200",
+          "bytes": "177"
+        },
+        {
+          "time": 1760893078279,
+          "type": "OpenAPI proxy IATA lookup success",
+          "term": "Zagreb",
+          "matches": "1"
+        }
+      ]
+    },
+    {
+      "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+      "events": [
+        {
+          "time": 1760892929793,
+          "type": "Proxy GET request",
+          "path": "/tools/iata/lookup",
+          "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+          "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+        },
+        {
+          "time": 1760892929793,
+          "type": "IATA lookup via proxy",
+          "term": "Zurich"
+        },
+        {
+          "time": 1760892930367,
+          "type": "Proxy GET response received",
+          "path": "/tools/iata/lookup",
+          "status": "200",
+          "bytes": "142"
+        },
+        {
+          "time": 1760892930367,
+          "type": "OpenAPI proxy IATA lookup success",
+          "term": "Zurich",
+          "matches": "1"
+        },
+        {
+          "time": 1760892931709,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760892931709,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760892931733,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-10-25",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760892931733,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-10-25",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760892934696,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "37131"
+        },
+        {
+          "time": 1760892934713,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760892934713,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760892934714,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760892964591,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-10-25",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760892964591,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-10-25",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760892964591,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760892964591,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760892966760,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "34014"
+        },
+        {
+          "time": 1760892966760,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760892966760,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760892966761,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760892973338,
+          "type": "Proxy GET request",
+          "path": "/tools/iata/lookup",
+          "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+          "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+        },
+        {
+          "time": 1760892973338,
+          "type": "IATA lookup via proxy",
+          "term": "Zurich"
+        },
+        {
+          "time": 1760892973975,
+          "type": "Proxy GET response received",
+          "path": "/tools/iata/lookup",
+          "status": "200",
+          "bytes": "142"
+        },
+        {
+          "time": 1760892973975,
+          "type": "OpenAPI proxy IATA lookup success",
+          "term": "Zurich",
+          "matches": "1"
+        }
+      ]
+    },
+    {
+      "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+      "events": [
+        {
+          "time": 1760893078097,
+          "type": "Proxy GET request",
+          "path": "/tools/iata/lookup",
+          "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+          "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+        },
+        {
+          "time": 1760893078097,
+          "type": "IATA lookup via proxy",
+          "term": "Zurich"
+        },
+        {
+          "time": 1760893078737,
+          "type": "Proxy GET response received",
+          "path": "/tools/iata/lookup",
+          "status": "200",
+          "bytes": "142"
+        },
+        {
+          "time": 1760893078737,
+          "type": "OpenAPI proxy IATA lookup success",
+          "term": "Zurich",
+          "matches": "1"
+        },
+        {
+          "time": 1760893081633,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-10-25",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760893081633,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-10-25",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760893081633,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760893081633,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760893083647,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "34014"
+        },
+        {
+          "time": 1760893083647,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760893083647,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760893083648,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760893097177,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-10-25",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760893097177,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-10-25",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760893097177,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760893097177,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760893099311,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "33988"
+        },
+        {
+          "time": 1760893099311,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760893099311,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760893099311,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        }
+      ]
+    },
+    {
+      "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+      "events": [
+        {
+          "time": 1760893265821,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-10-25",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760893265821,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-10-25",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760893265821,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760893265821,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760893268402,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "33988"
+        },
+        {
+          "time": 1760893268402,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760893268402,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760893268403,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760893279044,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-11-01",
+          "returnDate": "2025-11-03",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "5"
+        },
+        {
+          "time": 1760893279044,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760893279044,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "returnDate": "2025-11-03",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760893279045,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-11-01",
+            "adults": 1,
+            "nonStop": false,
+            "max": 5,
+            "travelClass": "ECONOMY",
+            "returnDate": "2025-11-03",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760893282681,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "19355"
+        },
+        {
+          "time": 1760893282681,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760893282681,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760893282681,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760893287283,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760893287284,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-11-01",
+            "adults": 1,
+            "nonStop": false,
+            "max": 5,
+            "travelClass": "ECONOMY",
+            "returnDate": "2025-11-03",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760893287284,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-11-01",
+          "returnDate": "2025-11-03",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "5"
+        },
+        {
+          "time": 1760893287284,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "returnDate": "2025-11-03",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760893290744,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "19355"
+        },
+        {
+          "time": 1760893290744,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760893290744,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760893290744,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760893297598,
+          "type": "Proxy GET request",
+          "path": "/tools/iata/lookup",
+          "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+          "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+        },
+        {
+          "time": 1760893297598,
+          "type": "IATA lookup via proxy",
+          "term": "Zurich"
+        },
+        {
+          "time": 1760893297845,
+          "type": "Proxy GET response received",
+          "path": "/tools/iata/lookup",
+          "status": "200",
+          "bytes": "142"
+        },
+        {
+          "time": 1760893297845,
+          "type": "OpenAPI proxy IATA lookup success",
+          "term": "Zurich",
+          "matches": "1"
+        },
+        {
+          "time": 1760893303619,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-10-25",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "returnDate": "2025-10-26",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760893303619,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-10-25",
+          "returnDate": "2025-10-26",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760893303619,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760893303619,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "returnDate": "2025-10-26",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760893307845,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "43183"
+        },
+        {
+          "time": 1760893307845,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760893307845,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760893307846,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760893313445,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2026-01-11",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "returnDate": "2026-01-12",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760893313445,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2026-01-11",
+          "returnDate": "2026-01-12",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760893313445,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760893313445,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "returnDate": "2025-01-12",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760893317431,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "57691"
+        },
+        {
+          "time": 1760893317440,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760893317441,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760893317441,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760893333813,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-10-25",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760893333813,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-10-25",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760893333813,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760893333813,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760893335886,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "34014"
+        },
+        {
+          "time": 1760893335886,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760893335886,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760893335902,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760893339859,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-10-25",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760893339859,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-10-25",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760893339859,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760893339859,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760893341939,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "34014"
+        },
+        {
+          "time": 1760893341939,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760893341939,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760893341940,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760893345900,
+          "type": "Proxy GET request",
+          "path": "/tools/iata/lookup",
+          "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+          "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+        },
+        {
+          "time": 1760893345900,
+          "type": "IATA lookup via proxy",
+          "term": "Zurich"
+        },
+        {
+          "time": 1760893346141,
+          "type": "Proxy GET response received",
+          "path": "/tools/iata/lookup",
+          "status": "200",
+          "bytes": "142"
+        },
+        {
+          "time": 1760893346141,
+          "type": "OpenAPI proxy IATA lookup success",
+          "term": "Zurich",
+          "matches": "1"
+        },
+        {
+          "time": 1760893347988,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-10-25",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760893347988,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-10-25",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760893347988,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760893347988,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760893350136,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "34014"
+        },
+        {
+          "time": 1760893350137,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760893350137,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760893350142,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760893354511,
+          "type": "Proxy GET request",
+          "path": "/tools/iata/lookup",
+          "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+          "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+        },
+        {
+          "time": 1760893354511,
+          "type": "IATA lookup via proxy",
+          "term": "Zurich"
+        },
+        {
+          "time": 1760893354736,
+          "type": "Proxy GET response received",
+          "path": "/tools/iata/lookup",
+          "status": "200",
+          "bytes": "142"
+        },
+        {
+          "time": 1760893354736,
+          "type": "OpenAPI proxy IATA lookup success",
+          "term": "Zurich",
+          "matches": "1"
+        },
+        {
+          "time": 1760893356779,
+          "type": "Proxy POST request",
+          "payload": {
+            "originLocationCode": "ZAG",
+            "destinationLocationCode": "ZRH",
+            "departureDate": "2025-10-25",
+            "adults": 1,
+            "nonStop": false,
+            "max": 10,
+            "travelClass": "ECONOMY",
+            "currencyCode": "EUR",
+            "includedAirlineCodes": "LH,LX,OS,SN,EW,4Y,EN"
+          },
+          "path": "/tools/amadeus/search",
+          "url": "https://origin-daisy.onrender.com/tools/amadeus/search"
+        },
+        {
+          "time": 1760893356779,
+          "type": "Amadeus search request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "departure": "2025-10-25",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True",
+          "maxResults": "10"
+        },
+        {
+          "time": 1760893356779,
+          "type": "OpenAPI normalized flight fields"
+        },
+        {
+          "time": 1760893356779,
+          "type": "OpenAPI flight request prepared",
+          "origin": "ZAG",
+          "destination": "ZRH",
+          "adults": "1",
+          "nonstop": "False",
+          "cabin": "ECONOMY",
+          "currency": "EUR",
+          "lhGroupOnly": "True"
+        },
+        {
+          "time": 1760893358926,
+          "type": "Proxy POST response received",
+          "path": "/tools/amadeus/search",
+          "status": "200",
+          "bytes": "33988"
+        },
+        {
+          "time": 1760893358927,
+          "type": "Amadeus search completed"
+        },
+        {
+          "time": 1760893358927,
+          "type": "Summarizing offers"
+        },
+        {
+          "time": 1760893358927,
+          "type": "OpenAPI flight search success",
+          "origin": "ZAG",
+          "destination": "ZRH"
+        },
+        {
+          "time": 1760893360894,
+          "type": "Proxy GET request",
+          "path": "/tools/iata/lookup",
+          "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+          "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+        },
+        {
+          "time": 1760893360894,
+          "type": "IATA lookup via proxy",
+          "term": "Zurich"
+        },
+        {
+          "time": 1760893361139,
+          "type": "Proxy GET response received",
+          "path": "/tools/iata/lookup",
+          "status": "200",
+          "bytes": "142"
+        },
+        {
+          "time": 1760893361139,
+          "type": "OpenAPI proxy IATA lookup success",
+          "term": "Zurich",
+          "matches": "1"
+        },
+        {
+          "time": 1760893366512,
+          "type": "Proxy GET request",
+          "path": "/tools/iata/lookup",
+          "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+          "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+        },
+        {
+          "time": 1760893366512,
+          "type": "IATA lookup via proxy",
+          "term": "Zurich"
+        },
+        {
+          "time": 1760893366738,
+          "type": "Proxy GET response received",
+          "path": "/tools/iata/lookup",
+          "status": "200",
+          "bytes": "142"
+        },
+        {
+          "time": 1760893366738,
+          "type": "OpenAPI proxy IATA lookup success",
+          "term": "Zurich",
+          "matches": "1"
+        }
+      ]
+    }
+  ]
+}

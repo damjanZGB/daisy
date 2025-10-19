@@ -1030,6 +1030,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         body = _props_to_dict(params if isinstance(params, list) else [])
     _log("OpenAPI request body parsed", keys=list(body.keys()))
     normalized = _normalize_flight_request_fields(body)
+    had_origin_before_context = bool((normalized or {}).get("origin"))
     normalized = _apply_contextual_defaults(normalized, event)
     if normalized:
         _log("OpenAPI normalized flight fields", normalized=normalized)
@@ -1071,6 +1072,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
     raw_origin = normalized.get("origin")
     raw_destination = normalized.get("destination")
     origin, origin_suggestions = _resolve_iata_code(raw_origin)
+    filled_from_context = (not had_origin_before_context) and bool(origin)
     destination, destination_suggestions = _resolve_iata_code(raw_destination)
     departure_input = normalized.get("departureDate")
     departure_date = _iso_date(str(departure_input) if departure_input is not None else "")
@@ -1149,6 +1151,14 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         )
         offers = _summarize_offers(raw, currency)
         _log("OpenAPI flight search success", origin=origin, destination=destination, offers=len(offers))
+        # If we auto-filled origin from context, cache it into session and surface a brief note.
+        note = None
+        if filled_from_context and origin:
+            try:
+                event.setdefault("sessionAttributes", {})["default_origin"] = origin
+            except Exception:
+                pass
+            note = f"Using your nearest airport as departure location ({origin}). Say 'change departure location' to update it."
         return _wrap_openapi(
             event,
             200,
@@ -1166,6 +1176,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                     "lhGroupOnly": lh_group_only,
                     "max": max_results,
                 },
+                **({"note": note, "message": note} if note else {}),
                 "offers": offers,
                 "provider": "Amadeus Flight Offers Search v2",
             },
@@ -1225,11 +1236,14 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
     params = event.get("parameters", [])
     param_body = _props_to_dict(params)
     normalized = _normalize_flight_request_fields(param_body)
+    had_origin_before_context = bool((normalized or {}).get("origin"))
+    normalized = _apply_contextual_defaults(normalized, event)
     if normalized:
         _log("Function normalized flight fields", normalized=normalized)
     origin_raw = normalized.get("origin")
     destination_raw = normalized.get("destination")
     origin, origin_suggestions = _resolve_iata_code(origin_raw)
+    filled_from_context = (not had_origin_before_context) and bool(origin)
     destination, destination_suggestions = _resolve_iata_code(destination_raw)
     departure_input = normalized.get("departureDate")
     departure_date = _iso_date(str(departure_input) if departure_input is not None else "")
@@ -1311,6 +1325,13 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
         )
         offers = _summarize_offers(raw, currency)
         _log("Function flight search success", origin=origin, destination=destination, offers=len(offers))
+        note = None
+        if filled_from_context and origin:
+            try:
+                event.setdefault("sessionAttributes", {})["default_origin"] = origin
+            except Exception:
+                pass
+            note = f"Using your nearest airport as departure location ({origin}). Say 'change departure location' to update it."
         return _wrap_function(
             event,
             200,
@@ -1328,6 +1349,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     "lhGroupOnly": lh_group_only,
                     "max": max_results,
                 },
+                **({"note": note, "message": note} if note else {}),
                 "offers": offers,
                 "provider": "Amadeus Flight Offers Search v2",
             },

@@ -17,7 +17,25 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib import error as _urlerr
 from urllib import parse as _urlparse
 from urllib import request as _urlreq
+import os
+import uuid
 from zoneinfo import ZoneInfo
+
+# Optional S3 debug capture for tool I/O
+try:
+    import boto3  # type: ignore
+except Exception:  # pragma: no cover
+    boto3 = None
+
+DEBUG_S3_BUCKET = (os.getenv("DEBUG_S3_BUCKET") or "").strip()
+DEBUG_S3_PREFIX = (os.getenv("DEBUG_S3_PREFIX") or "debug-tool-io").strip().strip("/")
+DEBUG_TOOL_IO = (os.getenv("DEBUG_TOOL_IO") or "").strip().lower() in {"1", "true", "yes", "on"}
+_S3_CLIENT = None
+if DEBUG_S3_BUCKET and boto3 is not None:  # pragma: no cover
+    try:
+        _S3_CLIENT = boto3.client("s3", region_name=os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "us-west-2")
+    except Exception:
+        _S3_CLIENT = None
 
 
 LH_GROUP_CODES = ["LH", "LX", "OS", "SN", "EW", "4Y", "EN"]
@@ -532,7 +550,26 @@ def _proxy_post(
                 status=status,
                 bytes=len(raw_bytes),
             )
-            return json.loads(text)
+            try:
+                parsed = json.loads(text)
+            except Exception:
+                parsed = {"raw": text}
+            # Optional S3 debug capture
+            if DEBUG_TOOL_IO and _S3_CLIENT and DEBUG_S3_BUCKET:
+                try:
+                    key = f"{DEBUG_S3_PREFIX}/{datetime.utcnow().strftime('%Y/%m/%d')}/{uuid.uuid4().hex}_post.json"
+                    body = json.dumps({
+                        "path": path,
+                        "url": url,
+                        "request_payload": payload,
+                        "status": status,
+                        "response": parsed,
+                    }, default=str).encode("utf-8")
+                    _S3_CLIENT.put_object(Bucket=DEBUG_S3_BUCKET, Key=key, Body=body, ContentType="application/json")
+                    _log("Tool I/O debug stored", key=key, bytes=len(body))
+                except Exception as exc:  # pragma: no cover
+                    _log("Tool I/O debug store failed", error=str(exc))
+            return parsed if isinstance(parsed, dict) else {"raw": text}
     except _urlerr.HTTPError as e:
         body = (e.read() or b"").decode("utf-8", errors="replace")
         _log(
@@ -569,7 +606,25 @@ def _proxy_get(
                 status=status,
                 bytes=len(raw_bytes),
             )
-            return json.loads(text)
+            try:
+                parsed = json.loads(text)
+            except Exception:
+                parsed = {"raw": text}
+            if DEBUG_TOOL_IO and _S3_CLIENT and DEBUG_S3_BUCKET:
+                try:
+                    key = f"{DEBUG_S3_PREFIX}/{datetime.utcnow().strftime('%Y/%m/%d')}/{uuid.uuid4().hex}_get.json"
+                    body = json.dumps({
+                        "path": path,
+                        "url": url,
+                        "request_params": params,
+                        "status": status,
+                        "response": parsed,
+                    }, default=str).encode("utf-8")
+                    _S3_CLIENT.put_object(Bucket=DEBUG_S3_BUCKET, Key=key, Body=body, ContentType="application/json")
+                    _log("Tool I/O debug stored", key=key, bytes=len(body))
+                except Exception as exc:  # pragma: no cover
+                    _log("Tool I/O debug store failed", error=str(exc))
+            return parsed if isinstance(parsed, dict) else {"raw": text}
     except _urlerr.HTTPError as e:
         body = (e.read() or b"").decode("utf-8", errors="replace")
         _log(
@@ -1030,6 +1085,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         body = _props_to_dict(params if isinstance(params, list) else [])
     _log("OpenAPI request body parsed", keys=list(body.keys()))
     normalized = _normalize_flight_request_fields(body)
+    had_origin_before_context = bool((normalized or {}).get("origin"))
     normalized = _apply_contextual_defaults(normalized, event)
     if normalized:
         _log("OpenAPI normalized flight fields", normalized=normalized)
@@ -1071,6 +1127,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
     raw_origin = normalized.get("origin")
     raw_destination = normalized.get("destination")
     origin, origin_suggestions = _resolve_iata_code(raw_origin)
+    filled_from_context = (not had_origin_before_context) and bool(origin)
     destination, destination_suggestions = _resolve_iata_code(raw_destination)
     departure_input = normalized.get("departureDate")
     departure_date = _iso_date(str(departure_input) if departure_input is not None else "")
@@ -1149,6 +1206,14 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         )
         offers = _summarize_offers(raw, currency)
         _log("OpenAPI flight search success", origin=origin, destination=destination, offers=len(offers))
+        # If we auto-filled origin from context, cache it into session and surface a brief note.
+        note = None
+        if filled_from_context and origin:
+            try:
+                event.setdefault("sessionAttributes", {})["default_origin"] = origin
+            except Exception:
+                pass
+            note = f"Using your nearest airport as departure location ({origin}). Say 'change departure location' to update it."
         return _wrap_openapi(
             event,
             200,
@@ -1166,6 +1231,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                     "lhGroupOnly": lh_group_only,
                     "max": max_results,
                 },
+                **({"note": note, "message": note} if note else {}),
                 "offers": offers,
                 "provider": "Amadeus Flight Offers Search v2",
             },
@@ -1225,11 +1291,14 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
     params = event.get("parameters", [])
     param_body = _props_to_dict(params)
     normalized = _normalize_flight_request_fields(param_body)
+    had_origin_before_context = bool((normalized or {}).get("origin"))
+    normalized = _apply_contextual_defaults(normalized, event)
     if normalized:
         _log("Function normalized flight fields", normalized=normalized)
     origin_raw = normalized.get("origin")
     destination_raw = normalized.get("destination")
     origin, origin_suggestions = _resolve_iata_code(origin_raw)
+    filled_from_context = (not had_origin_before_context) and bool(origin)
     destination, destination_suggestions = _resolve_iata_code(destination_raw)
     departure_input = normalized.get("departureDate")
     departure_date = _iso_date(str(departure_input) if departure_input is not None else "")
@@ -1311,6 +1380,13 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
         )
         offers = _summarize_offers(raw, currency)
         _log("Function flight search success", origin=origin, destination=destination, offers=len(offers))
+        note = None
+        if filled_from_context and origin:
+            try:
+                event.setdefault("sessionAttributes", {})["default_origin"] = origin
+            except Exception:
+                pass
+            note = f"Using your nearest airport as departure location ({origin}). Say 'change departure location' to update it."
         return _wrap_function(
             event,
             200,
@@ -1328,6 +1404,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     "lhGroupOnly": lh_group_only,
                     "max": max_results,
                 },
+                **({"note": note, "message": note} if note else {}),
                 "offers": offers,
                 "provider": "Amadeus Flight Offers Search v2",
             },
