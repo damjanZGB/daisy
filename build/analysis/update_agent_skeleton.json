@@ -1,0 +1,53 @@
+{
+    "agentId": "",
+    "agentName": "",
+    "instruction": "",
+    "foundationModel": "",
+    "description": "",
+    "orchestrationType": "CUSTOM_ORCHESTRATION",
+    "customOrchestration": {
+        "executor": {
+            "lambda": ""
+        }
+    },
+    "idleSessionTTLInSeconds": 0,
+    "agentResourceRoleArn": "",
+    "customerEncryptionKeyArn": "",
+    "promptOverrideConfiguration": {
+        "promptConfigurations": [
+            {
+                "promptType": "MEMORY_SUMMARIZATION",
+                "promptCreationMode": "OVERRIDDEN",
+                "promptState": "DISABLED",
+                "basePromptTemplate": "",
+                "inferenceConfiguration": {
+                    "temperature": 0.0,
+                    "topP": 0.0,
+                    "topK": 0,
+                    "maximumLength": 0,
+                    "stopSequences": [
+                        ""
+                    ]
+                },
+                "parserMode": "DEFAULT",
+                "foundationModel": "",
+                "additionalModelRequestFields": {}
+            }
+        ],
+        "overrideLambda": ""
+    },
+    "guardrailConfiguration": {
+        "guardrailIdentifier": "",
+        "guardrailVersion": ""
+    },
+    "memoryConfiguration": {
+        "enabledMemoryTypes": [
+            "SESSION_SUMMARY"
+        ],
+        "storageDays": 0,
+        "sessionSummaryConfiguration": {
+            "maxRecentSessions": 0
+        }
+    },
+    "agentCollaboration": "SUPERVISOR_ROUTER"
+}

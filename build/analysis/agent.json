@@ -1,0 +1,7 @@
+{
+    "agent": {
+        "agentId": "JDLTXAKYJY",
+        "agentName": "dAisy",
+        "agentArn": "arn:aws:bedrock:us-west-2:083756035354:agent/JDLTXAKYJY",
+        "clientToken": "c2eca5a6-f69d-4509-9d30-91287299dc06",
+        "instruction": 

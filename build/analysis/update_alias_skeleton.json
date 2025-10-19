@@ -1,0 +1,13 @@
+{
+    "agentId": "",
+    "agentAliasId": "",
+    "agentAliasName": "",
+    "description": "",
+    "routingConfiguration": [
+        {
+            "agentVersion": "",
+            "provisionedThroughput": ""
+        }
+    ],
+    "aliasInvocationState": "ACCEPT_INVOCATIONS"
+}
