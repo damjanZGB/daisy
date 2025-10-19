@@ -6,6 +6,7 @@
 3. Updated `aws/replay_lambda.py` so transcripts containing structured itineraries either parse embedded JSON payloads or fall back to a heuristic (latest ISO-like date + first/last IATA codes in parentheses). When such data exists the replay now bypasses Bedrock and invokes `daisy_in_action-0k2c0` directly via Lambda.
 4. Ran a local validation script that replays the extracted payload against the action Lambda; the invocation returned HTTP 200 with 10 offers, matching the production transcript.
 5. Packaged and deployed the replay Lambda, added `lambda:InvokeFunction` permission to its execution role, and re-ran `daisy-replay-lambda` for 2025-10-18 to confirm a full remote success.
+6. Seeded S3 with the 2025-10-18 synthetic transcripts for all personas and replayed the full set (13 transcripts total); every run completed via the direct Lambda path with zero failures.
 
 ## Findings
 - The transcript does not store the OpenAPI payload verbatim, but the message stream consistently exposes enough structured hints (`(ZAG)`, `(BRU)`, ISO-like travel date) to rebuild a working request.
@@ -28,6 +29,7 @@
 ## Replay Validation
 - Local test session `replay-test` invoked `daisy_in_action-0k2c0` with the payload above and received a 200 response plus 10 itineraries (JSON summary captured in `aws/replay_lambda.py` step output).
 - Remote `daisy-replay-lambda` run for `targetDate=2025-10-18` now succeeds (1 transcript replayed, 0 failures) once the role is allowed to call the action Lambda directly.
+- Broader replay over all seeded transcripts (Bianca/Gina/Origin/Paul) processed 13 sessions with 0 failures, confirming the heuristic extraction works across personas given structured itinerary hints.
 - Action Lambda defaults filled in `nonstop=false` and `lhGroupOnly=true`; no additional session attributes were required.
 
 ## Open Questions for Bedrock / Action Lambda
