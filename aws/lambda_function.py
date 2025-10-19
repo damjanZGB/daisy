@@ -700,9 +700,13 @@ def _summarize_offers(
                     "stops": stop_count,
                 }
             )
-        normalized.sort(key=lambda o: float(o.get("totalPrice") or 0))
-        _log("Summarized offers (modern payload)", count=len(normalized))
-        return normalized
+        filtered = _filter_lh_group_offers(normalized)
+        removed = len(normalized) - len(filtered)
+        if removed:
+            _log("Filtered non-LH offers", removed=removed)
+        filtered.sort(key=lambda o: float(o.get("totalPrice") or 0))
+        _log("Summarized offers (modern payload)", count=len(filtered))
+        return filtered
     # Fallback for legacy Amadeus payloads
     data = amadeus_json.get("data") or []
     dictionaries = amadeus_json.get("dictionaries") or {}
@@ -744,9 +748,29 @@ def _summarize_offers(
                 "segments": segments_summary,
             }
         )
-    legacy.sort(key=lambda o: float(o.get("totalPrice") or 0))
-    _log("Summarized offers (legacy payload)", count=len(legacy))
-    return legacy
+    filtered = _filter_lh_group_offers(legacy)
+    removed = len(legacy) - len(filtered)
+    if removed:
+        _log("Filtered non-LH offers (legacy payload)", removed=removed)
+    filtered.sort(key=lambda o: float(o.get("totalPrice") or 0))
+    _log("Summarized offers (legacy payload)", count=len(filtered))
+    return filtered
+
+
+def _filter_lh_group_offers(offers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    allowed = set(LH_GROUP_CODES)
+    filtered: List[Dict[str, Any]] = []
+    for offer in offers:
+        carriers = set(offer.get("carriers") or [])
+        for seg in offer.get("segments") or []:
+            for key in ("carrier", "marketingCarrier", "operatingCarrier"):
+                value = seg.get(key)
+                if value:
+                    carriers.add(value)
+        if carriers and not carriers.issubset(allowed):
+            continue
+        filtered.append(offer)
+    return filtered
 
 
 # ------------------------ Response wrappers ------------------------

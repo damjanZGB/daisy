@@ -11,6 +11,8 @@
 8. Updated `aws/replay_lambda.py` to force `lhGroupOnly` to `"true"` for every direct Lambda invocation, guaranteeing searches stay within the Lufthansa Group network.
 9. Removed date-phrase parsing from `aws/lambda_function.py`, redeployed the flight action Lambda, and registered the standalone `TimePhraseParser` Lambda as a new Bedrock action group.
 10. Updated persona instructions (Paul/Aris/Leo/Mira) to call the TimePhraseParser action group and reaffirm Lufthansa-only phrasing before presenting flights.
+11. Filtered non-Lufthansa carriers in `aws/lambda_function.py` to prevent LOT/other partners from appearing in flight lists; reran replay (2025-10-19) to confirm offers are now empty when only non-LH options exist.
+12. Updated persona instruction bullet points so Lufthansa-only enforcement is the default policy (not only when travelers request it).
 
 ## Findings
 - The transcript does not store the OpenAPI payload verbatim, but the message stream consistently exposes enough structured hints (`(ZAG)`, `(BRU)`, ISO-like travel date) to rebuild a working request.
