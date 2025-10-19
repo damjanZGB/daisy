@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "sessionId": "gina-hard-199fccbf4ae",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "error",
+      "text": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    }
+  ],
+  "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+}
