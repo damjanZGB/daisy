@@ -1856,7 +1856,10 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                         lines.append(f"    - {pitch}")
                 if lines:
                     closing = "Shall I hold Option 1 for 15 minutes or adjust dates?"
-                    payload["message"] = "\n".join(lines + ["", closing])
+                    m = "\n".join(lines + ["", closing])
+                    # Sanitize any non-ASCII separators that may slip in due to encoding
+                    m = m.replace("\u001a", "->").replace("\u0007", " | ")
+                    payload["message"] = m
                     # Cache a minimal selection map in session for smoother follow-ups.
                     try:
                         sess = event.setdefault("sessionAttributes", {})
@@ -1872,11 +1875,27 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                                     "price": (o.get("offer") or {}).get("totalPrice"),
                                     "currency": (o.get("offer") or {}).get("currency") or currency,
                                 }
-                                for o in options
+                                for o in options[:3]
                             ],
                         }
                     except Exception:
                         pass
+                # Return minimal options only (avoid large payloads)
+                def _brief(o: Dict[str, Any]) -> Dict[str, Any]:
+                    off = o.get("offer") or {}
+                    return {
+                        "label": o.get("label"),
+                        "pitch": o.get("pitch"),
+                        "destination": o.get("destination"),
+                        "date": o.get("date"),
+                        "price": off.get("totalPrice"),
+                        "currency": off.get("currency") or currency,
+                        "duration": off.get("duration"),
+                        "stops": o.get("stops"),
+                        "carriers": off.get("carriers"),
+                        "id": off.get("id"),
+                    }
+                payload["options"] = [ _brief(o) for o in options[:3] ]
             except Exception as exc:
                 _log("Itinerary aggregator failed", error=str(exc))
         _log(
