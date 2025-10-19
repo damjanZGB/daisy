@@ -1,0 +1,8 @@
+﻿{
+  "fields": {
+    "term": {
+      "type": "string",
+      "description": "City or airport name to look up"
+    }
+  }
+}

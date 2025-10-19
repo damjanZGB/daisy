@@ -1,0 +1,2886 @@
+{
+  "generatedAt": "2025-10-19T19:37:21.070517Z",
+  "windowMinutes": 180,
+  "sessions": [
+    {
+      "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+      "events": [
+        {
+          "raw": "[lambda] 2025-10-19T16:56:13Z IATA lookup via proxy | {\"term\": \"Zagreb\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:13Z IATA lookup via proxy",
+          "details": {
+            "term": "Zagreb",
+            "limit": "20"
+          },
+          "timestamp": 1760892973630,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:13Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zagreb&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zagreb\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:13Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zagreb&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zagreb\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760892973631,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:14Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"177\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:14Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "177"
+          },
+          "timestamp": 1760892974608,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:14Z OpenAPI proxy IATA lookup success | {\"term\": \"Zagreb\", \"matches\": \"1\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:14Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zagreb",
+            "matches": "1"
+          },
+          "timestamp": 1760892974608,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:17Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:17Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760892977554,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:17Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:17Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760892977554,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:19Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"33988\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:19Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "33988"
+          },
+          "timestamp": 1760892979645,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:19Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:19Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760892979646,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:19Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:19Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760892979646,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:19Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:19Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760892979659,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:32Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:32Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760892992458,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:32Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:32Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760892992458,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:34Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"34014\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:34Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "34014"
+          },
+          "timestamp": 1760892994557,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:34Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:34Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760892994557,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:34Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:34Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760892994557,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:34Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:34Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760892994558,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:17Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zurich\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:17Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760893037479,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:17Z IATA lookup via proxy | {\"term\": \"Zurich\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:17Z IATA lookup via proxy",
+          "details": {
+            "term": "Zurich",
+            "limit": "20"
+          },
+          "timestamp": 1760893037479,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:17Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"142\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:17Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "142"
+          },
+          "timestamp": 1760893037735,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:17Z OpenAPI proxy IATA lookup success | {\"term\": \"Zurich\", \"matches\": \"1\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:17Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zurich",
+            "matches": "1"
+          },
+          "timestamp": 1760893037735,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:18Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:18Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760893038960,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:18Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:18Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760893038960,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:21Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"34014\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:21Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "34014"
+          },
+          "timestamp": 1760893041015,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:21Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:21Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760893041015,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:21Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:21Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760893041015,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:21Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:21Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760893041016,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:47Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zurich\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:47Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760893067393,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:47Z IATA lookup via proxy | {\"term\": \"Zurich\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:47Z IATA lookup via proxy",
+          "details": {
+            "term": "Zurich",
+            "limit": "20"
+          },
+          "timestamp": 1760893067393,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:47Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"142\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:47Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "142"
+          },
+          "timestamp": 1760893067621,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:47Z OpenAPI proxy IATA lookup success | {\"term\": \"Zurich\", \"matches\": \"1\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:47Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zurich",
+            "matches": "1"
+          },
+          "timestamp": 1760893067621,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:49Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:49Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760893069116,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:49Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:49Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760893069116,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:51Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"33988\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:51Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "33988"
+          },
+          "timestamp": 1760893071549,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:51Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:51Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760893071549,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:51Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:51Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760893071549,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:51Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:51Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760893071549,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:58Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zagreb&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zagreb\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:58Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zagreb&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zagreb\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760893078077,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:58Z IATA lookup via proxy | {\"term\": \"Zagreb\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:58Z IATA lookup via proxy",
+          "details": {
+            "term": "Zagreb",
+            "limit": "20"
+          },
+          "timestamp": 1760893078077,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:58Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"177\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:58Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "177"
+          },
+          "timestamp": 1760893078279,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:58Z OpenAPI proxy IATA lookup success | {\"term\": \"Zagreb\", \"matches\": \"1\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:58Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zagreb",
+            "matches": "1"
+          },
+          "timestamp": 1760893078279,
+          "logStreamName": "2025/10/19/[$LATEST]41aa97588fb541d49ba4cdc6b1e4fa8b",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        }
+      ]
+    },
+    {
+      "logStreamName": "2025/10/19/[$LATEST]4eef957540df429fbf84de0099484fd7",
+      "events": [
+        {
+          "raw": "[lambda] 2025-10-19T16:40:32Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zapresic%2C+Croatia&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zapresic, Croatia\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:32Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zapresic%2C+Croatia&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zapresic, Croatia\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760892032180,
+          "logStreamName": "2025/10/19/[$LATEST]4eef957540df429fbf84de0099484fd7",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:32Z IATA lookup via proxy | {\"term\": \"Zapresic, Croatia\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:32Z IATA lookup via proxy",
+          "details": {
+            "term": "Zapresic, Croatia",
+            "limit": "20"
+          },
+          "timestamp": 1760892032180,
+          "logStreamName": "2025/10/19/[$LATEST]4eef957540df429fbf84de0099484fd7",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:32Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"14\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:32Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "14"
+          },
+          "timestamp": 1760892032766,
+          "logStreamName": "2025/10/19/[$LATEST]4eef957540df429fbf84de0099484fd7",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:32Z OpenAPI proxy IATA lookup success | {\"term\": \"Zapresic, Croatia\", \"matches\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:32Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zapresic, Croatia",
+            "matches": "0"
+          },
+          "timestamp": 1760892032766,
+          "logStreamName": "2025/10/19/[$LATEST]4eef957540df429fbf84de0099484fd7",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        }
+      ]
+    },
+    {
+      "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+      "events": [
+        {
+          "raw": "[lambda] 2025-10-19T16:38:18Z IATA lookup via proxy | {\"term\": \"Zurich\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:38:18Z IATA lookup via proxy",
+          "details": {
+            "term": "Zurich",
+            "limit": "20"
+          },
+          "timestamp": 1760891898702,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:38:18Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zurich\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:38:18Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760891898703,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:38:19Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"142\"}\n",
+          "message": "[lambda] 2025-10-19T16:38:19Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "142"
+          },
+          "timestamp": 1760891899737,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:38:19Z OpenAPI proxy IATA lookup success | {\"term\": \"Zurich\", \"matches\": \"1\"}\n",
+          "message": "[lambda] 2025-10-19T16:38:19Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zurich",
+            "matches": "1"
+          },
+          "timestamp": 1760891899737,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:38:20Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:38:20Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760891900986,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:38:20Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:38:20Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760891900986,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:38:23Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"33954\"}\n",
+          "message": "[lambda] 2025-10-19T16:38:23Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "33954"
+          },
+          "timestamp": 1760891903180,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:38:23Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:38:23Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760891903185,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:38:23Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:38:23Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760891903185,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:38:23Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:38:23Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760891903186,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:39:03Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:39:03Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760891943693,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:39:03Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:39:03Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760891943693,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:39:05Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"33988\"}\n",
+          "message": "[lambda] 2025-10-19T16:39:05Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "33988"
+          },
+          "timestamp": 1760891945942,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:39:05Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:39:05Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760891945944,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:39:05Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:39:05Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760891945944,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:39:05Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:39:05Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760891945944,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:39:39Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=closest+airport&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"closest airport\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:39:39Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=closest+airport&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"closest airport\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760891979466,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:39:39Z IATA lookup via proxy | {\"term\": \"closest airport\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:39:39Z IATA lookup via proxy",
+          "details": {
+            "term": "closest airport",
+            "limit": "20"
+          },
+          "timestamp": 1760891979466,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:39:39Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"14\"}\n",
+          "message": "[lambda] 2025-10-19T16:39:39Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "14"
+          },
+          "timestamp": 1760891979739,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:39:39Z OpenAPI proxy IATA lookup success | {\"term\": \"closest airport\", \"matches\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:39:39Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "closest airport",
+            "matches": "0"
+          },
+          "timestamp": 1760891979739,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:06Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=nearest+airport&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"nearest airport\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:06Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=nearest+airport&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"nearest airport\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760892006784,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:06Z IATA lookup via proxy | {\"term\": \"nearest airport\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:06Z IATA lookup via proxy",
+          "details": {
+            "term": "nearest airport",
+            "limit": "20"
+          },
+          "timestamp": 1760892006784,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:07Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"14\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:07Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "14"
+          },
+          "timestamp": 1760892007377,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:07Z OpenAPI proxy IATA lookup success | {\"term\": \"nearest airport\", \"matches\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:07Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "nearest airport",
+            "matches": "0"
+          },
+          "timestamp": 1760892007377,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:31Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:31Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760892031885,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:31Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:31Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760892031885,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:33Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"33988\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:33Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "33988"
+          },
+          "timestamp": 1760892033976,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:33Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:33Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760892033976,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:33Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:33Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760892033976,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:33Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:33Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760892033976,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:41:25Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 5, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:41:25Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 5, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760892085186,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:41:25Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"5\"}\n",
+          "message": "[lambda] 2025-10-19T16:41:25Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "5"
+          },
+          "timestamp": 1760892085186,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:41:27Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"16342\"}\n",
+          "message": "[lambda] 2025-10-19T16:41:27Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "16342"
+          },
+          "timestamp": 1760892087276,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:41:27Z Amadeus search completed | {\"offers\": \"5\"}\n",
+          "message": "[lambda] 2025-10-19T16:41:27Z Amadeus search completed",
+          "details": {
+            "offers": "5"
+          },
+          "timestamp": 1760892087276,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:41:27Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:41:27Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760892087277,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:41:27Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:41:27Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760892087277,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:41:42Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-11-01\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:41:42Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-11-01\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760892102268,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:41:42Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-11-01\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:41:42Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-11-01",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760892102268,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:41:44Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"33291\"}\n",
+          "message": "[lambda] 2025-10-19T16:41:44Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "33291"
+          },
+          "timestamp": 1760892104854,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:41:44Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:41:44Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760892104855,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:41:44Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:41:44Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760892104855,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:41:44Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:41:44Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760892104866,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:42:17Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:42:17Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760892137262,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:42:17Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:42:17Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760892137262,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:42:19Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"33954\"}\n",
+          "message": "[lambda] 2025-10-19T16:42:19Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "33954"
+          },
+          "timestamp": 1760892139713,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:42:19Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:42:19Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760892139713,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:42:19Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:42:19Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760892139713,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:42:19Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:42:19Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760892139713,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:43:23Z IATA lookup via proxy | {\"term\": \"Zurich, CH\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:43:23Z IATA lookup via proxy",
+          "details": {
+            "term": "Zurich, CH",
+            "limit": "20"
+          },
+          "timestamp": 1760892203260,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:43:23Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich%2C+CH&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zurich, CH\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:43:23Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich%2C+CH&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zurich, CH\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760892203266,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:43:23Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"14\"}\n",
+          "message": "[lambda] 2025-10-19T16:43:23Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "14"
+          },
+          "timestamp": 1760892203885,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:43:23Z OpenAPI proxy IATA lookup success | {\"term\": \"Zurich, CH\", \"matches\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:43:23Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zurich, CH",
+            "matches": "0"
+          },
+          "timestamp": 1760892203885,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:43:36Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-11-01\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 5, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:43:36Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-11-01\", \"adults\": 1, \"nonStop\": false, \"max\": 5, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760892216264,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:43:36Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-11-01\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"5\"}\n",
+          "message": "[lambda] 2025-10-19T16:43:36Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-11-01",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "5"
+          },
+          "timestamp": 1760892216264,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:43:37Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"15991\"}\n",
+          "message": "[lambda] 2025-10-19T16:43:37Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "15991"
+          },
+          "timestamp": 1760892217916,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:43:37Z Amadeus search completed | {\"offers\": \"5\"}\n",
+          "message": "[lambda] 2025-10-19T16:43:37Z Amadeus search completed",
+          "details": {
+            "offers": "5"
+          },
+          "timestamp": 1760892217916,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:43:37Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:43:37Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760892217916,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:43:37Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:43:37Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760892217917,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:45:07Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-11-01\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"returnDate\\\": \\\"2025-11-03\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:45:07Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-11-01\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"returnDate\": \"2025-11-03\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760892307229,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:45:07Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-11-01\", \"returnDate\": \"2025-11-03\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:45:07Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-11-01",
+            "returnDate": "2025-11-03",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760892307229,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:45:11Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"43226\"}\n",
+          "message": "[lambda] 2025-10-19T16:45:11Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "43226"
+          },
+          "timestamp": 1760892311299,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:45:11Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:45:11Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760892311300,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:45:11Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:45:11Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760892311300,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:45:11Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:45:11Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760892311300,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:46:13Z IATA lookup via proxy | {\"term\": \"near Zurich, CH\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:46:13Z IATA lookup via proxy",
+          "details": {
+            "term": "near Zurich, CH",
+            "limit": "20"
+          },
+          "timestamp": 1760892373628,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:46:13Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=near+Zurich%2C+CH&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"near Zurich, CH\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:46:13Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=near+Zurich%2C+CH&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"near Zurich, CH\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760892373647,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:46:14Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"14\"}\n",
+          "message": "[lambda] 2025-10-19T16:46:14Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "14"
+          },
+          "timestamp": 1760892374281,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:46:14Z OpenAPI proxy IATA lookup success | {\"term\": \"near Zurich, CH\", \"matches\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:46:14Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "near Zurich, CH",
+            "matches": "0"
+          },
+          "timestamp": 1760892374281,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:46:34Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=nearby+Zurich%2C+CH&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"nearby Zurich, CH\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:46:34Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=nearby+Zurich%2C+CH&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"nearby Zurich, CH\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760892394448,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:46:34Z IATA lookup via proxy | {\"term\": \"nearby Zurich, CH\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:46:34Z IATA lookup via proxy",
+          "details": {
+            "term": "nearby Zurich, CH",
+            "limit": "20"
+          },
+          "timestamp": 1760892394448,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:46:35Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"14\"}\n",
+          "message": "[lambda] 2025-10-19T16:46:35Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "14"
+          },
+          "timestamp": 1760892395074,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:46:35Z OpenAPI proxy IATA lookup success | {\"term\": \"nearby Zurich, CH\", \"matches\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:46:35Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "nearby Zurich, CH",
+            "matches": "0"
+          },
+          "timestamp": 1760892395074,
+          "logStreamName": "2025/10/19/[$LATEST]614d5081c742476f97a784f5098bc7ee",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        }
+      ]
+    },
+    {
+      "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+      "events": [
+        {
+          "raw": "[lambda] 2025-10-19T16:55:29Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zurich\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:55:29Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760892929793,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:55:29Z IATA lookup via proxy | {\"term\": \"Zurich\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:55:29Z IATA lookup via proxy",
+          "details": {
+            "term": "Zurich",
+            "limit": "20"
+          },
+          "timestamp": 1760892929793,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:55:30Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"142\"}\n",
+          "message": "[lambda] 2025-10-19T16:55:30Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "142"
+          },
+          "timestamp": 1760892930367,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:55:30Z OpenAPI proxy IATA lookup success | {\"term\": \"Zurich\", \"matches\": \"1\"}\n",
+          "message": "[lambda] 2025-10-19T16:55:30Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zurich",
+            "matches": "1"
+          },
+          "timestamp": 1760892930367,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:55:31Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:55:31Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760892931733,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:55:31Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:55:31Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760892931733,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:55:34Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"37131\"}\n",
+          "message": "[lambda] 2025-10-19T16:55:34Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "37131"
+          },
+          "timestamp": 1760892934696,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:55:34Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:55:34Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760892934713,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:55:34Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:55:34Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760892934713,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:55:34Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"3\"}\n",
+          "message": "[lambda] 2025-10-19T16:55:34Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "3"
+          },
+          "timestamp": 1760892934714,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:04Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:04Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760892964591,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:04Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:04Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760892964591,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:06Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"34014\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:06Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "34014"
+          },
+          "timestamp": 1760892966760,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:06Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:06Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760892966760,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:06Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:06Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760892966760,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:06Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:06Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760892966761,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:13Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zurich\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:13Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760892973338,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:13Z IATA lookup via proxy | {\"term\": \"Zurich\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:13Z IATA lookup via proxy",
+          "details": {
+            "term": "Zurich",
+            "limit": "20"
+          },
+          "timestamp": 1760892973338,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:13Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"142\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:13Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "142"
+          },
+          "timestamp": 1760892973975,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:56:13Z OpenAPI proxy IATA lookup success | {\"term\": \"Zurich\", \"matches\": \"1\"}\n",
+          "message": "[lambda] 2025-10-19T16:56:13Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zurich",
+            "matches": "1"
+          },
+          "timestamp": 1760892973975,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        }
+      ]
+    },
+    {
+      "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+      "events": [
+        {
+          "raw": "[lambda] 2025-10-19T16:57:58Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zurich\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:58Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760893078097,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:58Z IATA lookup via proxy | {\"term\": \"Zurich\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:58Z IATA lookup via proxy",
+          "details": {
+            "term": "Zurich",
+            "limit": "20"
+          },
+          "timestamp": 1760893078097,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:58Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"142\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:58Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "142"
+          },
+          "timestamp": 1760893078737,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:57:58Z OpenAPI proxy IATA lookup success | {\"term\": \"Zurich\", \"matches\": \"1\"}\n",
+          "message": "[lambda] 2025-10-19T16:57:58Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zurich",
+            "matches": "1"
+          },
+          "timestamp": 1760893078737,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:58:01Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:58:01Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760893081633,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:58:01Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:58:01Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760893081633,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:58:03Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"34014\"}\n",
+          "message": "[lambda] 2025-10-19T16:58:03Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "34014"
+          },
+          "timestamp": 1760893083647,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:58:03Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:58:03Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760893083647,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:58:03Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:58:03Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760893083647,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:58:03Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:58:03Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760893083648,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:58:17Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:58:17Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760893097177,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:58:17Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:58:17Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760893097177,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:58:19Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"33988\"}\n",
+          "message": "[lambda] 2025-10-19T16:58:19Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "33988"
+          },
+          "timestamp": 1760893099311,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:58:19Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T16:58:19Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760893099311,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:58:19Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T16:58:19Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760893099311,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:58:19Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T16:58:19Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760893099311,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI flight search success"
+        }
+      ]
+    },
+    {
+      "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+      "events": [
+        {
+          "raw": "[lambda] 2025-10-19T17:01:05Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:05Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760893265821,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:05Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:05Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760893265821,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:08Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"33988\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:08Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "33988"
+          },
+          "timestamp": 1760893268402,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:08Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:08Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760893268402,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:08Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:08Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760893268402,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:08Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:08Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760893268403,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:19Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-11-01\", \"returnDate\": \"2025-11-03\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"5\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:19Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-11-01",
+            "returnDate": "2025-11-03",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "5"
+          },
+          "timestamp": 1760893279044,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:19Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-11-01\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 5, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"returnDate\\\": \\\"2025-11-03\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:19Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-11-01\", \"adults\": 1, \"nonStop\": false, \"max\": 5, \"travelClass\": \"ECONOMY\", \"returnDate\": \"2025-11-03\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760893279045,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:22Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"19355\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:22Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "19355"
+          },
+          "timestamp": 1760893282681,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:22Z Amadeus search completed | {\"offers\": \"5\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:22Z Amadeus search completed",
+          "details": {
+            "offers": "5"
+          },
+          "timestamp": 1760893282681,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:22Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:22Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760893282681,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:22Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:22Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760893282681,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:27Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-11-01\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 5, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"returnDate\\\": \\\"2025-11-03\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:27Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-11-01\", \"adults\": 1, \"nonStop\": false, \"max\": 5, \"travelClass\": \"ECONOMY\", \"returnDate\": \"2025-11-03\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760893287284,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:27Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-11-01\", \"returnDate\": \"2025-11-03\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"5\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:27Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-11-01",
+            "returnDate": "2025-11-03",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "5"
+          },
+          "timestamp": 1760893287284,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:30Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"19355\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:30Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "19355"
+          },
+          "timestamp": 1760893290744,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:30Z Amadeus search completed | {\"offers\": \"5\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:30Z Amadeus search completed",
+          "details": {
+            "offers": "5"
+          },
+          "timestamp": 1760893290744,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:30Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:30Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760893290744,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:30Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:30Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760893290744,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:37Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zurich\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:37Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760893297598,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:37Z IATA lookup via proxy | {\"term\": \"Zurich\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:37Z IATA lookup via proxy",
+          "details": {
+            "term": "Zurich",
+            "limit": "20"
+          },
+          "timestamp": 1760893297598,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:37Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"142\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:37Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "142"
+          },
+          "timestamp": 1760893297845,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:37Z OpenAPI proxy IATA lookup success | {\"term\": \"Zurich\", \"matches\": \"1\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:37Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zurich",
+            "matches": "1"
+          },
+          "timestamp": 1760893297845,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:43Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"returnDate\\\": \\\"2025-10-26\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:43Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"returnDate\": \"2025-10-26\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760893303619,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:43Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"returnDate\": \"2025-10-26\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:43Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "returnDate": "2025-10-26",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760893303619,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:47Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"43183\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:47Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "43183"
+          },
+          "timestamp": 1760893307845,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:47Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:47Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760893307845,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:47Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:47Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760893307845,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:47Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:47Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760893307846,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:53Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2026-01-11\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"returnDate\\\": \\\"2026-01-12\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:53Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2026-01-11\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"returnDate\": \"2026-01-12\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760893313445,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:53Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2026-01-11\", \"returnDate\": \"2026-01-12\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:53Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2026-01-11",
+            "returnDate": "2026-01-12",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760893313445,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:57Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"57691\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:57Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "57691"
+          },
+          "timestamp": 1760893317431,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:57Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:57Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760893317440,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:57Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:57Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760893317441,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:01:57Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"5\"}\n",
+          "message": "[lambda] 2025-10-19T17:01:57Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "5"
+          },
+          "timestamp": 1760893317441,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:13Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:13Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760893333813,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:13Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:13Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760893333813,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:15Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"34014\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:15Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "34014"
+          },
+          "timestamp": 1760893335886,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:15Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:15Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760893335886,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:15Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:15Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760893335886,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:15Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:15Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760893335902,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:19Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:19Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760893339859,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:19Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:19Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760893339859,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:21Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"34014\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:21Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "34014"
+          },
+          "timestamp": 1760893341939,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:21Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:21Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760893341939,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:21Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:21Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760893341939,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:21Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:21Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760893341940,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:25Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zurich\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:25Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760893345900,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:25Z IATA lookup via proxy | {\"term\": \"Zurich\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:25Z IATA lookup via proxy",
+          "details": {
+            "term": "Zurich",
+            "limit": "20"
+          },
+          "timestamp": 1760893345900,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:26Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"142\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:26Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "142"
+          },
+          "timestamp": 1760893346141,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:26Z OpenAPI proxy IATA lookup success | {\"term\": \"Zurich\", \"matches\": \"1\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:26Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zurich",
+            "matches": "1"
+          },
+          "timestamp": 1760893346141,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:27Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:27Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760893347988,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:27Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:27Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760893347988,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:30Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"34014\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:30Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "34014"
+          },
+          "timestamp": 1760893350136,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:30Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:30Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760893350137,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:30Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:30Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760893350137,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:30Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:30Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760893350142,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:34Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zurich\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:34Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760893354511,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:34Z IATA lookup via proxy | {\"term\": \"Zurich\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:34Z IATA lookup via proxy",
+          "details": {
+            "term": "Zurich",
+            "limit": "20"
+          },
+          "timestamp": 1760893354511,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:34Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"142\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:34Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "142"
+          },
+          "timestamp": 1760893354736,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:34Z OpenAPI proxy IATA lookup success | {\"term\": \"Zurich\", \"matches\": \"1\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:34Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zurich",
+            "matches": "1"
+          },
+          "timestamp": 1760893354736,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:36Z Proxy POST request | {\"path\": \"/tools/amadeus/search\", \"url\": \"https://origin-daisy.onrender.com/tools/amadeus/search\", \"timeout\": \"8.0\", \"payload\": \"{\\\"originLocationCode\\\": \\\"ZAG\\\", \\\"destinationLocationCode\\\": \\\"ZRH\\\", \\\"departureDate\\\": \\\"2025-10-25\\\", \\\"adults\\\": 1, \\\"nonStop\\\": false, \\\"max\\\": 10, \\\"travelClass\\\": \\\"ECONOMY\\\", \\\"currencyCode\\\": \\\"EUR\\\", \\\"includedAirlineCodes\\\": \\\"LH,LX,OS,SN,EW,4Y,EN\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:36Z Proxy POST request",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "url": "https://origin-daisy.onrender.com/tools/amadeus/search",
+            "timeout": "8.0",
+            "payload": "{\"originLocationCode\": \"ZAG\", \"destinationLocationCode\": \"ZRH\", \"departureDate\": \"2025-10-25\", \"adults\": 1, \"nonStop\": false, \"max\": 10, \"travelClass\": \"ECONOMY\", \"currencyCode\": \"EUR\", \"includedAirlineCodes\": \"LH,LX,OS,SN,EW,4Y,EN\"}"
+          },
+          "timestamp": 1760893356779,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:36Z Amadeus search request prepared | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"departure\": \"2025-10-25\", \"adults\": \"1\", \"nonstop\": \"False\", \"cabin\": \"ECONOMY\", \"currency\": \"EUR\", \"lhGroupOnly\": \"True\", \"maxResults\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:36Z Amadeus search request prepared",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "departure": "2025-10-25",
+            "adults": "1",
+            "nonstop": "False",
+            "cabin": "ECONOMY",
+            "currency": "EUR",
+            "lhGroupOnly": "True",
+            "maxResults": "10"
+          },
+          "timestamp": 1760893356779,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search request prepared"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:38Z Proxy POST response received | {\"path\": \"/tools/amadeus/search\", \"status\": \"200\", \"bytes\": \"33988\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:38Z Proxy POST response received",
+          "details": {
+            "path": "/tools/amadeus/search",
+            "status": "200",
+            "bytes": "33988"
+          },
+          "timestamp": 1760893358926,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy POST response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:38Z Amadeus search completed | {\"offers\": \"10\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:38Z Amadeus search completed",
+          "details": {
+            "offers": "10"
+          },
+          "timestamp": 1760893358927,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Amadeus search completed"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:38Z Summarizing offers | {\"keys\": \"[\\\"offers\\\", \\\"raw\\\"]\", \"currency_hint\": \"EUR\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:38Z Summarizing offers",
+          "details": {
+            "keys": "[\"offers\", \"raw\"]",
+            "currency_hint": "EUR"
+          },
+          "timestamp": 1760893358927,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Summarizing offers"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:38Z OpenAPI flight search success | {\"origin\": \"ZAG\", \"destination\": \"ZRH\", \"offers\": \"0\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:38Z OpenAPI flight search success",
+          "details": {
+            "origin": "ZAG",
+            "destination": "ZRH",
+            "offers": "0"
+          },
+          "timestamp": 1760893358927,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI flight search success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:40Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zurich\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:40Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760893360894,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:40Z IATA lookup via proxy | {\"term\": \"Zurich\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:40Z IATA lookup via proxy",
+          "details": {
+            "term": "Zurich",
+            "limit": "20"
+          },
+          "timestamp": 1760893360894,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:41Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"142\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:41Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "142"
+          },
+          "timestamp": 1760893361139,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:41Z OpenAPI proxy IATA lookup success | {\"term\": \"Zurich\", \"matches\": \"1\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:41Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zurich",
+            "matches": "1"
+          },
+          "timestamp": 1760893361139,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:46Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zurich\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:46Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760893366512,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:46Z IATA lookup via proxy | {\"term\": \"Zurich\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:46Z IATA lookup via proxy",
+          "details": {
+            "term": "Zurich",
+            "limit": "20"
+          },
+          "timestamp": 1760893366512,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:46Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"142\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:46Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "142"
+          },
+          "timestamp": 1760893366738,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T17:02:46Z OpenAPI proxy IATA lookup success | {\"term\": \"Zurich\", \"matches\": \"1\"}\n",
+          "message": "[lambda] 2025-10-19T17:02:46Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zurich",
+            "matches": "1"
+          },
+          "timestamp": 1760893366738,
+          "logStreamName": "2025/10/19/[$LATEST]81831f93263442458b49db66599520e7",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        }
+      ]
+    },
+    {
+      "logStreamName": "2025/10/19/[$LATEST]f3f57e14d2b742319b1cad42e2567f16",
+      "events": [
+        {
+          "raw": "[lambda] 2025-10-19T16:40:32Z Proxy GET request | {\"path\": \"/tools/iata/lookup\", \"url\": \"https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20\", \"timeout\": \"5.0\", \"params\": \"{\\\"term\\\": \\\"Zurich\\\", \\\"limit\\\": \\\"20\\\"}\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:32Z Proxy GET request",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "url": "https://origin-daisy.onrender.com/tools/iata/lookup?term=Zurich&limit=20",
+            "timeout": "5.0",
+            "params": "{\"term\": \"Zurich\", \"limit\": \"20\"}"
+          },
+          "timestamp": 1760892032198,
+          "logStreamName": "2025/10/19/[$LATEST]f3f57e14d2b742319b1cad42e2567f16",
+          "pattern": "Proxy GET request"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:32Z IATA lookup via proxy | {\"term\": \"Zurich\", \"limit\": \"20\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:32Z IATA lookup via proxy",
+          "details": {
+            "term": "Zurich",
+            "limit": "20"
+          },
+          "timestamp": 1760892032198,
+          "logStreamName": "2025/10/19/[$LATEST]f3f57e14d2b742319b1cad42e2567f16",
+          "pattern": "IATA lookup via proxy"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:33Z Proxy GET response received | {\"path\": \"/tools/iata/lookup\", \"status\": \"200\", \"bytes\": \"142\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:33Z Proxy GET response received",
+          "details": {
+            "path": "/tools/iata/lookup",
+            "status": "200",
+            "bytes": "142"
+          },
+          "timestamp": 1760892033175,
+          "logStreamName": "2025/10/19/[$LATEST]f3f57e14d2b742319b1cad42e2567f16",
+          "pattern": "Proxy GET response received"
+        },
+        {
+          "raw": "[lambda] 2025-10-19T16:40:33Z OpenAPI proxy IATA lookup success | {\"term\": \"Zurich\", \"matches\": \"1\"}\n",
+          "message": "[lambda] 2025-10-19T16:40:33Z OpenAPI proxy IATA lookup success",
+          "details": {
+            "term": "Zurich",
+            "matches": "1"
+          },
+          "timestamp": 1760892033176,
+          "logStreamName": "2025/10/19/[$LATEST]f3f57e14d2b742319b1cad42e2567f16",
+          "pattern": "OpenAPI proxy IATA lookup success"
+        }
+      ]
+    }
+  ]
+}

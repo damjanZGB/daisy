@@ -1,0 +1,34 @@
+{
+  "ok": false,
+  "sessionId": "bianca-hard-199fd3bf8e8",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Hello! I am Leo, your Lufthansa Group travel navigator. Tell me—if you could fly anywhere soon, what would feel exciting right now?",
+      "askUser": []
+    },
+    {
+      "turn": 2,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "text": "Hello! I am Leo, your Lufthansa Group travel navigator. Tell me—if you could fly anywhere soon, what would feel exciting right now?",
+      "askUser": []
+    },
+    {
+      "turn": 3,
+      "role": "error",
+      "text": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    }
+  ],
+  "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+}

@@ -410,9 +410,33 @@ Create a SAM template that points to `lambda_function.lambda_handler`, run `sam 
    - **Name:** `TimePhraseParser`
    - **Type:** Lambda
    - **Lambda ARN:** *(your deployed function)*
-3. (Optional) Provide a function schema describing two operations:
-   - `convert_time_phrase` → maps to `op=human_to_future_iso`
-   - `normalize_any_date` → maps to `op=normalize_any`
+3. Provide a **function schema** with explicit parameters so the agent can pass phrases and timezone context. Example:
+
+   ```json
+   {
+     "functions": [
+       {
+         "name": "human_to_future_iso",
+         "description": "Convert a natural-language phrase (e.g. \"next Saturday\") into a future ISO date.",
+         "parameters": {
+           "phrase": { "type": "string", "required": true, "description": "Traveler supplied phrase to interpret." },
+           "timezone": { "type": "string", "required": false, "description": "IANA timezone (defaults to UTC if omitted)." },
+           "locale": { "type": "string", "required": false, "description": "JSON array of BCP-47 locale codes; defaults to [\"en\"]." },
+           "translation_map": { "type": "string", "required": false, "description": "JSON object of regex replacements before parsing." }
+         }
+       },
+       {
+         "name": "normalize_any",
+         "description": "Normalize an absolute date string to ISO format.",
+         "parameters": {
+           "text": { "type": "string", "required": true, "description": "Literal date text to normalize." },
+           "timezone": { "type": "string", "required": false, "description": "IANA timezone used when interpreting relative content." },
+           "locale": { "type": "string", "required": false, "description": "JSON array of locales; defaults to [\"en\"]." }
+         }
+       }
+     ]
+   }
+   ```
 
 Example input payloads:
 ```json

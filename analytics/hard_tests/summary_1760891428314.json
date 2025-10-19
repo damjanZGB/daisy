@@ -1,0 +1,23 @@
+[
+  {
+    "alias": "paul",
+    "sessionId": "paul-hard-199fd4d4d66",
+    "ok": true,
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\hard_tests\\paul_paul-hard-199fd4d4d66.json",
+    "error": null
+  },
+  {
+    "alias": "bianca",
+    "sessionId": "bianca-hard-199fd4d9de2",
+    "ok": true,
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\hard_tests\\bianca_bianca-hard-199fd4d9de2.json",
+    "error": null
+  },
+  {
+    "alias": "gina",
+    "sessionId": "gina-hard-199fd4e40c3",
+    "ok": true,
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\hard_tests\\gina_gina-hard-199fd4e40c3.json",
+    "error": null
+  }
+]

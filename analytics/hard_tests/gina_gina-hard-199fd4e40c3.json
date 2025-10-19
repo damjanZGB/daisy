@@ -1,0 +1,94 @@
+{
+  "ok": true,
+  "sessionId": "gina-hard-199fd4e40c3",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Hello! What kind of journey are you envisioning today? Are there any specific destinations or experiences you're hoping to include in your travel plans?",
+      "askUser": []
+    },
+    {
+      "turn": 2,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "text": "Hello! It's wonderful to connect with you. Now, could you tell me more about the kind of journey you're planning? Are there any particular destinations or experiences that are important to you?",
+      "askUser": []
+    },
+    {
+      "turn": 3,
+      "role": "user",
+      "text": "I want to go to Zurich. Next saturday."
+    },
+    {
+      "turn": 3,
+      "role": "assistant",
+      "text": "I'm delighted to assist you in planning your journey to Zurich! Here are some flight options that might resonate with your travel plans:\n\n\n\n1. **Flight 612**: Departing from Zapresic, Croatia (ZAG) at 06:00 AM, arriving in Zurich (ZRH) at 09:00 AM on the same day.\n**Price: €157.60. 1 stop.**\n\n\n\n2. **Flight 614**: Departing from Zapresic, Croatia (ZAG) at 08:00 AM, arriving in Zurich (ZRH) at 11:00 AM on the same day.\n**Price: €165.40. 1 stop.**\n\n\n\n3. **Flight 616**: Departing from Zapresic, Croatia (ZAG) at 10:00 AM, arriving in Zurich (ZRH) at 01:00 PM on the same day.\n**Price: €173.20. 1 stop.**\n\n\n\n4. **Flight 618**: Departing from Zapresic, Croatia (ZAG) at 12:00 PM, arriving in Zurich (ZRH) at 03:00 PM on the same day.\n**Price: €181.00. 1 stop.**\n\n\n\n5. **Flight 620**: Departing from Zapresic, Croatia (ZAG) at 02:00 PM, arriving in Zurich (ZRH) at 05:00 PM on the same day.\n**Price: €188.80. 1 stop.**",
+      "askUser": []
+    },
+    {
+      "turn": 4,
+      "role": "user",
+      "text": "Ok"
+    },
+    {
+      "turn": 4,
+      "role": "assistant",
+      "text": "I hope these options align well with your travel plans. If you need more details about any of these flights or have any other questions, feel free to let me know. I'm here to help you every step of the way!",
+      "askUser": []
+    },
+    {
+      "turn": 5,
+      "role": "user",
+      "text": "I want to stay for five days."
+    },
+    {
+      "turn": 5,
+      "role": "assistant",
+      "text": "For your return journey from Zurich, here are some flight options that might suit your plans:\n\n\n\n1. **Flight 622**: Departing from Zurich (ZRH) at 07:00 AM, arriving in Zapresic, Croatia (ZAG) at 10:00 AM on the same day.\n**Price: €157.60. 1 stop.**\n\n\n\n2. **Flight 624**: Departing from Zurich (ZRH) at 09:00 AM, arriving in Zapresic, Croatia (ZAG) at 12:00 PM on the same day.\n**Price: €165.40. 1 stop.**\n\n\n\n3. **Flight 626**: Departing from Zurich (ZRH) at 11:00 AM, arriving in Zapresic, Croatia (ZAG) at 02:00 PM on the same day.\n**Price: €173.20. 1 stop.**\n\n\n\n4. **Flight 628**: Departing from Zurich (ZRH) at 01:00 PM, arriving in Zapresic, Croatia (ZAG) at 04:00 PM on the same day.\n**Price: €181.00. 1 stop.**\n\n\n\n5. **Flight 630**: Departing from Zurich (ZRH) at 03:00 PM, arriving in Zapresic, Croatia (ZAG) at 06:00 PM on the same day.\n**Price: €188.80. 1 stop.**",
+      "askUser": []
+    },
+    {
+      "turn": 6,
+      "role": "user",
+      "text": "Departure is the next saturday, and arrival five days after that."
+    },
+    {
+      "turn": 6,
+      "role": "assistant",
+      "text": "Thank you for the clarification. Here are the flight options for your trip to Zurich:\n\n\n\n**Departure:**\n\n\n\n**Flight 612**: Departing from Zapresic, Croatia (ZAG) at 06:00 AM, arriving in Zurich (ZRH) at 09:00 AM on **2025-10-25**.\n**Price: €157.60. 1 stop.**\n\n\n\n**Return:**\n\n\n\n**Flight 622**: Departing from Zurich (ZRH) at 07:00 AM, arriving in Zapresic, Croatia (ZAG) at 10:00 AM on **2025-10-30**.\n**Price: €157.60. 1 stop.**",
+      "askUser": []
+    },
+    {
+      "turn": 7,
+      "role": "user",
+      "text": "Next saturday"
+    },
+    {
+      "turn": 7,
+      "role": "assistant",
+      "text": "I apologize for the confusion. Let me manually calculate the return date for you. If you depart on 2025-10-25, your return date would be 2025-11-01. Now, let's look at the flight options for your return journey.",
+      "askUser": []
+    },
+    {
+      "turn": 8,
+      "role": "user",
+      "text": "Next saturday"
+    },
+    {
+      "turn": 8,
+      "role": "assistant",
+      "text": "Thank you for the clarification. Here are the flight options for your trip to Zurich:\n\n**Departure:**\n\n**Flight 612**: Departing from Zapresic, Croatia (ZAG) at 06:00 AM, arriving in Zurich (ZRH) at 09:00 AM on **2025-10-25**.\n**Price: €157.60. 1 stop.**\n\n**Return:**\n\n**Flight 622**: Departing from Zurich (ZRH) at 07:00 AM, arriving in Zapresic, Croatia (ZAG) at 10:00 AM on **2025-10-30**.\n**Price: €157.60. 1 stop.**",
+      "askUser": []
+    }
+  ]
+}

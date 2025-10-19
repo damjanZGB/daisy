@@ -1,0 +1,17 @@
+[
+  {
+    "flight": "LH6814",
+    "aliasKey": "mira",
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\replay\\LH6814_mira_1760893292302.json"
+  },
+  {
+    "flight": "LH1378",
+    "aliasKey": "aris",
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\replay\\LH1378_aris_1760893327263.json"
+  },
+  {
+    "flight": "LH9999",
+    "aliasKey": "leo",
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\replay\\LH9999_leo_1760893369005.json"
+  }
+]

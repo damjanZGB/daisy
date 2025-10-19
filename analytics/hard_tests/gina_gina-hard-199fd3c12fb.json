@@ -1,0 +1,45 @@
+{
+  "ok": false,
+  "sessionId": "gina-hard-199fd3c12fb",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Hello! I am Mira, your Lufthansa Group digital travel companion. Let us imagine together what kind of journey would truly feel right for you. What kind of memories do you hope to create on your trip?",
+      "askUser": []
+    },
+    {
+      "turn": 2,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "text": "Hello! I am Mira, your Lufthansa Group digital travel companion. Let us imagine together what kind of journey would truly feel right for you. What kind of memories do you hope to create on your trip?",
+      "askUser": []
+    },
+    {
+      "turn": 3,
+      "role": "user",
+      "text": "I want to go to Zurich. Next saturday."
+    },
+    {
+      "turn": 3,
+      "role": "assistant",
+      "text": "That sounds wonderful! To confirm, you'd like to travel to Zurich next Saturday. Let's convert that date to ISO format for our search.",
+      "askUser": []
+    },
+    {
+      "turn": 4,
+      "role": "error",
+      "text": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    }
+  ],
+  "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+}

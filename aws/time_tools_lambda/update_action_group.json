@@ -1,0 +1,61 @@
+﻿{
+    "agentId":  "JDLTXAKYJY",
+    "agentVersion":  "DRAFT",
+    "actionGroupId":  "ASTBBKPZOE",
+    "actionGroupName":  "TimePhraseParser",
+    "description":  "Convert travel date phrases to ISO",
+    "actionGroupExecutor":  {
+                                "lambda":  "arn:aws:lambda:us-west-2:083756035354:function:bedrock-time-tools"
+                            },
+    "functionSchema":  {
+                           "functions":  [
+                                             {
+                                                 "name":  "human_to_future_iso",
+                                                 "description":  "Convert a natural-language phrase (e.g. \"next Saturday\") into a future ISO date.",
+                                                 "parameters":  {
+                                                                    "phrase":  {
+                                                                                   "type":  "string",
+                                                                                   "required":  true,
+                                                                                   "description":  "Traveler supplied phrase to interpret."
+                                                                               },
+                                                                    "timezone":  {
+                                                                                     "type":  "string",
+                                                                                     "required":  false,
+                                                                                     "description":  "IANA timezone (defaults to UTC if omitted)."
+                                                                                 },
+                                                                    "locale":  {
+                                                                                   "type":  "string",
+                                                                                   "required":  false,
+                                                                                   "description":  "JSON array of BCP-47 locale codes; defaults to [\"en\"]."
+                                                                               },
+                                                                    "translation_map":  {
+                                                                                            "type":  "string",
+                                                                                            "required":  false,
+                                                                                            "description":  "JSON object of regex replacements before parsing."
+                                                                                        }
+                                                                }
+                                             },
+                                             {
+                                                 "name":  "normalize_any",
+                                                 "description":  "Normalize an absolute date string to ISO format.",
+                                                 "parameters":  {
+                                                                    "text":  {
+                                                                                 "type":  "string",
+                                                                                 "required":  true,
+                                                                                 "description":  "Literal date text to normalize."
+                                                                             },
+                                                                    "timezone":  {
+                                                                                     "type":  "string",
+                                                                                     "required":  false,
+                                                                                     "description":  "IANA timezone used when interpreting relative content."
+                                                                                 },
+                                                                    "locale":  {
+                                                                                   "type":  "string",
+                                                                                   "required":  false,
+                                                                                   "description":  "JSON array of locales; defaults to [\"en\"]."
+                                                                               }
+                                                                }
+                                             }
+                                         ]
+                       }
+}

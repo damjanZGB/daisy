@@ -1,0 +1,44 @@
+{
+  "flight": "LH1378",
+  "session": "2a422dff-3f11-44e9-aee7-bdca3aa8ec0b",
+  "bedrockSessionId": "f4c5944c-48eb-4bca-81ef-29eb9db205fb",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hello and welcome aboard the Lufthansa Group experience. I am Aris, your digital travel orchestrator. Tell me—what kind of journey are you envisioning today?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Could you please confirm the departure airport? If you don't have a specific one in mind, we can use the default one, which is Zagreb (ZAG).",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Correct. Use default",
+      "assistant": "How many passengers will be traveling?",
+      "trace": []
+    },
+    {
+      "turn": 4,
+      "user": "Zagreb to Zurich, departure, 25.10.2025",
+      "assistant": "It seems there are no direct flights available for your requested dates. Would you like to adjust the travel dates or consider nearby Lufthansa Group destinations?",
+      "trace": []
+    },
+    {
+      "turn": 5,
+      "user": "01.11.2025",
+      "assistant": "Here are the available flight options for your journey from Zagreb to Zurich on January 11, 2026:\n\n1. **Flight 5999**:\n   - Departure: ZAG at 18:40\n   - THEN, **Flight 5750** -\n   - Arrival: ZRH at 21:45\n   - Duration: 3h 5m\n   - **Price: €356.99. 2 stops.**\n\n2. **Flight 5999**:\n   - Departure: ZAG at 18:40\n   - THEN, **Flight 5750** -\n   - Arrival: ZRH at 21:45\n   - Duration: 3h 5m\n   - **Price: €356.99. 2 stops.**\n\n3. **Flight 5989**:\n   - Departure: ZAG at 08:35\n   - THEN, **Flight 5764** -\n   - Arrival: ZRH at 12:15\n   - Duration: 3h 40m\n   - **Price: €356.99. 2 stops.**\n\n4. **Flight 5999**:\n   - Departure: ZAG at 18:40\n   - THEN, **Flight 5750** -\n   - Arrival: ZRH at 21:45\n   - Duration: 3h 5m\n   - **Price: €356.99. 2 stops.**\n\n5. **Flight 5989**:\n   - Departure: ZAG at 08:35\n   - THEN, **Flight 5766** -\n   - Arrival: ZRH at 16:10\n   - Duration: 7h 35m\n   - **Price: €356.99. 2 stops.**\n\nPlease review these options and let me know if you need further assistance.",
+      "trace": []
+    },
+    {
+      "turn": 6,
+      "user": "Show me the alternatives",
+      "assistant": "Here are the available flight options for your journey from Zagreb to Zurich on January 11, 2026:\n\n1. **Flight 5999**:\n   - Departure: ZAG at 18:40\n   - THEN, **Flight 5750** -\n   - Arrival: ZRH at 21:45\n   - Duration: 3h 5m\n   - **Price: €356.99. 2 stops.**\n\n2. **Flight 5999**:\n   - Departure: ZAG at 18:40\n   - THEN, **Flight 5750** -\n   - Arrival: ZRH at 21:45\n   - Duration: 3h 5m\n   - **Price: €356.99. 2 stops.**\n\n3. **Flight 5989**:\n   - Departure: ZAG at 08:35\n   - THEN, **Flight 5764** -\n   - Arrival: ZRH at 12:15\n   - Duration: 3h 40m\n   - **Price: €356.99. 2 stops.**\n\n4. **Flight 5999**:\n   - Departure: ZAG at 18:40\n   - THEN, **Flight 5750** -\n   - Arrival: ZRH at 21:45\n   - Duration: 3h 5m\n   - **Price: €356.99. 2 stops.**\n\n5. **Flight 5989**:\n   - Departure: ZAG at 08:35\n   - THEN, **Flight 5766** -\n   - Arrival: ZRH at 16:10\n   - Duration: 7h 35m\n   - **Price: €356.99. 2 stops.**\n\nPlease review these options and let me know if you need further assistance.",
+      "trace": []
+    }
+  ]
+}

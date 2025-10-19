@@ -1,0 +1,94 @@
+{
+  "ok": true,
+  "sessionId": "paul-hard-199fd4d4d66",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Hello and welcome aboard the Lufthansa Group experience. I am Aris, your digital travel orchestrator. Tell me—what kind of journey are you envisioning today?",
+      "askUser": []
+    },
+    {
+      "turn": 2,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "text": "Hello again! To help you better, could you please share more details about your travel plans? For instance, where are you planning to go, and when would you like to depart?",
+      "askUser": []
+    },
+    {
+      "turn": 3,
+      "role": "user",
+      "text": "I want to go to Zurich. Next saturday."
+    },
+    {
+      "turn": 3,
+      "role": "assistant",
+      "text": "Thank you for sharing your plans. To proceed, could you please let me know the departure airport and the number of passengers traveling with you?",
+      "askUser": []
+    },
+    {
+      "turn": 4,
+      "role": "user",
+      "text": "Ok"
+    },
+    {
+      "turn": 4,
+      "role": "assistant",
+      "text": "Thank you for sharing your plans. To proceed, could you please let me know the departure airport and the number of passengers traveling with you?",
+      "askUser": []
+    },
+    {
+      "turn": 5,
+      "role": "user",
+      "text": "I want to stay for five days."
+    },
+    {
+      "turn": 5,
+      "role": "assistant",
+      "text": "Thank you for sharing your plans. To proceed, could you please let me know the departure airport and the number of passengers traveling with you?",
+      "askUser": []
+    },
+    {
+      "turn": 6,
+      "role": "user",
+      "text": "Departure is the next saturday, and arrival five days after that."
+    },
+    {
+      "turn": 6,
+      "role": "assistant",
+      "text": "Thank you for sharing your plans. To proceed, could you please let me know the departure airport and the number of passengers traveling with you?",
+      "askUser": []
+    },
+    {
+      "turn": 7,
+      "role": "user",
+      "text": "Next saturday"
+    },
+    {
+      "turn": 7,
+      "role": "assistant",
+      "text": "Thank you for sharing your plans. To proceed, could you please let me know the departure airport and the number of passengers traveling with you?",
+      "askUser": []
+    },
+    {
+      "turn": 8,
+      "role": "user",
+      "text": "Next saturday"
+    },
+    {
+      "turn": 8,
+      "role": "assistant",
+      "text": "Thank you for sharing your plans. To proceed, could you please let me know the departure airport and the number of passengers traveling with you?",
+      "askUser": []
+    }
+  ]
+}

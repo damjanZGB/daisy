@@ -1,0 +1,43 @@
+{
+  "flight": "LH9999",
+  "session": "0aae5c0f-61e4-407a-83cf-bda1d58cd552",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi there! I am Leo, your Lufthansa Group travel navigator. Tell me—if you could fly anywhere soon, what would feel exciting right now?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "I'm sorry, but there are no flights available from Zapresic, Croatia to Zurich on October 25, 2025. Would you like to search for flights from a different origin or on different dates?",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "I can be connecting flight",
+      "assistant": "Could you please specify your destination, departure date, and the number of passengers? Also, is the default origin (ZAG) acceptable for your trip?",
+      "trace": []
+    },
+    {
+      "turn": 4,
+      "user": "Show me the alternatives",
+      "assistant": "Could you please clarify what kind of alternatives you are looking for? Are you interested in flight alternatives, destination alternatives, or something else?",
+      "trace": []
+    },
+    {
+      "turn": 5,
+      "user": "Show me the alternatives. Inspire me",
+      "assistant": "If you could fly anywhere soon, which destination or city would feel exciting right now?",
+      "trace": []
+    },
+    {
+      "turn": 6,
+      "user": "Yes. Show me the alternatives",
+      "assistant": "Could you please specify your destination airport or city?",
+      "trace": []
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+[
+  {
+    "alias": "paul",
+    "sessionId": "paul-hard-199fd38c215",
+    "ok": false,
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\hard_tests\\paul_paul-hard-199fd38c215.json",
+    "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+  },
+  {
+    "alias": "bianca",
+    "sessionId": "bianca-hard-199fd38e2e7",
+    "ok": false,
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\hard_tests\\bianca_bianca-hard-199fd38e2e7.json",
+    "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+  },
+  {
+    "alias": "gina",
+    "sessionId": "gina-hard-199fd38fef7",
+    "ok": false,
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\hard_tests\\gina_gina-hard-199fd38fef7.json",
+    "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+  }
+]

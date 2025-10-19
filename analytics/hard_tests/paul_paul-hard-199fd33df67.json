@@ -1,0 +1,34 @@
+{
+  "ok": false,
+  "sessionId": "paul-hard-199fd33df67",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Hello and welcome aboard the Lufthansa Group experience. I am Aris, your digital travel orchestrator. Tell me—what kind of journey are you envisioning today?",
+      "askUser": []
+    },
+    {
+      "turn": 2,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "text": "Hello again! To help you better, could you please share more details about your travel plans? For instance, where are you planning to go, and when would you like to depart?",
+      "askUser": []
+    },
+    {
+      "turn": 3,
+      "role": "error",
+      "text": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    }
+  ],
+  "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+}

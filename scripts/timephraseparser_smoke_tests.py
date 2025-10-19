@@ -134,6 +134,19 @@ def make_test_cases(timezone: str, expectations: Dict[str, str]) -> List[TestCas
             validator=expect_success,
         ),
         TestCase(
+            name="human_to_future_iso_function_payload",
+            description="Bedrock function invocation shape resolves 'next Saturday'.",
+            payload={
+                "function": "human_to_future_iso",
+                "parameters": [
+                    {"name": "phrase", "value": "next Saturday"},
+                    {"name": "timezone", "value": timezone},
+                    {"name": "locale", "value": json.dumps(["en"])},
+                ],
+            },
+            validator=expect_success,
+        ),
+        TestCase(
             name="normalize_any_literal_date",
             description='Literal "1 Nov 2025" normalizes to 2025-11-01.',
             payload={
@@ -247,4 +260,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

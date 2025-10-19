@@ -38,10 +38,14 @@ const BASE_STATE = {
 };
 
 const SCENARIO = [
-  "Hi! I'm planning a short-notice escape for two adults from Zapresic (default origin ZAG) to Zurich next Saturday evening, returning the following Monday around noon, Lufthansa Group flights only—use the nearest LH airport within 100 km if that helps.",
-  "One more time: keep that default origin without asking for an IATA code, call the time tool for those dates, and move straight to itineraries.",
-  "If Zurich is sold out, pivot to another Central European city that fits those dates and show the ISO-formatted dates you used.",
-  "Please flag if any overnight return involves a layover longer than four hours so I can plan accordingly.",
+  "Hi",
+  "Hi",
+  "I want to go to Zurich. Next saturday.",
+  "Ok",
+  "I want to stay for five days.",
+  "Departure is the next saturday, and arrival five days after that.",
+  "Next saturday",
+  "Next saturday",
 ];
 
 const OUTPUT_DIR = path.join(process.cwd(), "analytics", "hard_tests");

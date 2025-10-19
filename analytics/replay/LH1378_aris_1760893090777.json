@@ -1,0 +1,43 @@
+{
+  "flight": "LH1378",
+  "session": "2a422dff-3f11-44e9-aee7-bdca3aa8ec0b",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hello and welcome aboard the Lufthansa Group experience. I am Aris, your digital travel orchestrator. Tell me—what kind of journey are you envisioning today?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Based on your request to travel to Zurich next Saturday, here are the top flight options available within the Lufthansa Group network from the default departure airport (ZAG):\n\n\n\nSorry, there are no direct flights available from ZAG to ZRH on the requested date. However, here are the top options:\n\n\n\n\nPlease let me know if you would like to adjust your travel dates or consider nearby Lufthansa Group hubs for alternative options.",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Correct. Use default",
+      "assistant": "Could you please specify your travel destination, preferred departure date, and return date if applicable? If you're unsure about any details, we can use the default departure airport, which is Zapresic, Croatia (ZAG).",
+      "trace": []
+    },
+    {
+      "turn": 4,
+      "user": "Zagreb to Zurich, departure, 25.10.2025",
+      "assistant": "It appears there are no available flights from Zagreb to Zurich on the specified date. Would you like to adjust the dates or consider nearby Lufthansa Group destinations?",
+      "trace": []
+    },
+    {
+      "turn": 5,
+      "user": "01.11.2025",
+      "assistant": "The date you provided, \"01.11.2025\", has been converted to the ISO format as \"2025-11-01\". Please confirm if this is the date you intended to use for your travel plans.",
+      "trace": []
+    },
+    {
+      "turn": 6,
+      "user": "Show me the alternatives",
+      "assistant": "Could you please provide the origin, destination, and travel dates for your journey?",
+      "trace": []
+    }
+  ]
+}

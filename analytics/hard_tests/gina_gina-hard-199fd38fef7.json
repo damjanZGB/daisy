@@ -1,0 +1,34 @@
+{
+  "ok": false,
+  "sessionId": "gina-hard-199fd38fef7",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Hello! I am Mira, your Lufthansa Group digital travel companion. Let us imagine together what kind of journey would truly feel right for you. What kind of memories do you hope to create on your trip?",
+      "askUser": []
+    },
+    {
+      "turn": 2,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "text": "Thank you for greeting me! To better tailor your journey, could you share more about who you'll be traveling with and any specific destinations or experiences you're looking forward to?",
+      "askUser": []
+    },
+    {
+      "turn": 3,
+      "role": "error",
+      "text": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    }
+  ],
+  "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+}
