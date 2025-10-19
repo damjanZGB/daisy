@@ -139,6 +139,54 @@ def _month_from_phrase(phrase: Optional[str], reference: Optional[date] = None) 
     return reference.year, reference.month
 
 
+def _canonicalize_theme_tags(raw: List[str], phrase: Optional[str] = None) -> List[str]:
+    """Normalize theme tags to catalog tags.
+
+    Maps common synonyms like 'ski', 'skiing', 'snowboard' to 'winter_sports', etc.
+    """
+    aliases = {
+        "ski": ["winter_sports", "cold", "mountain"],
+        "skiing": ["winter_sports", "cold", "mountain"],
+        "snow": ["winter_sports", "cold", "mountain"],
+        "snowboard": ["winter_sports", "cold", "mountain"],
+        "alps": ["winter_sports", "cold", "mountain"],
+        "winter": ["winter_sports", "cold"],
+        "city": ["city_break"],
+        "city-break": ["city_break"],
+        "city_break": ["city_break"],
+        "weekend": ["city_break"],
+        "urban": ["city_break"],
+        "beach": ["beach", "warm"],
+        "sun": ["beach", "warm"],
+        "sunny": ["beach", "warm"],
+        "seaside": ["beach", "warm"],
+        "coast": ["beach", "warm"],
+        "island": ["beach", "warm"],
+        "resort": ["beach", "warm"],
+    }
+    out: List[str] = []
+    seen = set()
+    def add(tag: str):
+        t = tag.strip().lower()
+        if t and t not in seen:
+            out.append(t)
+            seen.add(t)
+    for t in raw or []:
+        key = str(t).strip().lower()
+        if key in aliases:
+            for mapped in aliases[key]:
+                add(mapped)
+        else:
+            add(key)
+    # Phrase hint (if includes 'ski')
+    if phrase:
+        low = phrase.lower()
+        if any(k in low for k in ("ski", "skiing", "snowboard")):
+            for m in ("winter_sports", "cold", "mountain"):
+                add(m)
+    return out
+
+
 def _parse_month_range(value: Optional[str], reference: Optional[date] = None) -> Tuple[Tuple[int, int], Tuple[int, int]]:
     """Parse a month or month range and return ((start_year, start_month), (end_year, end_month)).
 
@@ -1735,6 +1783,8 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 theme_tags = [str(x).strip().lower() for x in loaded if str(x).strip()]
             else:
                 theme_tags = [s.strip().lower() for s in txt.split(",") if s.strip()]
+        # Canonicalize/expand synonyms so 'skiing' etc. map to 'winter_sports'
+        theme_tags = _canonicalize_theme_tags(theme_tags, month_text)
 
         # Fallback to session default origin if not provided
         if not origin_code:
@@ -1767,6 +1817,9 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     if isinstance(avg, (int, float)) and float(avg) < min_val:
                         continue
             filtered.append(dest)
+        # If user intent was skiing but filter ended empty, relax to all winter_sports
+        if not filtered and ("winter_sports" in theme_set or any(t in theme_set for t in ("ski", "skiing"))):
+            filtered = [d for d in catalog if "winter_sports" in set(str(t).lower() for t in d.get("tags", []))]
         scored: List[Tuple[float, Dict[str, Any], str]] = []
         for d in filtered:
             s, reason = _score_destination(d, theme_set, target_month, origin_code)

@@ -18,6 +18,11 @@ class TestRecommenderHelpers(unittest.TestCase):
         self.assertEqual((y1, m1), (2026, 3))
         self.assertEqual((y2, m2), (2026, 4))
 
+    def test_theme_aliases_skiing(self):
+        tags = lf._canonicalize_theme_tags(["skiing"], "Skiing in December")
+        self.assertIn("winter_sports", tags)
+        self.assertIn("cold", tags)
+
 
 class TestScoring(unittest.TestCase):
     def setUp(self):
@@ -67,4 +72,3 @@ class TestScoring(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
