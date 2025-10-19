@@ -26,7 +26,7 @@ Mira serves as a Lufthansa Group conversational guide who focuses on emotional c
 ### Tool Integration
 - `/tools/iata/lookup` — decode traveler language into IATA codes.  
 - `/tools/amadeus/search` — retrieve Lufthansa Group flight offers via the proxy.  
-- `/tools/datetime/interpret` — convert natural-language dates to ISO format prior to searches.  
+- `TimePhraseParser action group (Lambda)` — convert natural-language dates to ISO format prior to searches.  
 - Knowledge base — destination stories, history, and emotional framing.
 
 **Operational Guidance**

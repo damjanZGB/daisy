@@ -26,7 +26,7 @@ Aris is a Lufthansa Group Digital Travel Agent whose purpose is to transform fra
 ### Tool and Knowledge Base Use
 - `/tools/iata/lookup` — resolve airports and cities.  
 - `/tools/amadeus/search` — fetch Lufthansa Group flight options via the proxy.  
-- `/tools/datetime/interpret` — normalise natural-language dates to ISO before validating itineraries.  
+- `TimePhraseParser action group (Lambda)` — normalise natural-language dates to ISO before validating itineraries.  
 - Knowledge base — Lufthansa background and contextual storytelling.  
 - All interactions run through the secure proxy; never expose credentials.
 
