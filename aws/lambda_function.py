@@ -139,6 +139,28 @@ def _month_from_phrase(phrase: Optional[str], reference: Optional[date] = None) 
     return reference.year, reference.month
 
 
+def _parse_month_range(value: Optional[str], reference: Optional[date] = None) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+    """Parse a month or month range and return ((start_year, start_month), (end_year, end_month)).
+
+    Supports:
+    - "YYYY-MM..YYYY-MM" explicit ranges
+    - Fallback to a single month via _month_from_phrase
+    """
+    if reference is None:
+        reference = datetime.utcnow().date()
+    if not value:
+        y, m = _month_from_phrase(None, reference)
+        return (y, m), (y, m)
+    text = str(value).strip()
+    m = re.fullmatch(r"(\d{4})-(\d{2})\.\.(\d{4})-(\d{2})", text)
+    if m:
+        y1, m1, y2, m2 = int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4))
+        return (y1, m1), (y2, m2)
+    # Minimal natural-language: just resolve first month and mirror
+    y, mon = _month_from_phrase(text, reference)
+    return (y, mon), (y, mon)
+
+
 def _score_destination(dest: dict, theme_tags: set[str], target_month: int, origin_code: Optional[str]) -> tuple[float, str]:
     score = 0.0
     reasons = []
@@ -180,7 +202,13 @@ def _score_destination(dest: dict, theme_tags: set[str], target_month: int, orig
         coords = _load_iata_coords()
         o = coords.get(origin_code.upper())
         d = coords.get(str(dest.get("code", "")).upper())
-        
+        if o and d:
+            km = _haversine_km(o[0], o[1], d[0], d[1])
+            penalty = min(0.4, max(0.0, km / 5000.0 * 0.4))
+            score -= penalty
+            reasons.append(f"dist~{int(km)}km")
+    reason = ", ".join(reasons) if reasons else "tag match"
+    return score, reason
 
 LH_GROUP_CODES = ["LH", "LX", "OS", "SN", "EW", "4Y", "EN"]
 
@@ -1109,6 +1137,68 @@ def _filter_lh_group_offers(offers: List[Dict[str, Any]]) -> List[Dict[str, Any]
     return filtered
 
 
+def search_best_itineraries(
+    origin: str,
+    candidates: List[Dict[str, Any]],
+    month_range_text: Optional[str],
+    *,
+    currency: Optional[str] = None,
+    lh_group_only: bool = True,
+    max_per_destination: int = 2,
+    timeout: float = 8.0,
+) -> List[Dict[str, Any]]:
+    """Minimal multi-destination search aggregator.
+
+    For each candidate destination, try 1 date near mid-month and return up to
+    `max_per_destination` summarized offers ranked by totalPrice.
+    """
+    (start_y, start_m), _end = _parse_month_range(month_range_text)
+    try_day = 15
+    dep_date = f"{start_y:04d}-{start_m:02d}-{try_day:02d}"
+    results: List[Dict[str, Any]] = []
+    for dest in candidates:
+        code = dest.get("code")
+        if not code:
+            continue
+        try:
+            raw = amadeus_search_flight_offers(
+                origin,
+                code,
+                dep_date,
+                None,
+                adults=1,
+                cabin="ECONOMY",
+                nonstop=False,
+                currency=currency,
+                lh_group_only=lh_group_only,
+                max_results=10,
+                timeout=timeout,
+            )
+            offers = _summarize_offers(raw, currency)
+            if offers:
+                top = offers[: max(1, max_per_destination)]
+                results.append(
+                    {
+                        "destination": code,
+                        "date": dep_date,
+                        "offers": top,
+                    }
+                )
+        except Exception as exc:
+            _log("Aggregator search failed for destination", destination=code, error=str(exc))
+            continue
+    # Flatten and pick up to 5 best offers overall
+    flattened: List[Dict[str, Any]] = []
+    for block in results:
+        dest_code = block.get("destination")
+        for offer in block.get("offers") or []:
+            o = dict(offer)
+            o["destination"] = dest_code
+            flattened.append(o)
+    flattened.sort(key=lambda o: float(o.get("totalPrice") or 0))
+    return flattened[:5]
+
+
 # ------------------------ Response wrappers ------------------------
 
 
@@ -1418,6 +1508,117 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
         except Exception as e:
             _log("Function IATA lookup error", term=term, error=str(e))
             return _wrap_function(event, 502, {"error": str(e)[:1200]})
+
+    if func_name == "recommend_destinations":
+        _log("Handling function event", function=func_name)
+        params = event.get("parameters", [])
+        origin_code = _get_param(params, "originCode")
+        month_text = _get_param(params, "month")
+        month_range_text = _get_param(params, "monthRange") or month_text
+        theme_raw = _get_param(params, "themeTags")
+        min_avg_high = _get_param(params, "minAvgHighC")
+        max_candidates = _to_int(_get_param(params, "maxCandidates", 8), 8)
+        with_itins = _to_bool(_get_param(params, "withItineraries", False), False)
+        currency = _get_param(params, "currency") or (os.getenv("DEFAULT_CURRENCY") or "EUR")
+
+        # Accept JSON array or comma-separated string for themeTags
+        theme_tags: List[str] = []
+        if isinstance(theme_raw, list):
+            theme_tags = [str(x).strip().lower() for x in theme_raw if str(x).strip()]
+        elif isinstance(theme_raw, str):
+            txt = theme_raw.strip()
+            loaded = None
+            try:
+                loaded = json.loads(txt)
+            except Exception:
+                loaded = None
+            if isinstance(loaded, list):
+                theme_tags = [str(x).strip().lower() for x in loaded if str(x).strip()]
+            else:
+                theme_tags = [s.strip().lower() for s in txt.split(",") if s.strip()]
+
+        # Fallback to session default origin if not provided
+        if not origin_code:
+            origin_code = (event.get("sessionAttributes") or {}).get("default_origin")
+
+        # Resolve target month for scoring
+        (year, target_month), _ = _parse_month_range(month_range_text)
+        theme_set = set(theme_tags)
+        catalog = _load_catalog()
+        if not catalog:
+            _log("Destination catalog is empty")
+            return _wrap_function(
+                event,
+                200,
+                {"message": "Destination catalog not available yet. Please try again later."},
+            )
+        # Filter by theme if provided
+        filtered = []
+        for dest in catalog:
+            tags = set(str(t).lower() for t in dest.get("tags", []))
+            if theme_set and not (theme_set & tags):
+                continue
+            if min_avg_high is not None:
+                try:
+                    min_val = float(min_avg_high)
+                except Exception:
+                    min_val = None
+                if min_val is not None:
+                    avg = (dest.get("avgHighCByMonth") or {}).get(str(target_month))
+                    if isinstance(avg, (int, float)) and float(avg) < min_val:
+                        continue
+            filtered.append(dest)
+        scored: List[Tuple[float, Dict[str, Any], str]] = []
+        for d in filtered:
+            s, reason = _score_destination(d, theme_set, target_month, origin_code)
+            scored.append((s, d, reason))
+        scored.sort(key=lambda t: t[0], reverse=True)
+        top = scored[: max(1, max_candidates)]
+        candidates = [
+            {
+                "code": d.get("code"),
+                "city": d.get("city"),
+                "country": d.get("country"),
+                "score": round(float(s), 3),
+                "reason": r,
+                "tags": d.get("tags") or [],
+            }
+            for (s, d, r) in top
+        ]
+        payload: Dict[str, Any] = {
+            "generatedAt": _now_iso(),
+            "query": {
+                "originCode": origin_code,
+                "month": month_text,
+                "monthRange": month_range_text,
+                "themeTags": theme_tags,
+                "minAvgHighC": min_avg_high,
+                "maxCandidates": max_candidates,
+            },
+            "candidates": candidates,
+        }
+        # Optional: try aggregator if requested and origin is present
+        if with_itins and origin_code and candidates:
+            try:
+                options = search_best_itineraries(
+                    origin_code,
+                    [d for (_, d, _) in top],
+                    month_range_text,
+                    currency=currency,
+                    lh_group_only=True,
+                )
+                payload["options"] = options
+            except Exception as exc:
+                _log("Itinerary aggregator failed", error=str(exc))
+        _log(
+            "Destination recommendations prepared",
+            origin=origin_code,
+            month=month_text,
+            monthRange=month_range_text,
+            themeTags=theme_tags,
+            candidates=len(candidates),
+        )
+        return _wrap_function(event, 200, payload)
 
     if func_name == "datetime_interpret":
         _log(

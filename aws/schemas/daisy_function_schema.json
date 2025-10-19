@@ -1,0 +1,51 @@
+{
+  "functions": [
+    {
+      "name": "recommend_destinations",
+      "description": "Suggest LH-Group destinations for a given theme and month, optionally returning top flight options.",
+      "parameters": {
+        "originCode": {
+          "type": "string",
+          "required": false,
+          "description": "Origin IATA code (defaults to session's inferred origin if omitted)."
+        },
+        "month": {
+          "type": "string",
+          "required": false,
+          "description": "Target month or phrase (e.g., 'March next year' or '2026-03')."
+        },
+        "monthRange": {
+          "type": "string",
+          "required": false,
+          "description": "Explicit range 'YYYY-MM..YYYY-MM'. If present, takes precedence over 'month'."
+        },
+        "themeTags": {
+          "type": "string",
+          "required": false,
+          "description": "JSON array or comma-separated list of themes, e.g. ['beach','warm'] or 'beach,warm'."
+        },
+        "minAvgHighC": {
+          "type": "number",
+          "required": false,
+          "description": "Minimum average high temperature (C) in the target month."
+        },
+        "maxCandidates": {
+          "type": "number",
+          "required": false,
+          "description": "Maximum number of destination candidates to return (default 8)."
+        },
+        "withItineraries": {
+          "type": "boolean",
+          "required": false,
+          "description": "If true and origin is known, also search best itineraries for top candidates."
+        },
+        "currency": {
+          "type": "string",
+          "required": false,
+          "description": "Preferred currency code for pricing (default ENV or EUR)."
+        }
+      }
+    }
+  ]
+}
+

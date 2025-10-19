@@ -33,7 +33,7 @@ Deliverables
 Implementation Plan (small steps)
 
 1) Seed Data Catalog (repo)
-- [ ] Create `data/lh_destinations_catalog.json` with array of objects:
+- [x] Create `data/lh_destinations_catalog.json` with array of objects:
   - `code` (IATA), `city`, `country`
   - `tags`: e.g., ["beach","warm"], ["winter_sports","cold"], ["city_break"], ["surf"], ["family"], etc.
   - `avgHighCByMonth`: map "1".."12" → number
@@ -45,10 +45,10 @@ Implementation Plan (small steps)
   - Warm/beach (Spring): TFS, LPA, AGP, ALC, PMI, FNC, AYT, HRG, RMF
   - Winter sports (Jan–Feb): INN, SZG, ZRH, GVA, MUC, TRN, LYS, SOF, GNB
   - City break (mild spring): BCN, LIS, NCE, ATH, IST (filter via LH‑Group at runtime)
-- [ ] Add `scripts/validate_catalog.py` to sanity‑check fields and month keys.
+- [x] Add `scripts/validate_catalog.py` to sanity-check fields and month keys.
 
 2) Lambda: Destination Recommender
-- [ ] In `aws/lambda_function.py` add handler branch `recommend_destinations` (function‑details path):
+- [x] In `aws/lambda_function.py` add handler branch `recommend_destinations` (function-details path):
   - Inputs: `originCode?`, `month?` or `monthRange?`, `themeTags[]` (e.g., ["beach","warm"]).
   - Normalize month (use TimePhraseParser Lambda when `month` is a phrase); derive `targetMonth` (1–12) and ISO year.
   - Load catalog (module‑level cache); filter by theme.
@@ -70,6 +70,7 @@ Implementation Plan (small steps)
 - [ ] Extend `daisy_in_action` action group with function schema for `recommend_destinations`:
   - Params: `originCode?` (string), `month?` (string), `monthRange?` (string), `themeTags` (array), `minAvgHighC?` (number), `maxCandidates?` (int, default 8).
   - Return: `candidates[]`.
+- Note: initial schema file added at `aws/schemas/daisy_function_schema.json`.
 - [ ] CLI update (DRAFT):
   - `aws bedrock-agent update-agent-action-group --agent-id <id> --agent-version DRAFT --action-group-id <id> --action-group-name daisy_in_action --function-schema file://aws/schemas/daisy_function_schema.json --region us-west-2`
   - `aws bedrock-agent prepare-agent --agent-id <id> --region us-west-2`
