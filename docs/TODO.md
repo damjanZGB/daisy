@@ -15,6 +15,6 @@
 - [x] Surface replay telemetry via CloudWatch metrics/SNS to highlight regression spikes.
 
 ## Bug Backlog
-- [ ] Monitor /tools/datetime/interpret coverage for additional phrase patterns.
+- [x] Retire /tools/datetime/interpret (handled by TimePhraseParser action group).
 - [ ] Add automated conversation test ensuring inferred origin context reaches all personas.
 

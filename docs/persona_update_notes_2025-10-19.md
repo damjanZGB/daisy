@@ -10,6 +10,7 @@
 7. Added `scripts/report_replay_failures.py` to summarise replay failures (latest-only) so instruction deltas surface quickly after nightly runs.
 8. Updated `aws/replay_lambda.py` to force `lhGroupOnly` to `"true"` for every direct Lambda invocation, guaranteeing searches stay within the Lufthansa Group network.
 9. Removed date-phrase parsing from `aws/lambda_function.py`, redeployed the flight action Lambda, and registered the standalone `TimePhraseParser` Lambda as a new Bedrock action group.
+10. Updated persona instructions (Paul/Aris/Leo/Mira) to call the TimePhraseParser action group and reaffirm Lufthansa-only phrasing before presenting flights.
 
 ## Findings
 - The transcript does not store the OpenAPI payload verbatim, but the message stream consistently exposes enough structured hints (`(ZAG)`, `(BRU)`, ISO-like travel date) to rebuild a working request.
@@ -30,6 +31,8 @@
 ```
 
 ## Replay Validation
+- Replay harness rerun on 2025-10-18 transcripts after agent versions 73/74/75 were published; 13 transcripts, 0 failures.
+- TimePhraseParser Lambda manually invoked (`human_to_future_iso`, `normalize_any`), both returned expected ISO dates.
 - Local test session `replay-test` invoked `daisy_in_action-0k2c0` with the payload above and received a 200 response plus 10 itineraries (JSON summary captured in `aws/replay_lambda.py` step output).
 - Remote `daisy-replay-lambda` run for `targetDate=2025-10-18` now succeeds (1 transcript replayed, 0 failures) once the role is allowed to call the action Lambda directly.
 - Broader replay over all seeded transcripts (Bianca/Gina/Origin/Paul) processed 13 sessions with 0 failures, confirming the heuristic extraction works across personas given structured itinerary hints.
