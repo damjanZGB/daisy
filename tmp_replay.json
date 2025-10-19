@@ -1,1 +1,114 @@
-{"runAt": "2025-10-19T04:32:20.203549Z", "targetDate": "2025-10-19", "totalTranscripts": 5, "results": [{"transcriptKey": "prod/bianca/2025/10/19/bianca/2025-10-19T01-32-25-547Z_8292de7b-dfd1-4ffe-8b42-0c038e5cde27.json", "variant": "bianca", "session": "bianca:8292de7b-dfd1-4ffe-8b42-0c038e5cde27", "success": true, "aliasId": "D84WDVHMZR", "steps": [], "skipped": true, "reason": "no_user_messages"}, {"transcriptKey": "prod/bianca/2025/10/19/bianca/2025-10-19T03-52-05-351Z_c0eb7ba7-62f4-4426-99e6-82c1ccf091fc.json", "variant": "bianca", "session": "bianca:c0eb7ba7-62f4-4426-99e6-82c1ccf091fc", "success": true, "aliasId": "D84WDVHMZR", "steps": [], "skipped": true, "reason": "no_user_messages"}, {"transcriptKey": "prod/bianca/2025/10/19/bianca/2025-10-19T08-15-00Z_lh_only_failure.json", "variant": "bianca", "session": "bianca:bianca-lhonly-failure-01", "success": true, "aliasId": "D84WDVHMZR", "steps": [{"turn": 1, "input": "ZAG->BRU 2025-11-01", "output": "{\n  \"generatedAt\": \"2025-10-19T04:32:07Z\",\n  \"query\": {\n    \"origin\": \"ZAG\",\n    \"destination\": \"BRU\",\n    \"departureDate\": \"2025-11-01\",\n    \"returnDate\": null,\n    \"adults\": 1,\n    \"cabin\": \"ECONOMY\",\n    \"nonstop\": false,\n    \"currency\": \"EUR\",\n    \"lhGroupOnly\": true,\n    \"max\": 10\n  },\n  \"offers\": [],\n  \"provider\": \"Amadeus Flight Offers Search v2\",\n  \"debugLog\": [\n    {\n      \"time\": \"2025-10-19T04:32:04Z\",\n      \"message\": \"Lambda invocation started\",\n      \"details\": {\n        \"event_keys\": \"[\\\"messageVersion\\\", \\\"actionGroup\\\", \\\"apiPath\\\", \\\"httpMethod\\\", \\\"sessionId\\\", \\\"agent\\\", \\\"sessionAttributes\\\", \\\"promptSessionAttributes\\\", \\\"parameters\\\", \\\"requestBody\\\"]\",\n        \"has_context\": \"True\"\n      }\n    },\n    {\n      \"time\": \"2025-10-19T04:32:04Z\",\n      \"message\": \"Routing to OpenAPI handler\"\n    },\n    {\n      \"time\": \"2025-10-19T04:32:04Z\",\n      \"message\": \"Handling OpenAPI event\",\n      \"details\": {\n        \"api_path\": \"/tools/amadeus/search\"\n      }\n    },\n    {\n      \"time\": \"2025-10-19T04:32:04Z\",\n      \"message\": \"OpenAPI request body parsed\",\n      \"details\": {\n        \"keys\": \"[\\\"originLocationCode\\\", \\\"destinationLocationCode\\\", \\\"departureDate\\\", \\\"adults\\\", \\\"travelClass\\\", \\\"currencyCode\\\", \\\"max\\\", \\\"lhGroupOnly\\\"]\"\n      }\n    },\n    {\n      \"time\": \"2025-10-19T04:32:04Z\",\n      \"message\": \"OpenAPI normalized flight fields\",\n      \"details\": {\n        \"normalized\": \"{\\\"origin\\\": \\\"ZAG\\\", \\\"destination\\\": \\\"BRU\\\", \\\"departureDate\\\": \\\"2025-11-01\\\", \\\"adults\\\": \\\"1\\\", \\\"cabin\\\": \\\"ECONOMY\\\", \\\"currency\\\": \\\"EUR\\\", \\\"max\\\": \\\"10\\\", \\\"lhGroupOnly\\\": \\\"true\\\"}\"\n      }\n    },\n    {\n      \"time\": \"2025-10-19T04:32:04Z\",\n      \"message\": \"Resolve IATA: attempting normalization\",\n      \"details\": {\n        \"raw\": \"ZAG\"\n      }\n    },\n    {\n      \"time\": \"2025-10-19T04:32:04Z\",\n      \"message\": \"Resolve IATA: normalized successfully\",\n      \"details\": {\n        \"code\": \"ZAG\"\n      }\n    },\n    {\n      \"time\": \"2025-10-19T04:32:04Z\",\n      \"...", "success": true, "transport": "lambda", "statusCode": 200, "offersFound": false, "itinerary": {"originLocationCode": "ZAG", "destinationLocationCode": "BRU", "departureDate": "2025-11-01", "adults": "1", "travelClass": "ECONOMY", "currencyCode": "EUR", "max": "10", "lhGroupOnly": "true"}, "extraction": "heuristic"}]}, {"transcriptKey": "prod/gina/2025/10/19/gina/2025-10-19T01-32-19-574Z_b5a7da3f-3a12-4e1d-8a80-eb5d52fac061.json", "variant": "gina", "session": "gina:b5a7da3f-3a12-4e1d-8a80-eb5d52fac061", "success": true, "aliasId": "UY0U7MRMDK", "steps": [], "skipped": true, "reason": "no_user_messages"}, {"transcriptKey": "prod/gina/2025/10/19/gina/2025-10-19T03-52-03-354Z_22a004de-c74b-4869-aef5-85eec3f9de30.json", "variant": "gina", "session": "gina:22a004de-c74b-4869-aef5-85eec3f9de30", "success": true, "aliasId": "UY0U7MRMDK", "steps": [{"turn": 1, "input": "Hi", "output": "Hello, I am Mira, your Lufthansa Group digital travel companion. Let us imagine together what kind of journey would truly feel right for you. What kind of memories do you hope to create on your trip?", "success": true}, {"turn": 2, "input": "I want to go to Zurich next saturday", "output": "<user__askuser question=\"Could you please confirm the departure airport? If you're unsure, I can suggest a default based on your location. Also, how many adults will be traveling with you?\">", "success": true}, {"turn": 3, "input": "Yes", "output": "<user__askuser question=\"It seems you didn't specify a departure airport. Could you please confirm the departure airport? If you're unsure, I can suggest a default based on your location. Also, how many adults will be traveling with you?\">", "success": true}, {"turn": 4, "input": "Yes", "output": "<user__askuser question=\"It seems you didn't specify a departure airport. Could you please confirm the departure airport? If you're unsure, I can suggest a default based on your location. Also, how many adults will be traveling with you?\">", "success": true}, {"turn": 5, "input": "I confirm the default", "output": "<user__askuser question=\"Thank you for confirming the default departure airport. Now, could you please tell me how many adults will be traveling with you?\">", "success": true}, {"turn": 6, "input": "ZAG", "output": "<user__askuser question=\"Thank you for providing the departure airport. Now, could you please tell me how many adults will be traveling with you?\">", "success": true}]}], "variantStats": {"bianca": {"total": 3, "failed": 0}, "gina": {"total": 2, "failed": 0}}}
+{
+    "runAt": "2025-10-19T04:13:49.324914Z",
+    "targetDate": "2025-10-19",
+    "totalTranscripts": 5,
+    "results": [
+        {
+            "transcriptKey": "prod/bianca/2025/10/19/bianca/2025-10-19T01-32-25-547Z_8292de7b-dfd1-4ffe-8b42-0c038e5cde27.json",
+            "variant": "bianca",
+            "session": "bianca:8292de7b-dfd1-4ffe-8b42-0c038e5cde27",
+            "success": false,
+            "aliasId": "D84WDVHMZR",
+            "steps": []
+        },
+        {
+            "transcriptKey": "prod/bianca/2025/10/19/bianca/2025-10-19T03-52-05-351Z_c0eb7ba7-62f4-4426-99e6-82c1ccf091fc.json",
+            "variant": "bianca",
+            "session": "bianca:c0eb7ba7-62f4-4426-99e6-82c1ccf091fc",
+            "success": false,
+            "aliasId": "D84WDVHMZR",
+            "steps": []
+        },
+        {
+            "transcriptKey": "prod/bianca/2025/10/19/bianca/2025-10-19T08-15-00Z_lh_only_failure.json",
+            "variant": "bianca",
+            "session": "bianca:bianca-lhonly-failure-01",
+            "success": false,
+            "aliasId": "D84WDVHMZR",
+            "steps": [
+                {
+                    "turn": 1,
+                    "input": "ZAG->BRU 2025-11-01",
+                    "output": "{\n  \"generatedAt\": \"2025-10-19T04:13:34Z\",\n  \"query\": {\n    \"origin\": \"ZAG\",\n    \"destination\": \"BRU\",\n    \"departureDate\": \"2025-11-01\",\n    \"returnDate\": null,\n    \"adults\": 1,\n    \"cabin\": \"ECONOMY\",\n    \"nonstop\": false,\n    \"currency\": \"EUR\",\n    \"lhGroupOnly\": true,\n    \"max\": 10\n  },\n  \"offers\": [],\n  \"provider\": \"Amadeus Flight Offers Search v2\",\n  \"debugLog\": [\n    {\n      \"time\": \"2025-10-19T04:13:32Z\",\n      \"message\": \"Lambda invocation started\",\n      \"details\": {\n        \"event_keys\": \"[\\\"messageVersion\\\", \\\"actionGroup\\\", \\\"apiPath\\\", \\\"httpMethod\\\", \\\"sessionId\\\", \\\"agent\\\", \\\"sessionAttributes\\\", \\\"promptSessionAttributes\\\", \\\"parameters\\\", \\\"requestBody\\\"]\",\n        \"has_context\": \"True\"\n      }\n    },\n    {\n      \"time\": \"2025-10-19T04:13:32Z\",\n      \"message\": \"Routing to OpenAPI handler\"\n    },\n    {\n      \"time\": \"2025-10-19T04:13:32Z\",\n      \"message\": \"Handling OpenAPI event\",\n      \"details\": {\n        \"api_path\": \"/tools/amadeus/search\"\n      }\n    },\n    {\n      \"time\": \"2025-10-19T04:13:32Z\",\n      \"message\": \"OpenAPI request body parsed\",\n      \"details\": {\n        \"keys\": \"[\\\"originLocationCode\\\", \\\"destinationLocationCode\\\", \\\"departureDate\\\", \\\"adults\\\", \\\"travelClass\\\", \\\"currencyCode\\\", \\\"max\\\", \\\"lhGroupOnly\\\"]\"\n      }\n    },\n    {\n      \"time\": \"2025-10-19T04:13:32Z\",\n      \"message\": \"OpenAPI normalized flight fields\",\n      \"details\": {\n        \"normalized\": \"{\\\"origin\\\": \\\"ZAG\\\", \\\"destination\\\": \\\"BRU\\\", \\\"departureDate\\\": \\\"2025-11-01\\\", \\\"adults\\\": \\\"1\\\", \\\"cabin\\\": \\\"ECONOMY\\\", \\\"currency\\\": \\\"EUR\\\", \\\"max\\\": \\\"10\\\", \\\"lhGroupOnly\\\": \\\"true\\\"}\"\n      }\n    },\n    {\n      \"time\": \"2025-10-19T04:13:32Z\",\n      \"message\": \"Resolve IATA: attempting normalization\",\n      \"details\": {\n        \"raw\": \"ZAG\"\n      }\n    },\n    {\n      \"time\": \"2025-10-19T04:13:32Z\",\n      \"message\": \"Resolve IATA: normalized successfully\",\n      \"details\": {\n        \"code\": \"ZAG\"\n      }\n    },\n    {\n      \"time\": \"2025-10-19T04:13:32Z\",\n      \"...",
+                    "success": false,
+                    "transport": "lambda",
+                    "statusCode": 200,
+                    "itinerary": {
+                        "originLocationCode": "ZAG",
+                        "destinationLocationCode": "BRU",
+                        "departureDate": "2025-11-01",
+                        "adults": "1",
+                        "travelClass": "ECONOMY",
+                        "currencyCode": "EUR",
+                        "max": "10",
+                        "lhGroupOnly": "true"
+                    },
+                    "extraction": "heuristic"
+                }
+            ]
+        },
+        {
+            "transcriptKey": "prod/gina/2025/10/19/gina/2025-10-19T01-32-19-574Z_b5a7da3f-3a12-4e1d-8a80-eb5d52fac061.json",
+            "variant": "gina",
+            "session": "gina:b5a7da3f-3a12-4e1d-8a80-eb5d52fac061",
+            "success": false,
+            "aliasId": "UY0U7MRMDK",
+            "steps": []
+        },
+        {
+            "transcriptKey": "prod/gina/2025/10/19/gina/2025-10-19T03-52-03-354Z_22a004de-c74b-4869-aef5-85eec3f9de30.json",
+            "variant": "gina",
+            "session": "gina:22a004de-c74b-4869-aef5-85eec3f9de30",
+            "success": true,
+            "aliasId": "UY0U7MRMDK",
+            "steps": [
+                {
+                    "turn": 1,
+                    "input": "Hi",
+                    "output": "Hello, I am Mira, your Lufthansa Group digital travel companion. Let us imagine together what kind of journey would truly feel right for you. What kind of memories do you hope to create on your trip?",
+                    "success": true
+                },
+                {
+                    "turn": 2,
+                    "input": "I want to go to Zurich next saturday",
+                    "output": "Thank you for sharing your travel plans. To proceed, could you please confirm the departure airport? Also, how many adults will be traveling?",
+                    "success": true
+                },
+                {
+                    "turn": 3,
+                    "input": "Yes",
+                    "output": "Thank you for sharing your travel plans. To proceed, could you please confirm the departure airport? Also, how many adults will be traveling?",
+                    "success": true
+                },
+                {
+                    "turn": 4,
+                    "input": "Yes",
+                    "output": "Thank you for sharing your travel plans. To proceed, could you please confirm the departure airport? Also, how many adults will be traveling?",
+                    "success": true
+                },
+                {
+                    "turn": 5,
+                    "input": "I confirm the default",
+                    "output": "Thank you for confirming the departure airport. To proceed, could you please let me know how many adults will be traveling?",
+                    "success": true
+                },
+                {
+                    "turn": 6,
+                    "input": "ZAG",
+                    "output": "Thank you for confirming the departure airport. To proceed, could you please let me know how many adults will be traveling?",
+                    "success": true
+                }
+            ]
+        }
+    ],
+    "variantStats": {
+        "bianca": {
+            "total": 3,
+            "failed": 3
+        },
+        "gina": {
+            "total": 2,
+            "failed": 1
+        }
+    }
+}
