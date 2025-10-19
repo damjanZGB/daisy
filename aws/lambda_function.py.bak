@@ -239,9 +239,9 @@ def _normalise_phrase_tokens(raw: str) -> List[str]:
     if not raw:
         return []
     text = _strip_trailing_punctuation(raw)
-    # Replace unicode dashes with spaces before stripping separators so �next�Saturday� works.
-    text = text.replace("�", " ").replace("�", " ")
-    text = text.replace("�", "'")
+    # Replace unicode dashes with spaces before stripping separators so ï¿½nextï¿½Saturdayï¿½ works.
+    text = text.replace("ï¿½", " ").replace("ï¿½", " ")
+    text = text.replace("ï¿½", "'")
     text = re.sub(r"[,\-/]", " ", text)
     text = re.sub(r"[()]", " ", text)
     text = _NON_WORD_RE.sub(" ", text)
@@ -306,7 +306,7 @@ class InvocationLogger:
         return bool(self.entries)
 
     def export(self) -> List[Dict[str, Any]]:
-        return list(self.entries)
+    return list(self.entries)
 
     def as_text(self) -> str:
         lines = []
@@ -1623,6 +1623,7 @@ def lambda_handler(event, context):
         raise
     finally:
         _CURRENT_LOGGER.reset(token)
+
 
 
 
