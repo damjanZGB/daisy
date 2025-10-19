@@ -1,0 +1,34 @@
+{
+  "ok": false,
+  "sessionId": "paul-hard-199fb597377",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi! I am cobbling together a short notice inspiration trip."
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Could you please specify the destination, travel dates, and the number of travelers for your trip?",
+      "askUser": []
+    },
+    {
+      "turn": 2,
+      "role": "user",
+      "text": "I'm leaning toward Zurich next Saturday evening, back the Monday after that around noon — can you shape something Lufthansa Group exclusive?"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "text": "Could you please confirm the exact travel dates? The trip is next Saturday evening and back on the Monday after that around noon. What are the specific dates?",
+      "askUser": []
+    },
+    {
+      "turn": 3,
+      "role": "error",
+      "text": "DependencyFailedException: APIPath in Lambda response doesn't match input. Check that the APIPath in the input and response match and retry the request."
+    }
+  ],
+  "error": "DependencyFailedException: APIPath in Lambda response doesn't match input. Check that the APIPath in the input and response match and retry the request."
+}

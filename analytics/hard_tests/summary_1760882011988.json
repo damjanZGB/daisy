@@ -1,0 +1,9 @@
+[
+  {
+    "alias": "bianca",
+    "sessionId": "bianca-hard-199fcbf243d",
+    "ok": false,
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\hard_tests\\bianca_bianca-hard-199fcbf243d.json",
+    "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+  }
+]

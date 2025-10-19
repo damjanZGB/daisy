@@ -1,0 +1,71 @@
+passport number
+booking reference
+phone number
+email address
+credit card
+ssn
+politics
+election
+religion
+church
+medical advice
+financial advice
+skyscanner
+google flights
+kayak
+expedia
+momondo
+passnummer
+buchungsnummer
+telefonnummer
+e-mail-adresse
+kreditkarte
+sozialversicherungsnummer
+politik
+wahl
+kirche
+medizinischer rat
+finanzberatung
+numéro de passeport
+référence de réservation
+numéro de téléphone
+adresse e-mail
+carte de crédit
+numéro de sécurité sociale
+politique
+élection
+religion
+église
+conseil médical
+conseil financier
+número de pasaporte
+localizador de reserva
+número de teléfono
+correo electrónico
+tarjeta de crédito
+número de seguridad social
+política
+elección
+iglesia
+asesoramiento médico
+asesoramiento financiero
+numero di passaporto
+codice di prenotazione
+numero di telefono
+indirizzo email
+carta di credito
+codice fiscale
+consiglio medico
+consiglio finanziario
+número de passaporte
+código de reserva
+número de telefone
+endereço de e-mail
+cartão de crédito
+número de segurança social
+política
+eleição
+religião
+igreja
+aconselhamento médico
+aconselhamento financeiro

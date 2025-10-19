@@ -1,0 +1,25 @@
+{
+  "ok": false,
+  "sessionId": "gina-hard-199fb59a806",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi! I am cobbling together a short notice inspiration trip."
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Could you please share the origin airport, destination city, travel dates, and the number of travelers for your trip? This will help me tailor your journey to your needs.",
+      "askUser": [
+        "Could you please share the origin airport, destination city, travel dates, and the number of travelers for your trip? This will help me tailor your journey to your needs."
+      ]
+    },
+    {
+      "turn": 2,
+      "role": "error",
+      "text": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    }
+  ],
+  "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+}

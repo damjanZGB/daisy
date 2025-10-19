@@ -1,0 +1,45 @@
+{
+  "ok": false,
+  "sessionId": "bianca-hard-199fadf39c7",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi! I am cobbling together a short notice inspiration trip."
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Could you please share your preferred destination and travel dates for this trip? If you have any specific preferences, such as a preferred time of day for departure or arrival, let me know!",
+      "askUser": []
+    },
+    {
+      "turn": 2,
+      "role": "user",
+      "text": "I'm leaning toward Zurich next Saturday evening, back the Monday after that around noon — can you shape something Lufthansa Group exclusive?"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "text": "Great choice! How many passengers will be traveling, and do you have any other preferences for the flight, such as a specific time of day or class preference?",
+      "askUser": []
+    },
+    {
+      "turn": 3,
+      "role": "user",
+      "text": "Please keep the origin flexible: use my nearest airport if helpful, otherwise anything within 100km of my current spot in Zaprešić."
+    },
+    {
+      "turn": 3,
+      "role": "assistant",
+      "text": "Thank you for the details! Now, could you please specify the number of passengers and any other preferences you might have, such as a specific time of day or class preference?",
+      "askUser": []
+    },
+    {
+      "turn": 4,
+      "role": "error",
+      "text": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    }
+  ],
+  "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+}

@@ -1,0 +1,38 @@
+{
+  "ok": false,
+  "sessionId": "paul-hard-199fadf180a",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi! I am cobbling together a short notice inspiration trip."
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Hello! To help you plan your trip, could you please provide the following details:\\n1. The origin airport (or city if you prefer)\\n2. The destination airport (or city if you prefer)\\n3. Your preferred travel dates (including return if applicable)?",
+      "askUser": [
+        "Hello! To help you plan your trip, could you please provide the following details:\\n1. The origin airport (or city if you prefer)\\n2. The destination airport (or city if you prefer)\\n3. Your preferred travel dates (including return if applicable)?"
+      ]
+    },
+    {
+      "turn": 2,
+      "role": "user",
+      "text": "I'm leaning toward Zurich next Saturday evening, back the Monday after that around noon — can you shape something Lufthansa Group exclusive?"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "text": "Thank you for the details. To proceed, could you please confirm the following:\\n1. The origin airport (I've inferred it as ZAG, Zagreb, Croatia, but please confirm)\\n2. The exact dates in the format 'YYYY-MM-DD' for both departure and return.",
+      "askUser": [
+        "Thank you for the details. To proceed, could you please confirm the following:\\n1. The origin airport (I've inferred it as ZAG, Zagreb, Croatia, but please confirm)\\n2. The exact dates in the format 'YYYY-MM-DD' for both departure and return."
+      ]
+    },
+    {
+      "turn": 3,
+      "role": "error",
+      "text": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    }
+  ],
+  "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+}

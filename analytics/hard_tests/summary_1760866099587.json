@@ -1,0 +1,9 @@
+[
+  {
+    "alias": "bianca",
+    "sessionId": "bianca-hard-199fbca9bf1",
+    "ok": false,
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\hard_tests\\bianca_bianca-hard-199fbca9bf1.json",
+    "error": "DependencyFailedException: Dependency resource: received model timeout/error exception from Bedrock. Try the request again."
+  }
+]

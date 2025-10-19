@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "sessionId": "bianca-hard-199fbca9bf1",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "error",
+      "text": "DependencyFailedException: Dependency resource: received model timeout/error exception from Bedrock. Try the request again."
+    }
+  ],
+  "error": "DependencyFailedException: Dependency resource: received model timeout/error exception from Bedrock. Try the request again."
+}

@@ -1,0 +1,45 @@
+{
+  "ok": false,
+  "sessionId": "gina-hard-199fae5e5d6",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi! I am cobbling together a short notice inspiration trip."
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Hello! To help you plan your short notice trip, could you please share the destination you're considering, the travel dates, and the number of travelers?",
+      "askUser": []
+    },
+    {
+      "turn": 2,
+      "role": "user",
+      "text": "I'm leaning toward Zurich next Saturday evening, back the Monday after that around noon — can you shape something Lufthansa Group exclusive?"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "text": "Thank you for sharing your travel plans! Could you please let me know the number of travelers joining you on this trip?",
+      "askUser": []
+    },
+    {
+      "turn": 3,
+      "role": "user",
+      "text": "Please keep the origin flexible: use my nearest airport if helpful, otherwise anything within 100km of my current spot in Zaprešić."
+    },
+    {
+      "turn": 3,
+      "role": "assistant",
+      "text": "Thank you for sharing your travel plans! Could you please let me know the number of travelers joining you on this trip?",
+      "askUser": []
+    },
+    {
+      "turn": 4,
+      "role": "error",
+      "text": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    }
+  ],
+  "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+}

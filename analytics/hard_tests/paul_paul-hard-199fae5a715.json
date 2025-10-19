@@ -1,0 +1,23 @@
+{
+  "ok": false,
+  "sessionId": "paul-hard-199fae5a715",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi! I am cobbling together a short notice inspiration trip."
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Could you please specify your travel destination and the dates you're considering for your trip?",
+      "askUser": []
+    },
+    {
+      "turn": 2,
+      "role": "error",
+      "text": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    }
+  ],
+  "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+}
