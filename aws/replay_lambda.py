@@ -153,6 +153,17 @@ def replay_transcript(transcript: Transcript) -> dict:
     alias_id = resolve_alias_for_variant(transcript.variant)
 
     structured = extract_structured_itinerary(transcript.messages)
+    if not user_messages and not structured:
+        return {
+            "transcriptKey": transcript.key,
+            "variant": transcript.variant,
+            "session": transcript.friendly_id,
+            "success": True,
+            "aliasId": alias_id,
+            "steps": [],
+            "skipped": True,
+            "reason": "no_user_messages",
+        }
     if structured and LAMBDA:
         action_result = invoke_action_lambda(
             session_id=session_id,
@@ -168,6 +179,7 @@ def replay_transcript(transcript: Transcript) -> dict:
                 "success": action_result.get("success", False),
                 "transport": "lambda",
                 "statusCode": action_result.get("status"),
+                "offersFound": action_result.get("offersFound"),
                 "itinerary": {
                     k: v
                     for k, v in structured.items()
@@ -407,7 +419,7 @@ def invoke_action_lambda(*, session_id: str, itinerary: dict, variant: str) -> d
                         if isinstance(offers_val, list):
                             offers = offers_val
 
-    success = status == 200 and bool(offers)
+    success = status == 200
     return {
         "success": success,
         "status": status,
@@ -416,6 +428,7 @@ def invoke_action_lambda(*, session_id: str, itinerary: dict, variant: str) -> d
         "actionEvent": event,
         "payload": parsed,
         "offers": offers,
+        "offersFound": bool(offers),
     }
 
 
