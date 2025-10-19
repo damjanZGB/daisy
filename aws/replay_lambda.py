@@ -319,9 +319,11 @@ def apply_itinerary_defaults(values: dict) -> Optional[dict]:
     result.setdefault("currencyCode", "EUR")
     result.setdefault("max", "10")
 
-    for field in ("nonstop", "lhGroupOnly"):
-        if field in result:
-            result[field] = normalize_bool(result[field])
+    if "nonstop" in result:
+        result["nonstop"] = normalize_bool(result["nonstop"])
+
+    # Always enforce Lufthansa Group filtering regardless of transcript content.
+    result["lhGroupOnly"] = "true"
 
     return result
 
@@ -437,7 +439,8 @@ def build_action_event(*, session_id: str, itinerary: dict, variant: str) -> dic
     add_property("currencyCode", itinerary.get("currencyCode"))
     add_property("max", itinerary.get("max"))
     add_property("nonstop", itinerary.get("nonstop"))
-    add_property("lhGroupOnly", itinerary.get("lhGroupOnly"))
+    # Force Lufthansa Group filtering in the outbound payload.
+    properties.append({"name": "lhGroupOnly", "value": "true"})
 
     event = {
         "messageVersion": "1.0",

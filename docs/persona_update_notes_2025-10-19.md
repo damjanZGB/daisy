@@ -7,6 +7,8 @@
 4. Ran a local validation script that replays the extracted payload against the action Lambda; the invocation returned HTTP 200 with 10 offers, matching the production transcript.
 5. Packaged and deployed the replay Lambda, added `lambda:InvokeFunction` permission to its execution role, and re-ran `daisy-replay-lambda` for 2025-10-18 to confirm a full remote success.
 6. Seeded S3 with the 2025-10-18 synthetic transcripts for all personas and replayed the full set (13 transcripts total); every run completed via the direct Lambda path with zero failures.
+7. Added `scripts/report_replay_failures.py` to summarise replay failures (latest-only) so instruction deltas surface quickly after nightly runs.
+8. Updated `aws/replay_lambda.py` to force `lhGroupOnly` to `"true"` for every direct Lambda invocation, guaranteeing searches stay within the Lufthansa Group network.
 
 ## Findings
 - The transcript does not store the OpenAPI payload verbatim, but the message stream consistently exposes enough structured hints (`(ZAG)`, `(BRU)`, ISO-like travel date) to rebuild a working request.

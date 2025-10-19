@@ -10,7 +10,7 @@
 ## NLP Feedback Loop Project
 - [x] Define structured logging for chat transcripts (store in S3/location suitable for replay).
 - [x] Build nightly/offline replay harness that feeds recorded turns back into the agent with varied phrasing to detect misunderstandings.
-- [ ] Implement reporting that highlights failed utterances with recommended instruction updates.
+- [x] Implement reporting that highlights failed utterances with recommended instruction updates.
 - [ ] Create process for human review and controlled deployment of updated instructions/exemplars to Bedrock.
 - [x] Surface replay telemetry via CloudWatch metrics/SNS to highlight regression spikes.
 
