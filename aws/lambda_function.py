@@ -163,6 +163,20 @@ def _canonicalize_theme_tags(raw: List[str], phrase: Optional[str] = None) -> Li
         "coast": ["beach", "warm"],
         "island": ["beach", "warm"],
         "resort": ["beach", "warm"],
+        "diving": ["diving", "beach", "warm"],
+        "scuba": ["diving", "beach", "warm"],
+        "snorkeling": ["diving", "beach", "warm"],
+        "fishing": ["fishing"],
+        "tuna": ["tuna_fishing", "fishing"],
+        "tuna_fishing": ["tuna_fishing", "fishing"],
+        "big_game_fishing": ["tuna_fishing", "fishing"],
+        "safari": ["safari", "wildlife"],
+        "wildlife": ["wildlife", "safari"],
+        "bike": ["cycling"],
+        "bicycle": ["cycling"],
+        "cycling": ["cycling"],
+        "mtb": ["cycling"],
+        "hunting": ["hunting"],
     }
     out: List[str] = []
     seen = set()
@@ -239,6 +253,12 @@ def _score_destination(dest: dict, theme_tags: set[str], target_month: int, orig
             elev_score = max(0.0, min(1.0, (elev - 500.0) / 1500.0))
             score += elev_score * 0.5
             reasons.append(f"elev={elev}m")
+    # Activity-specific boosts
+    activity_tags = {"diving", "tuna_fishing", "fishing", "safari", "wildlife", "cycling", "hunting"}
+    for tag in activity_tags:
+        if tag in theme_tags and tag in (dest.get("tags") or []):
+            score += 0.2
+            reasons.append(tag)
     # Carrier bias (prefer LHâ€‘Group presence)
     brands = set(str(x) for x in dest.get("lhGroupCarriers", []))
     if brands:
