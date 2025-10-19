@@ -41,7 +41,7 @@ Implementation Plan (small steps)
   - `elevationM` (optional), `snowReliability` (map) for winter sports scoring
   - `lhGroupCarriers`: ["LH","LX","OS","SN","EW","4Y","EN"] (most common brands to that destination)
   - `notes` (optional)
-- [ ] Populate 40–80 entries across themes:
+- [x] Populate 40-80 entries across themes:
   - Warm/beach (Spring): TFS, LPA, AGP, ALC, PMI, FNC, AYT, HRG, RMF
   - Winter sports (Jan–Feb): INN, SZG, ZRH, GVA, MUC, TRN, LYS, SOF, GNB
   - City break (mild spring): BCN, LIS, NCE, ATH, IST (filter via LH‑Group at runtime)
@@ -108,3 +108,7 @@ Quick Start for a new Codex session (empty context)
    - Wire results into the existing OpenAPI/function responses (use existing note/message + caching of default_origin).
 4. Update function schema (DRAFT), prepare agent, publish, switch alias.
 5. Run replay for the three scenarios above. If good, expand catalog and tune scoring weights.
+
+
+
+

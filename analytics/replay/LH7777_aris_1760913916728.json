@@ -1,0 +1,26 @@
+{
+  "flight": "LH7777",
+  "session": "fa4a9a2f-6c3e-4a9e-9a9a-777777777777",
+  "bedrockSessionId": "3cc4f80b-06d8-4021-aa1b-76a890aa2726",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Some warm place with beach in March next year",
+      "assistant": "Here are some warm beach destinations you might consider for March next year:\n\n\n1. **Hurghada, Egypt** (HRG) - Average high of 26°C, water temperature 22°C. Tags: beach, warm, diving\n2. **Marsa Alam, Egypt** (RMF) - Average high of 26°C, water temperature 22°C. Tags: beach, warm, diving\n3. **Sharm El Sheikh, Egypt** (SSH) - Average high of 25°C, water temperature 22°C. Tags: beach, warm, diving\n\n<sources>\n<REDACTED>__<REDACTED>\n\n\n\n4. **Tenerife South, Spain** (TFS) - Average high of 23°C, water temperature 20°C. Tags: beach, warm\n5. **Gran Canaria, Spain** (LPA) - Average high of 22°C, water temperature 20°C. Tags: beach, warm\n\n<sources>\n<REDACTED>__<REDACTED>",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "Yes, show me a few options",
+      "assistant": "Here are a few options for you:\n\n\n1. **Hurghada, Egypt** (HRG) - Average high of 26°C, water temperature 22°C. Tags: beach, warm, diving\n2. **Marsa Alam, Egypt** (RMF) - Average high of 26°C, water temperature 22°C. Tags: beach, warm, diving\n\n<sources>\n<REDACTED>__<REDACTED>\n\n\n\n3. **Tenerife South, Spain** (TFS) - Average high of 23°C, water temperature 20°C. Tags: beach, warm\n\n<sources>\n<REDACTED>__<REDACTED>",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Option 1 looks good",
+      "assistant": "Sorry, I couldn't find information about Hurghada, Egypt. Would you like me to find information about another destination?",
+      "trace": []
+    }
+  ]
+}

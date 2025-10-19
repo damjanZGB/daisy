@@ -1,0 +1,26 @@
+{
+  "flight": "LH8888",
+  "session": "fb5b9b3f-6c3e-4a9e-9a9a-888888888888",
+  "bedrockSessionId": "e53b6b08-1c0f-4812-a32d-0bd194200c41",
+  "aliasKey": "mira",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Cold place for skiing in January",
+      "assistant": "Hello! It seems we didn't find any skiing destinations in January from Zapresic, Croatia. Would you prefer to choose a different origin, or should I suggest some popular skiing destinations like Zermatt, Switzerland, or Aspen, Colorado?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "Prefer shortest travel time",
+      "assistant": "It seems there are no skiing destinations in January from Zapresic, Croatia. Would you prefer to choose a different origin, or should I suggest some popular skiing destinations like Zermatt, Switzerland, or Aspen, Colorado? If you choose a destination, I can find the shortest travel time for you.",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Hold the best value option",
+      "assistant": "It seems there are no skiing destinations in January from Zapresic, Croatia. Would you prefer to choose a different origin, or should I suggest some popular skiing destinations like Zermatt, Switzerland, or Aspen, Colorado? If you choose a destination, I can find the shortest travel time and the best value for you.",
+      "trace": []
+    }
+  ]
+}

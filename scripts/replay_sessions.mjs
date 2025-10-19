@@ -60,6 +60,36 @@ const SESSIONS = [
       'Yes. Show me the alternatives',
     ],
   },
+  {
+    flight: 'LH7777',
+    sessionId: 'fa4a9a2f-6c3e-4a9e-9a9a-777777777777',
+    aliasKey: 'aris',
+    steps: [
+      'Some warm place with beach in March next year',
+      'Yes, show me a few options',
+      'Option 1 looks good',
+    ],
+  },
+  {
+    flight: 'LH8888',
+    sessionId: 'fb5b9b3f-6c3e-4a9e-9a9a-888888888888',
+    aliasKey: 'mira',
+    steps: [
+      'Cold place for skiing in January',
+      'Prefer shortest travel time',
+      'Hold the best value option',
+    ],
+  },
+  {
+    flight: 'LH9998',
+    sessionId: 'fc6c9c4f-6c3e-4a9e-9a9a-999899989998',
+    aliasKey: 'leo',
+    steps: [
+      'Family city break in April weekend',
+      'Any nonstop suggestions?',
+      'Show me alternative dates',
+    ],
+  },
 ];
 
 const client = new BedrockAgentRuntimeClient({ region: REGION });

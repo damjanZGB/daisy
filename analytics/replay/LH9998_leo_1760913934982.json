@@ -1,0 +1,26 @@
+{
+  "flight": "LH9998",
+  "session": "fc6c9c4f-6c3e-4a9e-9a9a-999899989998",
+  "bedrockSessionId": "77443b72-f673-4bd3-9b7c-0431e84bcd6c",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Family city break in April weekend",
+      "assistant": "Could you please specify the origin city for your trip? If you're not sure, we can start with the default origin city, Zapresic, Croatia.",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "Any nonstop suggestions?",
+      "assistant": "Are you open to suggestions for any city, or are you looking for nonstop suggestions for a specific destination?",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Show me alternative dates",
+      "assistant": "Do you have specific dates in mind, or are you open to alternative dates for your city break in April?",
+      "trace": []
+    }
+  ]
+}
