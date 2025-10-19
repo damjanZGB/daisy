@@ -1,0 +1,9 @@
+[
+  {
+    "alias": "paul",
+    "sessionId": "paul-hard-199fcdcc381",
+    "ok": false,
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\hard_tests\\paul_paul-hard-199fcdcc381.json",
+    "error": "Agent asked traveler for raw ISO date or IATA code instead of using tools."
+  }
+]

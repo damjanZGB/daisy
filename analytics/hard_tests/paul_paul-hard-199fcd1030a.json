@@ -1,0 +1,23 @@
+{
+  "ok": false,
+  "sessionId": "paul-hard-199fcd1030a",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi! I'm planning a short-notice escape for two adults from Zapresic (default origin ZAG) to Zurich next Saturday evening, returning the following Monday around noon, Lufthansa Group flights only—use the nearest LH airport within 100 km if that helps."
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Could you please confirm the exact departure date (YYYY-MM-DD) and return date (YYYY-MM-DD) for your trip?",
+      "askUser": []
+    },
+    {
+      "turn": 2,
+      "role": "error",
+      "text": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    }
+  ],
+  "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+}

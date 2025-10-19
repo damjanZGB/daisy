@@ -136,6 +136,19 @@ async function runScenarioForAlias(alias) {
       if (sessionState && Object.keys(sessionState).length > 0) {
         carryState = sessionState;
       }
+      const normalized = (text || "").toLowerCase();
+      if (
+        normalized.includes("exact date") ||
+        normalized.includes("yyyy-mm-dd") ||
+        normalized.includes("iata code")
+      ) {
+        return {
+          ok: false,
+          sessionId,
+          transcript,
+          error: "Agent asked traveler for raw ISO date or IATA code instead of using tools.",
+        };
+      }
     }
     return { ok: true, sessionId, transcript };
   } catch (error) {
@@ -169,6 +182,15 @@ async function main() {
   const summaryPath = path.join(OUTPUT_DIR, `summary_${Date.now()}.json`);
   fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2));
   console.log(`Summary stored at ${summaryPath}`);
+  const failures = summary.filter(item => !item.ok);
+  if (failures.length > 0) {
+    console.error(
+      `Detected ${failures.length} failing alias${failures.length > 1 ? "es" : ""}: ${failures
+        .map(f => f.alias)
+        .join(", ")}`
+    );
+    process.exitCode = 1;
+  }
 }
 
 main().catch(error => {

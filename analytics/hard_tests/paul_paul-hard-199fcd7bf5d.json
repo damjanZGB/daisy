@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "sessionId": "paul-hard-199fcd7bf5d",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "error",
+      "text": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    }
+  ],
+  "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+}
