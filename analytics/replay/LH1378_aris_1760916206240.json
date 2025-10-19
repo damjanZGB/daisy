@@ -1,0 +1,44 @@
+{
+  "flight": "LH1378",
+  "session": "2a422dff-3f11-44e9-aee7-bdca3aa8ec0b",
+  "bedrockSessionId": "0b4a670f-6a76-4836-8543-1468e37ec9e7",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hello! Welcome to Lufthansa Group. I am Aris, your digital travel orchestrator. Tell me—what kind of journey are you envisioning today?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Thank you for sharing your travel plans. To proceed, could you please confirm the departure airport? If you haven't decided yet, we can use the default departure airport inferred via UI geolocation, which is ZAG (Zapresic, Croatia).",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Correct. Use default",
+      "assistant": "Great! The travel date has been set to October 25, 2025. Let me find the best flight options for you from Zapresic, Croatia (ZAG) to Zurich (ZRH).",
+      "trace": []
+    },
+    {
+      "turn": 4,
+      "user": "Zagreb to Zurich, departure, 25.10.2025",
+      "assistant": "I'm sorry, but there are no direct flights from Zagreb to Zurich on October 25, 2025. However, I can offer nearby Lufthansa Group destinations or alternative dates within 12 months. Would you like to explore these options?",
+      "trace": []
+    },
+    {
+      "turn": 5,
+      "user": "01.11.2025",
+      "assistant": "Thank you for the updated date. Let me find the best flight options for you from Zagreb to Zurich on November 1, 2025.",
+      "trace": []
+    },
+    {
+      "turn": 6,
+      "user": "Show me the alternatives",
+      "assistant": "I'm sorry, but there are no direct flights from Zagreb to Zurich on November 1, 2025. However, I can offer nearby Lufthansa Group destinations or alternative dates within 12 months. Would you like to explore these options?",
+      "trace": []
+    }
+  ]
+}

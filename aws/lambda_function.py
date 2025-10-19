@@ -1421,7 +1421,10 @@ def _wrap_function(
         "status": status,
         "data": body_obj,
     }
-    response_payload = _attach_logs(response_payload, logger)
+    # Avoid large responses causing agent runtime failures: omit verbose logs for heavy functions
+    func_name = str(event.get("function") or "").strip().lower()
+    if func_name not in {"recommend_destinations"}:
+        response_payload = _attach_logs(response_payload, logger)
     _log("Function response wrapped", status=status, function=event.get("function"))
     return {
         "messageVersion": "1.0",
@@ -1618,6 +1621,22 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             max_results,
         )
         offers = _summarize_offers(raw, currency)
+        # Fallback: if nonstop requested and none found, retry with connections allowed.
+        if nonstop and not offers:
+            _log("OpenAPI: No nonstop offers; retrying with connections allowed")
+            raw = amadeus_search_flight_offers(
+                origin,
+                destination,
+                departure_date,
+                return_date,
+                adults,
+                cabin,
+                False,
+                currency,
+                lh_group_only,
+                max_results,
+            )
+            offers = _summarize_offers(raw, currency)
         _log("OpenAPI flight search success", origin=origin, destination=destination, offers=len(offers))
         # If we auto-filled origin from context, cache it into session and surface a brief note.
         note = None
@@ -1974,6 +1993,22 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             max_results,
         )
         offers = _summarize_offers(raw, currency)
+        # Fallback: if user asked for nonstop and none found, retry with connections allowed.
+        if nonstop and not offers:
+            _log("No nonstop offers; retrying with connections allowed")
+            raw = amadeus_search_flight_offers(
+                origin,
+                destination,
+                departure_date,
+                return_date,
+                adults,
+                cabin,
+                False,  # allow connections
+                currency,
+                lh_group_only,
+                max_results,
+            )
+            offers = _summarize_offers(raw, currency)
         _log("Function flight search success", origin=origin, destination=destination, offers=len(offers))
         note = None
         if filled_from_context and origin:
