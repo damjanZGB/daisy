@@ -3,11 +3,20 @@
     "code": "TFS",
     "city": "Tenerife South",
     "country": "Spain",
-    "tags": ["beach", "warm"],
+    "tags": ["beach", "warm", "cycling"],
     "avgHighCByMonth": {"1": 21, "2": 21, "3": 23, "4": 24, "5": 25, "6": 27, "7": 29, "8": 29, "9": 28, "10": 26, "11": 24, "12": 22},
     "waterTempCByMonth": {"1": 20, "2": 19, "3": 20, "4": 20, "5": 21, "6": 22, "7": 23, "8": 24, "9": 24, "10": 23, "11": 22, "12": 21},
     "lhGroupCarriers": ["EW", "4Y", "LH"],
     "notes": "Canary Islands; year-round beach climate."
+  },
+  {
+    "code": "MQP",
+    "city": "Kruger Mpumalanga",
+    "country": "South Africa",
+    "tags": ["safari", "wildlife", "wildlife_photography", "nature", "warm"],
+    "avgHighCByMonth": {"1": 30, "2": 30, "3": 29, "4": 28, "5": 26, "6": 24, "7": 24, "8": 27, "9": 28, "10": 29, "11": 30, "12": 31},
+    "lhGroupCarriers": ["4Y"],
+    "notes": "Gateway to Kruger National Park private reserves."
   },
   {
     "code": "LPA",
@@ -42,7 +51,7 @@
     "code": "PMI",
     "city": "Palma de Mallorca",
     "country": "Spain",
-    "tags": ["beach", "warm"],
+    "tags": ["beach", "warm", "cycling"],
     "avgHighCByMonth": {"1": 15, "2": 15, "3": 17, "4": 20, "5": 24, "6": 28, "7": 31, "8": 31, "9": 28, "10": 24, "11": 19, "12": 16},
     "lhGroupCarriers": ["EW", "4Y", "LH"],
     "notes": "Balearics; warms up from late spring."
@@ -158,7 +167,7 @@
     "code": "ACE",
     "city": "Lanzarote",
     "country": "Spain",
-    "tags": ["beach", "warm", "family"],
+    "tags": ["beach", "warm", "family", "cycling"],
     "avgHighCByMonth": {"1": 20, "2": 21, "3": 22, "4": 24, "5": 25, "6": 27, "7": 29, "8": 29, "9": 28, "10": 26, "11": 23, "12": 21},
     "waterTempCByMonth": {"3": 19, "4": 20, "5": 21, "6": 22, "7": 23, "8": 24},
     "lhGroupCarriers": ["EW", "4Y", "LH"],
@@ -786,7 +795,7 @@
     "code": "WDH",
     "city": "Windhoek",
     "country": "Namibia",
-    "tags": ["safari", "wildlife", "nature", "warm"],
+    "tags": ["safari", "wildlife", "wildlife_photography", "nature", "warm"],
     "avgHighCByMonth": {"1": 31, "2": 30, "3": 29, "4": 26, "5": 22, "6": 20, "7": 20, "8": 23, "9": 27, "10": 29, "11": 30, "12": 31},
     "lhGroupCarriers": ["4Y", "LH"],
     "notes": "Gateway to Etosha; self-drive safari."
@@ -795,7 +804,7 @@
     "code": "JNB",
     "city": "Johannesburg",
     "country": "South Africa",
-    "tags": ["safari", "wildlife", "city_break", "warm"],
+    "tags": ["safari", "wildlife", "wildlife_photography", "city_break", "warm"],
     "avgHighCByMonth": {"1": 26, "2": 26, "3": 25, "4": 22, "5": 19, "6": 17, "7": 17, "8": 20, "9": 24, "10": 26, "11": 26, "12": 26},
     "lhGroupCarriers": ["LH", "LX", "4Y"],
     "notes": "Access to Kruger private reserves."
@@ -804,7 +813,7 @@
     "code": "NBO",
     "city": "Nairobi",
     "country": "Kenya",
-    "tags": ["safari", "wildlife", "warm"],
+    "tags": ["safari", "wildlife", "wildlife_photography", "warm"],
     "avgHighCByMonth": {"1": 26, "2": 27, "3": 27, "4": 25, "5": 24, "6": 22, "7": 21, "8": 22, "9": 24, "10": 25, "11": 23, "12": 24},
     "lhGroupCarriers": ["LH", "SN"],
     "notes": "Masai Mara & Amboseli access."
@@ -813,7 +822,7 @@
     "code": "VFA",
     "city": "Victoria Falls",
     "country": "Zimbabwe",
-    "tags": ["safari", "wildlife", "nature", "warm"],
+    "tags": ["safari", "wildlife", "wildlife_photography", "nature", "warm"],
     "avgHighCByMonth": {"1": 32, "2": 32, "3": 31, "4": 31, "5": 29, "6": 25, "7": 25, "8": 28, "9": 31, "10": 33, "11": 34, "12": 32},
     "lhGroupCarriers": ["4Y"],
     "notes": "Falls + safari circuits (Chobe, Hwange)."

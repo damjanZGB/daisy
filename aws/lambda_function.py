@@ -172,6 +172,9 @@ def _canonicalize_theme_tags(raw: List[str], phrase: Optional[str] = None) -> Li
         "big_game_fishing": ["tuna_fishing", "fishing"],
         "safari": ["safari", "wildlife"],
         "wildlife": ["wildlife", "safari"],
+        "photo": ["wildlife_photography", "wildlife", "safari"],
+        "photography": ["wildlife_photography", "wildlife", "safari"],
+        "wildlife photography": ["wildlife_photography", "wildlife", "safari"],
         "bike": ["cycling"],
         "bicycle": ["cycling"],
         "cycling": ["cycling"],
@@ -1971,6 +1974,18 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 payload["options"] = [ _brief(o) for o in options[:3] ]
             except Exception as exc:
                 _log("Itinerary aggregator failed", error=str(exc))
+        # If we still don't have a message (no options), provide a short, clean candidate list
+        if not payload.get("message"):
+            msg_lines = [
+                "Here are destination ideas that fit your theme (I can expand dates to find flights):"
+            ]
+            for idx, c in enumerate(candidates[:5], start=1):
+                city = c.get("city") or "?"
+                country = c.get("country") or "?"
+                code = c.get("code") or "?"
+                reason = c.get("reason") or ""
+                msg_lines.append(f"- {idx}) {city}, {country} ({code}) — {reason}")
+            payload["message"] = "\n".join(msg_lines)
         _log(
             "Destination recommendations prepared",
             origin=origin_code,
