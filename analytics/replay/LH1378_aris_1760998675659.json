@@ -1,0 +1,176 @@
+{
+  "flight": "LH1378",
+  "session": "2a422dff-3f11-44e9-aee7-bdca3aa8ec0b",
+  "bedrockSessionId": "a0acca00-80f5-4ba3-bc1a-1f030cb1fffe",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul , your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Here are the flight options for your trip to Zurich on October 25, 2025:\n\n1. **JU601**: Departing from Zagreb (ZAG) at 09:50, arriving in Belgrade (BEG) at 11:00 -> THEN, **JU332**: Departing from Belgrade (BEG) at 12:00, arriving in Zurich (ZRH) at 13:50. Total duration: 4 hours. Price: 128.77 EUR. 1 stop.\n\n2. **OU460**: Direct flight from Zagreb (ZAG) to Zurich (ZRH). Departure at 09:15, arrival at 10:45. Total duration: 1 hour 30 minutes. Price: 133.34 EUR. Direct.\n\n3. **OU464**: Direct flight from Zagreb (ZAG) to Zurich (ZRH). Departure at 17:50, arrival at 19:20. Total duration: 1 hour 30 minutes. Price: 133.34 EUR. Direct.\n\n4. **A3781**: Departing from Zagreb (ZAG) at 19:15, arriving in Athens (ATH) at 22:05 -> THEN, **A3850**: Departing from Athens (ATH) at 08:30, arriving in Zurich (ZRH) at 10:20 (next day). Total duration: 15 hours 5 minutes. Price: 145.06 EUR. 1 stop.\n\n5. **OU384**: Departing from Zagreb (ZAG) at 14:25, arriving in Dubrovnik (DBV) at 15:20 -> THEN, **OU5204**: Departing from Dubrovnik (DBV) at 19:40, arriving in Zurich (ZRH) at 21:30. Total duration: 7 hours 5 minutes. Price: 165.67 EUR. 1 stop.\n\n6. **LO614**: Departing from Zagreb (ZAG) at 18:05, arriving in Warsaw (WAW) at 19:35 -> THEN, **LO411**: Departing from Warsaw (WAW) at 07:30, arriving in Zurich (ZRH) at 09:35 (next day). Total duration: 15 hours 30 minutes. Price: 197.32 EUR. 1 stop.\n\n7. **OU5396**: Departing from Zagreb (ZAG) at 06:00, arriving in Frankfurt (FRA) at 07:45 -> THEN, **LX1069**: Departing from Frankfurt (FRA) at 08:50, arriving in Zurich (ZRH) at 09:45. Total duration: 3 hours 45 minutes. Price: 200.45 EUR. 1 stop.\n\n8. **OU5396**: Departing from",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": true,
+        "hasPrice": true
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Correct. Use default",
+      "assistant": "Here are the flight options for your trip to Zurich on October 25, 2025:\n\n1. **JU601**: Departing from Zagreb (ZAG) at 09:50, arriving in Belgrade (BEG) at 11:00 -> THEN, **JU332**: Departing from Belgrade (BEG) at 12:00, arriving in Zurich (ZRH) at 13:50. Total duration: 4 hours. Price: 128.77 EUR. 1 stop.\n\n2. **OU460**: Direct flight from Zagreb (ZAG) to Zurich (ZRH). Departure at 09:15, arrival at 10:45. Total duration: 1 hour 30 minutes. Price: 133.34 EUR. Direct.\n\n3. **OU464**: Direct flight from Zagreb (ZAG) to Zurich (ZRH). Departure at 17:50, arrival at 19:20. Total duration: 1 hour 30 minutes. Price: 133.34 EUR. Direct.\n\n4. **A3781**: Departing from Zagreb (ZAG) at 19:15, arriving in Athens (ATH) at 22:05 -> THEN, **A3850**: Departing from Athens (ATH) at 08:30, arriving in Zurich (ZRH) at 10:20 (next day). Total duration: 15 hours 5 minutes. Price: 145.06 EUR. 1 stop.\n\n5. **OU384**: Departing from Zagreb (ZAG) at 14:25, arriving in Dubrovnik (DBV) at 15:20 -> THEN, **OU5204**: Departing from Dubrovnik (DBV) at 19:40, arriving in Zurich (ZRH) at 21:30. Total duration: 7 hours 5 minutes. Price: 165.67 EUR. 1 stop.\n\n6. **LO614**: Departing from Zagreb (ZAG) at 18:05, arriving in Warsaw (WAW) at 19:35 -> THEN, **LO411**: Departing from Warsaw (WAW) at 07:30, arriving in Zurich (ZRH) at 09:35 (next day). Total duration: 15 hours 30 minutes. Price: 197.32 EUR. 1 stop.\n\n7. **OU5396**: Departing from Zagreb (ZAG) at 06:00, arriving in Frankfurt (FRA) at 07:45 -> THEN, **LX1069**: Departing from Frankfurt (FRA) at 08:50, arriving in Zurich (ZRH) at 09:45. Total duration: 3 hours 45 minutes. Price: 200.45 EUR. 1 stop.\n\n8. **OU5396**: Departing",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": true,
+        "hasPrice": true
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "Zagreb to Zurich, departure, 25.10.2025",
+      "assistant": "Here are the details of your flight: Zagreb to Zurich, departing on October 25, 2025. Is this information correct? If you need any modifications or have further questions, please let me know.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 5,
+      "user": "01.11.2025",
+      "assistant": "Thank you for the update. The new departure date for your flight from Zagreb to Zurich is November 1, 2025. Is this information correct? If you need any further modifications or have additional questions, please let me know.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 6,
+      "user": "Show me the alternatives",
+      "assistant": "Here are the alternative flight options for your trip to Zurich on November 1, 2025:\n\n1. **OU460**: Direct flight from Zagreb (ZAG) to Zurich (ZRH). Departure at 08:45, arrival at 10:05. Total duration: 1 hour 20 minutes. Price: 133.34 EUR. Direct.\n\n2. **OU464**: Direct flight from Zagreb (ZAG) to Zurich (ZRH). Departure at 17:55, arrival at 19:15. Total duration: 1 hour 20 minutes. Price: 133.34 EUR. Direct.\n\n3. **OU650**: Departing from Zagreb (ZAG) at 07:05, arriving in Split (SPU) at 07:50 -> THEN, **OU462**: Departing from Split (SPU) at 12:15, arriving in Zurich (ZRH) at 14:05. Total duration: 7 hours. Price: 151.12 EUR. 1 stop.\n\n4. **LO612**: Departing from Zagreb (ZAG) at 12:45, arriving in Warsaw (WAW) at 14:20 -> THEN, **LO409**: Departing from Warsaw (WAW) at 17:00, arriving in Zurich (ZRH) at 19:05. Total duration: 6 hours 20 minutes. Price: 179.32 EUR. 1 stop.\n\n5. **LO614**: Departing from Zagreb (ZAG) at 18:00, arriving in Warsaw (WAW) at 19:35 -> THEN, **LO411**: Departing from Warsaw (WAW) at 07:30, arriving in Zurich (ZRH) at 09:35 (next day). Total duration: 15 hours 35 minutes. Price: 179.32 EUR. 1 stop.\n\n6. **OU414**: Departing from Zagreb (ZAG) at 17:55, arriving in Frankfurt (FRA) at 19:30 -> THEN, **LX1077**: Departing from Frankfurt (FRA) at 20:45, arriving in Zurich (ZRH) at 21:50. Total duration: 3 hours 55 minutes. Price: 202.45 EUR. 1 stop.\n\n7. **OU416**: Departing from Zagreb (ZAG) at 09:05, arriving in Frankfurt (FRA) at 10:40 -> THEN, **LH1190**: Departing from Frankfurt (FRA) at 12:50, arriving in Zurich (ZRH) at 13:45. Total duration: 4 hours 40 minutes. Price: 202.45 EUR. 1 stop.\n\n8. **OU416**: Departing from",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": true,
+        "hasPrice": true
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 7,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "Here are the round trip flight options for your journey from Zagreb to Zurich, departing on December 10, 2025, and returning on December 12, 2025:\n\n1. **OU460**: Departing from Zagreb (ZAG) at 08:45, arriving in Zurich (ZRH) at 10:05 -> THEN, **OU461**: Departing from Zurich (ZRH) at 11:05, arriving in Zagreb (ZAG) at 12:10. Total duration: 1 hour 20 minutes outbound, 1 hour 5 minutes inbound. Price: 203.07 EUR. 0 stops.\n\n2. **OU464**: Departing from Zagreb (ZAG) at 17:55, arriving in Zurich (ZRH) at 19:15 -> THEN, **OU461**: Departing from Zurich (ZRH) at 11:05, arriving in Zagreb (ZAG) at 12:10. Total duration: 1 hour 20 minutes outbound, 1 hour 5 minutes inbound. Price: 203.07 EUR. 0 stops.\n\n3. **OU460**: Departing from Zagreb (ZAG) at 08:45, arriving in Zurich (ZRH) at 10:05 -> THEN, **OU465**: Departing from Zurich (ZRH) at 19:55, arriving in Zagreb (ZAG) at 21:00. Total duration: 1 hour 20 minutes outbound, 1 hour 5 minutes inbound. Price: 203.07 EUR. 0 stops.\n\n4. **OU464**: Departing from Zagreb (ZAG) at 17:55, arriving in Zurich (ZRH) at 19:15 -> THEN, **OU465**: Departing from Zurich (ZRH) at 19:55, arriving in Zagreb (ZAG) at 21:00. Total duration: 1 hour 20 minutes outbound, 1 hour 5 minutes inbound. Price: 203.07 EUR. 0 stops.\n\n5. **OU460**: Departing from Zagreb (ZAG) at 08:45, arriving in Zurich (ZRH) at 10:05 -> THEN, **LX786**: Departing from Zurich (ZRH) at 07:30, arriving in Brussels (BRU) at 08:50 -> THEN, **OU457**: Departing from Brussels (BRU) at 10:30, arriving in Zagreb (ZAG) at 12:10. Total duration: 1 hour 20 minutes outbound, 4 hours 40 minutes inbound. Price: 261.72 EUR. 1 stop.",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": true,
+        "hasPrice": true
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    }
+  ]
+}

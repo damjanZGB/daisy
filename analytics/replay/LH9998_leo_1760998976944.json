@@ -1,0 +1,104 @@
+{
+  "flight": "LH9998",
+  "session": "fc6c9c4f-6c3e-4a9e-9a9a-999899989998",
+  "bedrockSessionId": "4fe76415-f668-4bbb-a03a-06efab5e2f5c",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Family city break in April weekend",
+      "assistant": "Do you have a preferred origin city for this city break, or should I proceed with the default origin, Zapresic, Croatia (ZAG)?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "Any nonstop suggestions?",
+      "assistant": "Could you please provide the exact name of the city or the IATA code for your preferred destination for a nonstop flight?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Show me alternative dates",
+      "assistant": "Could you please provide a specific date range or phrase (e.g., 'two weeks from now') for alternative dates?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "Here are your flight options for your trip from ZAG to ZRH:\n\n1. **LH612**: ZAG -> ZRH on 2025-12-10 at 08:45 -> Arrival: 10:05, 1 stop. **Price: 203.07 EUR. 1 stop.**\n\n2. **LH612**: ZAG -> ZRH on 2025-12-10 at 08:45 -> Arrival: 10:05, 1 stop. **Price: 203.07 EUR. 1 stop.**\n\n3. **LH612**: ZAG -> ZRH on 2025-12-10 at 17:55 -> Arrival: 19:15, 1 stop. **Price: 203.07 EUR. 1 stop.**\n\n4. **LH612**: ZAG -> ZRH on 2025-12-10 at 17:55 -> Arrival: 19:15, 1 stop. **Price: 203.07 EUR. 1 stop.**\n\n5. **LX786** - ZRH -> BRU on 2025-12-12 at 07:30 -> Arrival: 08:50, 1 stop. THEN, **OU457**: BRU -> ZAG on 2025-12-12 at 10:30 -> Arrival: 12:10, 1 stop. **Price: 261.72 EUR. 2 stops.**",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": true,
+        "hasPrice": true
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    }
+  ]
+}

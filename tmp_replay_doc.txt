@@ -1,9 +1,9 @@
-ï»¿# Replay Harness Continuation Plan
+# Replay Harness Continuation Plan
 
 ## Context Recap
 - The replay harness fails because the agent falls back to the diagnostic response (dependencyFailedException).
 - A confirmed successful transcript lives at s3://origin-daisy-bucket/prod/bianca/2025/10/18/bianca/2025-10-18T21-43-25-029Z_1339bf23-d3a4-4e4b-8c91-d555316b1625.json.
-- The action Lambda (daisy_in_action-0k2c0) works when it receives a full OpenAPI payload; the replay harness simply isnâ€™t rebuilding that payload.
+- The action Lambda (daisy_in_action-0k2c0) works when it receives a full OpenAPI payload; the replay harness simply isn’t rebuilding that payload.
 
 ## Goal
 Use the real transcript/logs to recover the Amadeus search parameters and update the replay harness to call the action Lambda directly without relying on Bedrock to infer them.
@@ -35,40 +35,8 @@ Use the real transcript/logs to recover the Amadeus search parameters and update
 
 ## Additional Notes
 - Relaxing the action Lambda validation is **not** recommended; supplying the true OpenAPI payload is the correct fix.
-- Synthetic transcripts alone wonâ€™t workâ€”this plan relies on the confirmed real transcript above.
+- Synthetic transcripts alone won’t work—this plan relies on the confirmed real transcript above.
 - If additional payload variants are needed (e.g., round-trip vs one-way), repeat the process for other successful sessions once captured.
 
 Provide this document to the next Codex session so they can continue the work.
 
-## Updates (2025-10-20)
-
-- Proxy fallback implemented for functionResponse-only replies
-  - File: `proxy.mjs:decodeAgentEventStream`
-  - When Bedrock streams no `outputText` but returns a final `functionResponse` with `responseBody.TEXT.body`, the proxy now surfaces that payload as `text`.
-  - The proxy adds `usedFunctionResponseFallback: true` in the JSON response to indicate fallback was used. `/invoke` logs also include this flag and `textLen`.
-
-- Frontend defensive fallback (all variants)
-  - Files: `frontend/paul/index.html:804`, `frontend/bianca/index.html`, `frontend/gina/index.html`, `frontend/origin/index.html`
-  - If `data.text || data.responseText || data.answer` is empty, the UI falls back to `data.finalResponse.response.functionResponse.responseBody.TEXT.body` and parses JSON if needed.
-
-- Replay analytics extensions
-  - Placeholder detection added in `scripts/replay_sessions.mjs` per turn; flags `placeholders` plus `placeholder_flags` map.
-    - Banned patterns flagged: "Airport Name N", "Airline Name N", "EUR X.XX", "X km", "Notes: ...", solitary "...", "TBD".
-  - CloudWatch tool-call aggregation added in `scripts/extract_proxy_logs.py`:
-    - Output now includes `aggregate` totals and per-session `counts` and `toolCalls` for IATA and Amadeus events.
-
-### Quick validation commands
-
-1) Run replays to generate per-session JSON and a summary list:
-
-   `node scripts/replay_sessions.mjs`
-
-2) Aggregate proxy/Lambda logs for recent window (adjust minutes as needed):
-
-   `python scripts/extract_proxy_logs.py --minutes 60`
-
-   - Output: `analytics/replay/proxy_logs_summary.json` with `aggregate` and per-session `counts`.
-
-3) Inspect placeholder flags and formatting in replay outputs:
-
-   - Each `analytics/replay/<flight>_<alias>_*.json` includes `turns[].format_ok` and `turns[].placeholders`.

@@ -1,0 +1,104 @@
+{
+  "flight": "LH7777",
+  "session": "fa4a9a2f-6c3e-4a9e-9a9a-777777777777",
+  "bedrockSessionId": "6b2eff58-e078-49cd-adf3-edcdd9d7e9bc",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Some warm place with beach in March next year",
+      "assistant": "Here are some warm beach destinations for March next year:\n1. **Hurghada, Egypt (HRG)** - Average high temperature: 26°C, water temperature: 22°C\n2. **Marsa Alam, Egypt (RMF)** - Average high temperature: 26°C, water temperature: 22°C\n3. **Sharm El Sheikh, Egypt (SSH)** - Average high temperature: 25°C, water temperature: 22°C\n4. **Victoria Falls, Zimbabwe (VFA)** - Average high temperature: 31°C\n5. **Kruger Mpumalanga, South Africa (MQP)** - Average high temperature: 29°C\n\nWould you like to explore flight options for any of these destinations?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "Yes, show me a few options",
+      "assistant": "Great choice! To proceed, could you please specify which destination you would like to explore flight options for?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Option 1 looks good",
+      "assistant": "I'm sorry, but I was unable to retrieve the IATA code for Hurghada, Egypt. Let's proceed without it. To find flight options, could you please specify your departure city?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "Here are some flight options for your trip from ZAG to ZRH:\n\n1. **OU604**:\n   - Departure: ZAG -> ZRH on 2025-12-10 at 08:45\n   - Arrival: ZRH -> ZAG on 2025-12-12 at 11:05\n   - Duration: 1h 20m\n   - **Price: 203.07 EUR. 1 stop.**\n\n2. **OU604**:\n   - Departure: ZAG -> ZRH on 2025-12-10 at 08:45\n   - Arrival: ZRH -> ZAG on 2025-12-12 at 19:55\n   - Duration: 1h 20m\n   - **Price: 203.07 EUR. 1 stop.**\n\n3. **OU604**:\n   - Departure: ZAG -> ZRH on 2025-12-10 at 17:55\n   - Arrival: ZRH -> ZAG on 2025-12-12 at 11:05\n   - Duration: 1h 20m\n   - **Price: 203.07 EUR. 1 stop.**\n\n4. **OU604**:\n   - Departure: ZAG -> ZRH on 2025-12-10 at 17:55\n   - Arrival: ZRH -> ZAG on 2025-12-12 at 19:55\n   - Duration: 1h 20m\n   - **Price: 203.07 EUR. 1 stop.**\n\n5. **LX786 OU457**:\n   - Departure: ZAG -> ZRH on 2025-12-10 at 08:45\n   - THEN, **LX786** - ZRH -> BRU on 2025-12-12 at 07:30\n   - THEN, **OU457** - BRU -> ZAG on 2025-12-12 at 10:30\n   - Duration: 1h 20m\n   - **Price: 261.72 EUR. 2 stops.**\n\nWould you like to explore more options or proceed with booking?",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": true,
+        "hasPrice": true
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    }
+  ]
+}

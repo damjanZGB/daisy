@@ -330,45 +330,6 @@ function decodeAgentEventStream(buffer) {
   const chunks = [];
   const events = [];
   let finalResponse = null;
-  const findTextBody = (node, depth = 0) => {
-    if (!node || typeof node !== "object" || depth > 8) return null;
-    try {
-      if (node.TEXT && typeof node.TEXT.body === "string") return node.TEXT.body;
-      if (node.responseBody && node.responseBody.TEXT && typeof node.responseBody.TEXT.body === "string") return node.responseBody.TEXT.body;
-      for (const key of Object.keys(node)) {
-        const val = node[key];
-        const found = findTextBody(val, depth + 1);
-        if (found) return found;
-      }
-    } catch (_) {
-      // ignore traversal errors
-    }
-    return null;
-  };
-  const deriveTextFromFunctionResponse = (resp) => {
-    try {
-      const raw = findTextBody(resp) || null;
-      if (!raw) return null;
-      let parsed;
-      try { parsed = JSON.parse(raw); } catch (_) { /* not JSON */ }
-      if (!parsed) return String(raw);
-      if (typeof parsed === "string") return parsed;
-      if (parsed && typeof parsed === "object") {
-        if (typeof parsed.text === "string" && parsed.text.trim()) return parsed.text.trim();
-        if (typeof parsed.message === "string" && parsed.message.trim()) return parsed.message.trim();
-        if (parsed.data) {
-          if (typeof parsed.data.text === "string" && parsed.data.text.trim()) return parsed.data.text.trim();
-          if (typeof parsed.data.message === "string" && parsed.data.message.trim()) return parsed.data.message.trim();
-          if (typeof parsed.data.summary === "string" && parsed.data.summary.trim()) return parsed.data.summary.trim();
-        }
-        // Fallback to compact JSON if no obvious text field
-        try { return JSON.stringify(parsed); } catch { return String(raw); }
-      }
-      return String(raw);
-    } catch (_) {
-      return null;
-    }
-  };
   for (const { headers, payload } of messages) {
     const eventType = headers[":event-type"] || headers.eventType;
     const messageType = headers[":message-type"] || headers.messageType;
@@ -451,31 +412,9 @@ function decodeAgentEventStream(buffer) {
   if (!cleanedText && askUserQuestions.length > 0) {
     cleanedText = askUserQuestions[askUserQuestions.length - 1];
   }
-  let usedFunctionResponseFallback = false;
-  // Fallback: if no streamed outputText, try to surface TEXT from final functionResponse
-  if (!cleanedText && finalResponse) {
-    const fallback = deriveTextFromFunctionResponse(finalResponse);
-    if (fallback && typeof fallback === "string" && fallback.trim()) {
-      cleanedText = fallback.trim();
-      usedFunctionResponseFallback = true;
-    }
-  }
-  // As an additional safety, scan the last few events for a functionResponse body if needed
-  if (!cleanedText && events.length) {
-    for (let i = events.length - 1; i >= 0; i--) {
-      const ev = events[i];
-      const candidate = deriveTextFromFunctionResponse(ev.json || ev.payload);
-      if (candidate && candidate.trim()) {
-        cleanedText = candidate.trim();
-        usedFunctionResponseFallback = true;
-        break;
-      }
-    }
-  }
   const result = { text: cleanedText, events };
   if (askUserQuestions.length > 0) result.askUserQuestions = askUserQuestions;
   if (finalResponse) result.finalResponse = finalResponse;
-  if (usedFunctionResponseFallback) result.usedFunctionResponseFallback = true;
   return result;
 }
 async function awsInvokeAgent({
@@ -1021,11 +960,7 @@ const server = http.createServer(async (req, res) => {
       });
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify(data));
-      logger.info(`[${requestId}] Agent invocation succeeded`, {
-        sessionId,
-        usedFunctionResponseFallback: !!data.usedFunctionResponseFallback,
-        textLen: typeof data.text === "string" ? data.text.length : 0,
-      });
+      logger.info(`[${requestId}] Agent invocation succeeded`, { sessionId });
       return;
     }
 
@@ -1267,4 +1202,5 @@ if (shouldStartServer) {
 }
 
 export { iataLookup, loadIata, interpretDatePhrase };
+
 

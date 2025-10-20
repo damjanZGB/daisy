@@ -777,7 +777,33 @@
           }
           setProxyOnline(true);
           const data = await res.json();
-          const reply = sanitizeAssistantText((data.text || data.responseText || data.answer || '').trim());
+          let replyRaw = (data.text || data.responseText || data.answer || '').trim();
+          if (!replyRaw) {
+            try {
+              const body = (data?.finalResponse?.response?.functionResponse?.responseBody?.TEXT?.body)
+                || (data?.finalResponse?.response?.actionInvocation?.functionResponse?.responseBody?.TEXT?.body)
+                || (data?.finalResponse?.functionResponse?.responseBody?.TEXT?.body);
+              if (typeof body === 'string' && body) {
+                try {
+                  const obj = JSON.parse(body);
+                  if (typeof obj === 'string') replyRaw = obj;
+                  else if (obj && typeof obj === 'object') {
+                    replyRaw = String(
+                      obj.text
+                      || obj.message
+                      || (obj.data && (obj.data.text || obj.data.message || obj.data.summary))
+                      || JSON.stringify(obj)
+                    );
+                  } else {
+                    replyRaw = String(body);
+                  }
+                } catch (_) {
+                  replyRaw = String(body);
+                }
+              }
+            } catch (_) {}
+          }
+          const reply = sanitizeAssistantText((replyRaw || '').trim());
           const meta = data.cid ? `cid ${data.cid}` : undefined;
           // track last itinerary options for possible PDF generation
           const parsedOptions = parseItineraryOptions(reply);

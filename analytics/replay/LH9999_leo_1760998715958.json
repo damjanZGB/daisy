@@ -1,0 +1,176 @@
+{
+  "flight": "LH9999",
+  "session": "0aae5c0f-61e4-407a-83cf-bda1d58cd552",
+  "bedrockSessionId": "aedb4325-1ed6-406b-95de-b80f42bd3008",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul, your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "That sounds exciting! To confirm, you want to travel to Zurich next Saturday. Is that correct?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "I can be connecting flight",
+      "assistant": "Here are some flight options for your trip to Zurich next Saturday:",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "Show me the alternatives",
+      "assistant": "Here are all the flight options for your trip to Zurich next Saturday:",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 5,
+      "user": "Show me the alternatives. Inspire me",
+      "assistant": "Here are all the flight options for your trip to Zurich next Saturday, along with some inspiration for each:",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 6,
+      "user": "Yes. Show me the alternatives",
+      "assistant": "Here are all the flight options for your trip to Zurich next Saturday:",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 7,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "To confirm, you want a round trip from Zagreb (ZAG) to Zurich (ZRH) departing on December 10, 2025, and returning on December 12, 2025, for 1 adult. Is that correct?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    }
+  ]
+}

@@ -41,7 +41,20 @@ def main():
 
     end = int(time.time()*1000)
     start = end - args.minutes*60*1000
-    patterns = ['Proxy POST request','Proxy POST response received','Proxy GET request','Proxy GET response received','IATA lookup via proxy','OpenAPI proxy IATA lookup success','Amadeus search request prepared','Amadeus search completed','Summarizing offers','OpenAPI flight search success','OpenAPI normalized flight fields','OpenAPI flight request prepared']
+    patterns = [
+        'Proxy POST request',
+        'Proxy POST response received',
+        'Proxy GET request',
+        'Proxy GET response received',
+        'IATA lookup via proxy',
+        'OpenAPI proxy IATA lookup success',
+        'Amadeus search request prepared',
+        'Amadeus search completed',
+        'Summarizing offers',
+        'OpenAPI flight search success',
+        'OpenAPI normalized flight fields',
+        'OpenAPI flight request prepared',
+    ]
 
     records: List[Dict[str, Any]] = []
     for pat in patterns:
@@ -76,9 +89,48 @@ def main():
     if current['events']:
         sessions.append(current)
 
+    # Derive simple per-session counts for tool calls
+    def count_patterns(evts: List[Dict[str, Any]], needle: str) -> int:
+        return sum(1 for e in evts if e.get('pattern') == needle)
+
+    aggregate = {
+        'sessions': len(sessions),
+        'events': len(records),
+        'iata_success': 0,
+        'amadeus_prepared': 0,
+        'amadeus_completed': 0,
+        'openapi_prepared': 0,
+        'openapi_success': 0,
+    }
+    for s in sessions:
+        evts = s.get('events', [])
+        counts = {
+            'iata_success': count_patterns(evts, 'OpenAPI proxy IATA lookup success'),
+            'amadeus_prepared': count_patterns(evts, 'Amadeus search request prepared'),
+            'amadeus_completed': count_patterns(evts, 'Amadeus search completed'),
+            'openapi_prepared': count_patterns(evts, 'OpenAPI flight request prepared'),
+            'openapi_success': count_patterns(evts, 'OpenAPI flight search success'),
+        }
+        s['counts'] = counts
+        # toolCalls provides a friendlier view
+        s['toolCalls'] = {
+            'iata': counts['iata_success'],
+            'amadeus': max(counts['amadeus_prepared'], counts['amadeus_completed'], counts['openapi_prepared'], counts['openapi_success']),
+        }
+        # update aggregate totals
+        for k in ('iata_success','amadeus_prepared','amadeus_completed','openapi_prepared','openapi_success'):
+            aggregate[k] += counts[k]
+
+    out_payload = {
+        "generatedAt": dt.datetime.utcnow().isoformat()+"Z",
+        "windowMinutes": args.minutes,
+        "aggregate": aggregate,
+        "sessions": sessions,
+    }
+
     with open(args.out, 'w', encoding='utf-8') as f:
-        json.dump({"generatedAt": dt.datetime.utcnow().isoformat()+"Z", "windowMinutes": args.minutes, "sessions": sessions}, f, indent=2)
-    print(f"Wrote {args.out} with {len(sessions)} grouped event sets and {len(records)} events")
+        json.dump(out_payload, f, indent=2)
+    print(f"Wrote {args.out} with {len(sessions)} grouped event sets and {len(records)} events; iata_success={aggregate['iata_success']} amadeus_completed={aggregate['amadeus_completed']}")
 
 if __name__ == '__main__':
     main()

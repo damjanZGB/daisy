@@ -1,0 +1,296 @@
+{
+  "flight": "LH6814",
+  "session": "03b364a6-904f-4eba-ac72-9bc8bae96966",
+  "bedrockSessionId": "a30aab15-8b68-4980-9efd-dbc9dee2cc10",
+  "aliasKey": "mira",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul, your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today? What kind of memories do you hope to create?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Great choice! Zurich is a wonderful destination. And you're planning to travel next Saturday. Let's confirm the date and find some flights for you.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Next saturday",
+      "assistant": "The date has been confirmed as 2025-10-25. Now, let's confirm the destination and find some flights for you.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "Closest ariport to me.",
+      "assistant": "It seems there was no match for the closest airport to you. However, based on the context, I'll assume you're in Zapresic, Croatia, and use its airport as the default origin. Let's proceed with finding flights to Zurich.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 5,
+      "user": "Nearest airport to my location",
+      "assistant": "I'm sorry, but I couldn't find the nearest airport based on the information provided. However, I can proceed with Zapresic, Croatia as the origin for further assistance. Let's find some flights to Zurich.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 6,
+      "user": "ZAG",
+      "assistant": "The date has been confirmed as 2025-10-25. Now, let's confirm the destination and find some flights for you.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 7,
+      "user": "Yes",
+      "assistant": "Great! The date has been confirmed as 2025-10-25. Now, let's confirm the destination and find some flights for you.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 8,
+      "user": "Show me the alternatives",
+      "assistant": "Here are some flight options for your trip to Zurich on 2025-10-25:\n\n1. **LH612**:\n   - Departure: ZAG -> BEG\n   - THEN, **JU601** - BEG -> ZRH\n   - Total duration: 4h\n   - Price: 128.77 EUR. 1 stop.\n\n2. **OU460**:\n   - Departure: ZAG -> ZRH\n   - Total duration: 1h 30m\n   - Price: 133.34 EUR. Direct.\n\n3. **A3781**:\n   - Departure: ZAG -> ATH\n   - THEN, **A3850** - ATH -> ZRH\n   - Total duration: 15h 5m\n   - Price: 145.06 EUR. 1 stop.\n\n4. **OU384**:\n   - Departure: ZAG -> DBV\n   - THEN, **OU5204** - DBV -> ZRH\n   - Total duration: 7h 5m\n   - Price: 165.67 EUR. 1 stop.\n\n5. **LO614**:\n   - Departure: ZAG -> WAW\n   - THEN, **LO411** - WAW -> ZRH\n   - Total duration: 15h 30m\n   - Price: 197.32 EUR. 1 stop.\n\n6. **OU5396**:\n   - Departure: ZAG -> FRA\n   - THEN, **LX1069** - FRA -> ZRH\n   - Total duration: 3h 45m\n   - Price: 200.45 EUR. 1 stop.\n\n7. **LH1186**:\n   - Departure: ZAG -> FRA\n   - THEN, **OU5396** - FRA -> ZRH\n   - Total duration: 4h 40m\n   - Price: 200.45 EUR. 1 stop.\n\n8. **OU416**:\n   - Departure: ZAG -> FRA\n   - THEN, **LH1190** - FRA -> ZRH\n   - Total duration: 5h\n   - Price: 202.45 EUR. 1 stop.\n\n9. **OU410**:\n   - Departure: ZAG -> FRA\n   - THEN, **LH1190** - FRA -> ZRH\n   - Total duration: 6h 25m\n   - Price: 202.45 EUR. 1 stop.",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": true,
+        "hasPrice": true
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 9,
+      "user": "Zagreb, zurich, 01.11.2025, one passenger return 03.11.2025",
+      "assistant": "Here are some flight options for your round trip from Zagreb to Zurich on 2025-11-01 and returning on 2025-11-03:\n\n1. **OU460**:\n   - Departure: ZAG -> ZRH\n   - Return: ZRH -> ZAG\n   - Total duration: 2h 10m\n   - Price: 149.07 EUR. Direct.\n\n2. **OU464**:\n   - Departure: ZAG -> ZRH\n   - Return: ZRH -> ZAG\n   - Total duration: 2h 10m\n   - Price: 149.07 EUR. Direct.\n\n3. **OU650**:\n   - Departure: ZAG -> SPU\n   - Then, **OU462** - SPU -> ZRH\n   - Return: ZRH -> ZAG\n   - Total duration: 7h\n   - Price: 166.85 EUR. 1 stop.\n\n4. **OU460**:\n   - Departure: ZAG -> ZRH\n   - Then, **OU465** - ZRH -> ZAG\n   - Total duration: 2h 10m\n   - Price: 149.07 EUR. Direct.\n\n5. **OU464**:\n   - Departure: ZAG -> ZRH\n   - Then, **OU465** - ZRH -> ZAG\n   - Total duration: 2h 10m\n   - Price: 149.07 EUR. Direct.",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": true,
+        "hasPrice": true
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 10,
+      "user": "Yes",
+      "assistant": "Great choice! If you need any further assistance or have any questions about these flight options, feel free to ask. Safe travels!",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 11,
+      "user": "Show me the alternatives same departure airport same destination",
+      "assistant": "Here are some alternative flight options for your round trip from Zagreb to Zurich on 2025-11-01 and returning on 2025-11-03:\n\n1. **OU460**:\n   - Departure: ZAG -> ZRH\n   - Return: ZRH -> ZAG\n   - Total duration: 2h 10m\n   - Price: 149.07 EUR. Direct.\n\n2. **OU464**:\n   - Departure: ZAG -> ZRH\n   - Return: ZRH -> ZAG\n   - Total duration: 2h 10m\n   - Price: 149.07 EUR. Direct.\n\n3. **OU650**:\n   - Departure: ZAG -> SPU\n   - Then, **OU462** - SPU -> ZRH\n   - Return: ZRH -> ZAG\n   - Total duration: 7h\n   - Price: 166.85 EUR. 1 stop.\n\n4. **OU460**:\n   - Departure: ZAG -> ZRH\n   - Then, **OU465** - ZRH -> ZAG\n   - Total duration: 2h 10m\n   - Price: 149.07 EUR. Direct.\n\n5. **OU464**:\n   - Departure: ZAG -> ZRH\n   - Then, **OU465** - ZRH -> ZAG\n   - Total duration: 2h 10m\n   - Price: 149.07 EUR. Direct.\n\n6. **OU650**:\n   - Departure: ZAG -> SPU\n   - Then, **OU462** - SPU -> ZRH\n   - Return: ZRH -> ZAG\n   - Total duration: 7h\n   - Price: 166.85 EUR. 1 stop.\n\n7. **LX1076**:\n   - Departure: ZAG -> ZRH\n   - Then, **OU415** - ZRH -> ZAG\n   - Total duration: 3h 25m\n   - Price: 218.18 EUR. 1 stop.\n\n8. **LX1076**:\n   - Departure: ZAG -> ZRH\n   - Then, **OU415** - ZRH -> ZAG\n   - Total duration: 3h 25m\n   - Price: 218.18 EUR. 1 stop.\n\n9. **LH1191**:\n   - Departure: ZAG -> ZRH\n   - Then, **OU411** - ZRH -> ZAG\n   - Total duration: 4h 35m\n   - Price: 218.18 EUR. 1 stop.\n\n10. **LH1191**:\n    - Departure: ZAG -> ZRH\n    - Then, **OU411** - ZRH -> ZAG\n    - Total duration: 4h 35m\n    - Price: 218.18 EUR. 1 stop.",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": true,
+        "hasPrice": true
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 12,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "Let's find some flight options for your round trip from Zagreb to Zurich on 2025-12-10 and returning on 2025-12-12. Here are some possibilities:",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
 import { TextDecoder } from 'node:util';
@@ -131,33 +131,17 @@ function assessFormatting(text) {
   const hasThenCanonical = /(^|\n)\s*-\s*THEN\s+[A-Z0-9]{1,3}\s*\d{1,5}\s+[A-Z]{3}\s+\d{2}:\d{2}\s*->\s*[A-Z]{3}\s+\d{2}:\d{2}/i.test(normalized);
   const hasThenGeneric = /\bTHEN\b/i.test(normalized);
   const hasThen = hasThenCanonical || hasThenGeneric;
-  // Arrow either ASCII -> or unicode →
-  const hasArrow = /(->|→)/.test(normalized);
+  // Arrow either ASCII -> or unicode ?
+  const hasArrow = /(->|?)/.test(normalized);
   // Price: bold **123 EUR**, or currency symbol, or amount + ISO currency
   const hasPriceBold = /\*\*\s*[^*\n]*\d[\d.,]*\s*(EUR|USD|CHF|GBP)\s*\*\*/i.test(normalized);
-  const hasPriceSym = /([€$£]\s?\d[\d.,]*)/.test(normalized);
+  const hasPriceSym = /([�$�]\s?\d[\d.,]*)/.test(normalized);
   const hasPriceCode = /\b\d[\d.,]*\s*(EUR|USD|CHF|GBP|RSD|HRK)\b/i.test(normalized);
   const hasPrice = hasPriceBold || hasPriceSym || hasPriceCode;
   const checks = { hasNumbered, hasSections, hasThen, hasArrow, hasPrice };
   // Consider OK if we have either sections or numbering, plus either THEN or arrow, and a price
   const ok = (hasSections || hasNumbered) && (hasThen || hasArrow) && hasPrice;
   return { ok, checks };
-}
-
-// Detect placeholder patterns that must not appear in outputs
-function detectPlaceholders(text) {
-  const t = String(text || '');
-  const flags = {
-    airportNameN: /Airport\s+Name\s*N/i.test(t),
-    airlineNameN: /Airline\s+Name\s*N/i.test(t),
-    eurXxx: /EUR\s*X\.XX/i.test(t),
-    xKm: /\bX\s*km\b/i.test(t),
-    notesDots: /Notes?:\s*\.\.\./i.test(t),
-    ellipsisOnly: /^\s*\.\.\.\s*$/m.test(t),
-    tbd: /\bTBD\b/i.test(t),
-  };
-  const any = Object.values(flags).some(Boolean);
-  return { any, flags };
 }
 async function invokeWithTrace(aliasId, sessionId, inputText, carryState) {
   const maxRetries = 2;
@@ -220,8 +204,7 @@ async function run() {
         try {
           const { assistantText, sessionState, trace, error } = await invokeWithTrace(aliasId, bedrockSessionId, user, state);
           const fmt = assessFormatting(assistantText);
-          const ph = detectPlaceholders(assistantText);
-          out.turns.push({ turn: i + 1, user, assistant: assistantText, trace, error, format_ok: fmt.ok, format_checks: fmt.checks, placeholders: ph.any, placeholder_flags: ph.flags });
+          out.turns.push({ turn: i + 1, user, assistant: assistantText, trace, error, format_ok: fmt.ok, format_checks: fmt.checks });
           state = sessionState || state;
         } catch (stepErr) {
           out.turns.push({ turn: i + 1, user, assistant: '', trace: [], error: String(stepErr) });
@@ -277,5 +260,6 @@ run().catch(err => {
   console.error('Replay failed:', err);
   process.exitCode = 1;
 });
+
 
 

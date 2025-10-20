@@ -1,0 +1,101 @@
+{
+  "flight": "LH8888",
+  "session": "fb5b9b3f-6c3e-4a9e-9a9a-888888888888",
+  "bedrockSessionId": "8a55bdf0-a321-4da0-b6fd-b65a806f9ecc",
+  "aliasKey": "mira",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Cold place for skiing in January",
+      "assistant": "Could you please specify your departure city or airport? If you don't have one in mind, I can suggest a default origin.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "Prefer shortest travel time",
+      "assistant": "Thank you for sharing your preference for the shortest travel time. To ensure we find the best cold skiing destination for you in January, could you please specify your departure city or airport? If you don't have one in mind, I can suggest a default origin.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Hold the best value option",
+      "assistant": "Thank you for sharing your preference for the best value option. To ensure we find the best cold skiing destination for you in January, could you please specify your departure city or airport? If you don't have one in mind, I can suggest a default origin.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "",
+      "trace": [],
+      "error": "The server encountered an error processing the Lambda response. Check the Lambda response and retry the request",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      },
+      "placeholders": false,
+      "placeholder_flags": {
+        "airportNameN": false,
+        "airlineNameN": false,
+        "eurXxx": false,
+        "xKm": false,
+        "notesDots": false,
+        "ellipsisOnly": false,
+        "tbd": false
+      }
+    }
+  ]
+}
