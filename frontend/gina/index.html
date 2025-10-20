@@ -75,56 +75,71 @@
     })();
     const { useState, useEffect, useRef, useMemo, useCallback } = React;
     // Sanitizer: strip askuser/sources markers and normalize spacing
-    const sanitizeAssistantText = (t) => {
-      if (!t) return '';
-      let out = String(t);
-      // Remove Bedrock askuser/sources wrappers
-      out = out.replace(/<user__askuser[^>]*question=\"([^\"]+)\"[^>]*>/gi, '$1');
-      out = out.replace(/<\/user__askuser>/gi, '');
-      out = out.replace(/<sources>[\s\S]*?<\/sources>/gi, '');
-      // Normalize smart punctuation to ASCII
-      out = out.replace(/[\u2018\u2019]/g, "'");
-      out = out.replace(/[\u201C\u201D]/g, '"');
-      out = out.replace(/[\u2013\u2014]/g, '-');
-      // Replace degree symbol with plain C (e.g., 26°C -> 26 C)
-      out = out.replace(/\s*\u00B0\s*C/gi, ' C');
-      // Collapse excessive blank lines
-      out = out.replace(/\n{3,}/g, '\n\n');
-      return out.trim();
-    };
+      const sanitizeAssistantText = (t) => {
+        if (!t) return '';
+        let out = String(t);
+        // Remove wrappers
+        out = out.replace(/<user__askuser[^>]*question=\"([^\"]+)\"[^>]*>/gi, '$1');
+        out = out.replace(/<\/user__askuser>/gi, '');
+        out = out.replace(/<sources>[\s\S]*?<\/sources>/gi, '');
+        // Normalize smart punctuation to ASCII
+        out = out.replace(/[\u2018\u2019]/g, "'");
+        out = out.replace(/[\u201C\u201D]/g, '"');
+        out = out.replace(/[\u2013\u2014]/g, '-');
+        out = out.replace(/\s*\u00B0\s*C/gi, ' C');
+        out = out.replace(/\n{3,}/g, '\n\n');
+        return out.trim();
+      };
     // Parse numbered itinerary options with optional THEN lines
     const parseItineraryOptions = (text) => {
       const lines = String(text||'').split(/\r?\n/);
       const options = [];
       let current = null;
-      const headerRe = /^\s*(\d+)\)\s+(.+)$/;
+      const headerRe = /^\s*(\d+)[\)\.]\s+(.+)$/;
       for (const raw of lines) {
-        const m = raw.match(headerRe);
+        const m = String(raw).match(headerRe);
         if (m) {
           if (current) options.push(current);
           current = { header: m[2], legs: [] };
           continue;
         }
         const leg = String(raw).trim();
-        if (/^\-\s+THEN\s+/i.test(leg)) {
-          current && current.legs.push(leg.replace(/^\-\s+/, ''));
+        if (/^\-\s*THEN\b/i.test(leg)) {
+          const cleaned = leg.replace(/^\-\s*/, '').replace(/^THEN\s*,?\s*/i, 'THEN ');
+          if (current) current.legs.push(cleaned);
+          continue;
+        }
+        if (/^\-\s*Carriers\s*:/i.test(leg)) {
+          const cleaned = leg.replace(/^\-\s*/, '');
+          if (current) current.legs.push(cleaned);
+          continue;
         }
       }
       if (current) options.push(current);
       return options;
     };
+    const ensureJsPdf = () => new Promise((resolve) => {
+      if (window.jspdf && window.jspdf.jsPDF) return resolve(window.jspdf.jsPDF);
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.crossOrigin = 'anonymous';
+      s.referrerPolicy = 'no-referrer';
+      s.onload = () => resolve(window.jspdf ? window.jspdf.jsPDF : null);
+      s.onerror = () => resolve(null);
+      document.head.appendChild(s);
+    });
     // Create a simple PDF blob from an option
     const generatePdf = async (opt) => {
       try {
-        const { jsPDF } = window.jspdf || {};
-        if (!jsPDF) return null;
-        const doc = new jsPDF({ unit: 'pt' });
+        const JS = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : await ensureJsPdf();
+        if (!JS) return null;
+        const doc = new JS({ unit: 'pt' });
         let y = 40; const x = 40;
         doc.setFont('helvetica','bold'); doc.setFontSize(14);
         doc.text('Itinerary (Example)', x, y); y+=24;
         doc.setFont('helvetica','normal'); doc.setFontSize(12);
         doc.text(opt.header || 'Selected Option', x, y); y+=18;
-        for (const leg of (opt.legs || [])) { if (y>760){ doc.addPage(); y=40;} doc.text(leg, x, y); y+=16; }
+        for (const leg of (opt.legs || [])) { if (y>760){ doc.addPage(); y=40;} doc.text(String(leg), x, y); y+=16; }
         return doc.output('blob');
       } catch (_) { return null; }
     };
