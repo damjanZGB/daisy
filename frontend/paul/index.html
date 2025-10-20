@@ -145,7 +145,7 @@
       try {
         const { PDFDocument } = window.PDFLib || {};
         if (!PDFDocument) return null;
-        const formBytes = await fetch('/lufthansa_template_empty_form.pdf').then(r => r.arrayBuffer());
+        const tryFetch = async (paths) => { for (const p of paths) { try { const res = await fetch(p); if (res.ok) return await res.arrayBuffer(); } catch(_){} } return null; }; const candidates = ['/lufthansa_template_empty_form.pdf','./lufthansa_template_empty_form.pdf','../lufthansa_template_empty_form.pdf','../img/lufthansa_template_empty_form.pdf','./img/lufthansa_template_empty_form.pdf']; const formBytes = await tryFetch(candidates); if (!formBytes) return null;
         const parseLeg = (line) => {
           const m = String(line).match(/THEN\s+([A-Z]{1,3})\s*(\d{2,5})\s+([A-Z]{3})\s+(\d{2}:\d{2})\s*->\s*([A-Z]{3})\s+(\d{2}:\d{2})/i);
           return m ? { carrier:m[1].toUpperCase(), flightNo:m[2], from:m[3].toUpperCase(), dep:m[4], to:m[5].toUpperCase(), arr:m[6] } : null;
@@ -181,7 +181,7 @@
           form.flatten();
           const [pg]=await finalDoc.copyPages(src,[0]); finalDoc.addPage(pg);
         }
-        const bytes=await finalDoc.save();
+        if (finalDoc.getPageCount() === 0) { finalDoc.addPage(); } const bytes=await finalDoc.save();
         return new Blob([bytes],{type:'application/pdf'});
       } catch (e) { console.warn('PDF error', e); return null; }
     };
@@ -799,3 +799,4 @@
  </body>
 
  </html>
+
