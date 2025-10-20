@@ -1,0 +1,1 @@
+{"messageVersion": "1.0", "response": {"actionGroup": "daisy_in_action", "apiPath": "/tools/amadeus/search", "httpMethod": "POST", "httpStatusCode": 200, "responseBody": {"application/json": {"body": "{\"message\": \"Please choose a departure airport IATA code (for example, MUC).\", \"suggestions\": []}"}}}, "sessionAttributes": {}, "promptSessionAttributes": {}}

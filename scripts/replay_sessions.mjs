@@ -126,13 +126,9 @@ async function invokeWithTrace(aliasId, sessionId, inputText, carryState) {
           if (ev.contentBlock?.text) {
             assistantText += ev.contentBlock.text;
           }
-          if (ev.trace?.observation) {
+          if (ev.trace?.observation || ev.trace?.invocation) {
             trace.push(ev.trace);
-            fs.writeFileSync(path.join(OUTPUT_DIR, 'event_'+Date.now()+'.json'), JSON.stringify(ev, null, 2));
-          }
-          if (ev.trace?.invocation) {
-            trace.push(ev.trace);
-            fs.writeFileSync(path.join(OUTPUT_DIR, 'event_'+Date.now()+'.json'), JSON.stringify(ev, null, 2));
+            try { fs.writeFileSync(path.join(OUTPUT_DIR, 'event_'+Date.now()+'.json'), JSON.stringify(ev, null, 2)); } catch {}
           }
         }
       }
@@ -145,43 +141,56 @@ async function invokeWithTrace(aliasId, sessionId, inputText, carryState) {
         await sleep(1500 + attempt * 1500);
         continue;
       }
-      throw e;
+      // Non-retryable error: return a graceful failure result to avoid aborting the run
+      return { assistantText: '', sessionState: carryState, trace: [], error: String(e?.message || e) };
     }
   }
-  throw lastErr;
+  // After retries, return a graceful failure
+  return { assistantText: '', sessionState: carryState, trace: [], error: String(lastErr?.message || lastErr) };
 }
 
 async function run() {
   const results = [];
   for (const s of SESSIONS) {
-    const aliasId = ALIASES[s.aliasKey];
-    const create = await client.send(new CreateSessionCommand({}));
-    const bedrockSessionId = create.sessionId;
-    const out = { flight: s.flight, session: s.sessionId, bedrockSessionId, aliasKey: s.aliasKey, turns: [] };
-    let state = {
-      sessionAttributes: { default_origin: 'ZAG' },
-      promptSessionAttributes: { default_origin: 'ZAG', default_origin_label: 'Zapresic, Croatia' },
-    };
-    for (let i = 0; i < s.steps.length; i++) {
-      const user = s.steps[i];
-      const { assistantText, sessionState, trace } = await invokeWithTrace(aliasId, bedrockSessionId, user, state);
-      out.turns.push({ turn: i + 1, user, assistant: assistantText, trace });
-      state = sessionState || state;
-    }
-    const file = path.join(OUTPUT_DIR, `${s.flight}_${s.aliasKey}_${Date.now()}.json`);
-    fs.writeFileSync(file, JSON.stringify(out, null, 2));
     try {
-      const inv = await client.send(new ListInvocationsCommand({ sessionIdentifier: bedrockSessionId }));
-      fs.writeFileSync(file.replace('.json','_inv.json'), JSON.stringify(inv, null, 2));
-      if (inv.invocationSummaries?.length) {
-        const steps = await client.send(new ListInvocationStepsCommand({ sessionIdentifier: bedrockSessionId, invocationId: inv.invocationSummaries[0].invocationId }));
-        fs.writeFileSync(file.replace('.json','_steps.json'), JSON.stringify(steps, null, 2));
+      const aliasId = ALIASES[s.aliasKey];
+      const create = await client.send(new CreateSessionCommand({}));
+      const bedrockSessionId = create.sessionId;
+      const out = { flight: s.flight, session: s.sessionId, bedrockSessionId, aliasKey: s.aliasKey, turns: [] };
+      let state = {
+        sessionAttributes: { default_origin: 'ZAG' },
+        promptSessionAttributes: { default_origin: 'ZAG', default_origin_label: 'Zapresic, Croatia' },
+      };
+      for (let i = 0; i < s.steps.length; i++) {
+        const user = s.steps[i];
+        try {
+          const { assistantText, sessionState, trace, error } = await invokeWithTrace(aliasId, bedrockSessionId, user, state);
+          out.turns.push({ turn: i + 1, user, assistant: assistantText, trace, error });
+          state = sessionState || state;
+        } catch (stepErr) {
+          out.turns.push({ turn: i + 1, user, assistant: '', trace: [], error: String(stepErr) });
+        }
       }
-    } catch (e) {
-      fs.writeFileSync(file.replace('.json','_inv_err.txt'), String(e));
+      const file = path.join(OUTPUT_DIR, `${s.flight}_${s.aliasKey}_${Date.now()}.json`);
+      fs.writeFileSync(file, JSON.stringify(out, null, 2));
+      try {
+        const inv = await client.send(new ListInvocationsCommand({ sessionIdentifier: bedrockSessionId }));
+        fs.writeFileSync(file.replace('.json','_inv.json'), JSON.stringify(inv, null, 2));
+        if (inv.invocationSummaries?.length) {
+          const steps = await client.send(new ListInvocationStepsCommand({ sessionIdentifier: bedrockSessionId, invocationId: inv.invocationSummaries[0].invocationId }));
+          fs.writeFileSync(file.replace('.json','_steps.json'), JSON.stringify(steps, null, 2));
+        }
+      } catch (e) {
+        try { fs.writeFileSync(file.replace('.json','_inv_err.txt'), String(e)); } catch {}
+      }
+      results.push({ flight: s.flight, aliasKey: s.aliasKey, file });
+      console.log(`Replayed ${s.flight}/${s.aliasKey} -> ${file}`);
+    } catch (sessionErr) {
+      const errFile = path.join(OUTPUT_DIR, `${s.flight}_${s.aliasKey}_${Date.now()}_error.txt`);
+      try { fs.writeFileSync(errFile, String(sessionErr)); } catch {}
+      results.push({ flight: s.flight, aliasKey: s.aliasKey, file: errFile, error: String(sessionErr) });
+      console.warn(`Replay error ${s.flight}/${s.aliasKey}:`, sessionErr?.name || sessionErr);
     }
-    results.push({ flight: s.flight, aliasKey: s.aliasKey, file });
-    console.log(`Replayed ${s.flight}/${s.aliasKey} -> ${file}`);
   }
   const summary = path.join(OUTPUT_DIR, `summary_${Date.now()}.json`);
   fs.writeFileSync(summary, JSON.stringify(results, null, 2));
