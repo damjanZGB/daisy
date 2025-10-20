@@ -140,7 +140,7 @@
             end
 
             subgraph Proxy[Node Proxy :8787]
-              P1[/POST /invoke\n(Gateway to Bedrock)/]
+              P1[/POST /invoke<br/>(Gateway to Bedrock)/]
               P2[/POST /tools/amadeus/search/]
               P3[/GET /tools/iata/lookup/]
               P4[/POST /tools/datetime/interpret/]
@@ -148,12 +148,12 @@
             end
 
             subgraph Bedrock[Bedrock Agent Runtime]
-              AID[Agent: JDLTXAKYJY\nAliases: Bianca/Paul/Gina]
+              AID[Agent: JDLTXAKYJY<br/>Aliases: Bianca/Paul/Gina]
               AG[Agent Orchestrator]
             end
 
             subgraph Lambda[Action Group Lambda]
-              L1[daisy_in_action-0k2c0\nPython 3.12]
+              L1[daisy_in_action-0k2c0<br/>Python 3.12]
               L2[Destination Recommender]
             end
 
@@ -166,8 +166,14 @@
               S3[(S3 debug-tool-io/)]
             end
 
-            U -->|Chat| F1 & F2 & F3 & F4
-            F1 & F2 & F3 & F4 -->|JSON| P1
+            U -->|Chat| F1
+            U -->|Chat| F2
+            U -->|Chat| F3
+            U -->|Chat| F4
+            F1 -->|JSON| P1
+            F2 -->|JSON| P1
+            F3 -->|JSON| P1
+            F4 -->|JSON| P1
             P1 -->|InvokeAgent (stream)| AG
             AG -->|function-details| L1
             L1 -->|IATA| P3
@@ -176,11 +182,15 @@
             P2 -->|GET offers| AMA
             AMA --> P2
             L1 -->|functionResponse TEXT| AG
-            AG -.events.-> P1
-            P1 -->|text (w/ fallback)| F1 & F2 & F3 & F4
+            AG -. events .-> P1
+            P1 -->|text (w/ fallback)| F1
+            P1 -->|text (w/ fallback)| F2
+            P1 -->|text (w/ fallback)| F3
+            P1 -->|text (w/ fallback)| F4
             L1 --> S3
             L1 --> CW
-            P3 & P4 --> CW
+            P3 --> CW
+            P4 --> CW
         </div>
         <p class="hint">The proxy assembles streamed text from Bedrock and falls back to Lambda’s functionResponse TEXT when Bedrock streams only a heading.</p>
       </section>
@@ -413,15 +423,16 @@ curl -s -X POST http://localhost:8787/invoke \
         <div class="diagram mermaid" id="diag-data">
           flowchart LR
             subgraph Capture[Tool I/O Capture]
-              P[Proxy payload]\n(POST /tools/*)
-              R[Proxy response]\n(Offers + Raw)
+              P[Proxy payload<br/>(POST /tools/*)]
+              R[Proxy response<br/>(Offers + Raw)]
             end
-            P & R --> S3D[(S3 debug-tool-io/)]
+            P --> S3D[(S3 debug-tool-io/)]
+            R --> S3D
             subgraph Replay
               RS[scripts/replay_sessions.mjs]
               EX[scripts/extract_proxy_logs.py]
             end
-            S3D -.source.-> RS
+            S3D -. source .-> RS
             CWL[(CloudWatch Logs)] --> EX
             RS --> SUM[analytics/replay/*.json]
             EX --> SUM
@@ -433,4 +444,3 @@ curl -s -X POST http://localhost:8787/invoke \
   </div>
 </body>
 </html>
-
