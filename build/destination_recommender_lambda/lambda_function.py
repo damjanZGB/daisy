@@ -37,6 +37,14 @@ if DEBUG_S3_BUCKET and boto3 is not None:  # pragma: no cover
     except Exception:
         _S3_CLIENT = None
 
+# ------- Recommender verbosity and size controls -------
+# If false, omit THEN lines in recommender message to keep payloads small (useful in replay/stress).
+RECOMMENDER_VERBOSE = (os.getenv("RECOMMENDER_VERBOSE") or "true").strip().lower() in {"1", "true", "yes", "on"}
+# Max number of options to include in the recommender response.
+RECOMMENDER_MAX_OPTIONS = int((os.getenv("RECOMMENDER_MAX_OPTIONS") or "3").strip() or 3)
+# If the formatted message text exceeds this many bytes, switch to a compact format (limit options, drop THEN lines).
+RECOMMENDER_MAX_TEXT_BYTES = int((os.getenv("RECOMMENDER_MAX_TEXT_BYTES") or "4000").strip() or 4000)
+
 # --------------- Destination Catalog (recommender) ----------------
 _DEST_CATALOG_PATHS = [
     os.path.join(os.getcwd(), "data", "lh_destinations_catalog.json"),
@@ -1918,7 +1926,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     lines.append(header)
                     if carriers_txt:
                         lines.append(f"    - Carriers: {carriers_txt}")
-                    if isinstance(offer.get("segments"), list) and offer["segments"]:
+                    if RECOMMENDER_VERBOSE and isinstance(offer.get("segments"), list) and offer["segments"]:
                         # Show up to 3 segments as THEN lines
                         for s in offer["segments"][:3]:
                             c = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
@@ -1936,6 +1944,37 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     # Sanitize any non-ASCII separators that may slip in due to encoding
                     m = m.replace("\u001a", "->").replace("\u0007", " | ")
                     payload["message"] = m
+                    # Compact the message if it exceeds the configured byte threshold
+                    try:
+                        _msg_bytes = len(payload["message"].encode("utf-8")) if isinstance(payload.get("message"), str) else 0
+                    except Exception:
+                        _msg_bytes = len(str(payload.get("message", "")))
+                    if _msg_bytes > RECOMMENDER_MAX_TEXT_BYTES:
+                        compact_lines: List[str] = []
+                        _max_opts = min(RECOMMENDER_MAX_OPTIONS, 2)
+                        for _idx2, _opt2 in enumerate(options[:_max_opts], start=1):
+                            _offer2 = _opt2.get("offer") or {}
+                            _price2 = _fmt_price(_offer2.get("totalPrice"), _offer2.get("currency") or currency)
+                            _dep2 = _offer2.get("departureAirport") or "?"
+                            _arr2 = _offer2.get("arrivalAirport") or (_opt2.get("destination") or "?")
+                            _dur2 = _offer2.get("duration") or "?"
+                            _stops2 = _opt2.get("stops")
+                            _stops_txt2 = "nonstop" if _stops2 == 0 else (f"{_stops2} stop" if _stops2 == 1 else f"{_stops2} stops")
+                            _header2 = f"{_idx2}) {_opt2.get('label') or 'Option'} - {_dep2} -> {_arr2} | {_opt2.get('date')} | {_stops_txt2} | {_dur2} | **{_price2}**"
+                            compact_lines.append(_header2)
+                            _carriers2 = _offer2.get("carriers") or []
+                            _carriers_txt2 = ",".join(_carriers2) if isinstance(_carriers2, list) else str(_carriers2 or "")
+                            if _carriers_txt2:
+                                compact_lines.append(f"    - Carriers: {_carriers_txt2}")
+                        _compact_msg = "\n".join(compact_lines + ["", closing])
+                        payload["message"] = _compact_msg
+                        _log(
+                            "Recommender message compacted",
+                            originalBytes=_msg_bytes,
+                            threshold=RECOMMENDER_MAX_TEXT_BYTES,
+                            maxOptions=RECOMMENDER_MAX_OPTIONS,
+                            verbose=RECOMMENDER_VERBOSE,
+                        )
                     # Cache a minimal selection map in session for smoother follow-ups.
                     try:
                         sess = event.setdefault("sessionAttributes", {})
@@ -1971,7 +2010,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                         "carriers": off.get("carriers"),
                         "id": off.get("id"),
                     }
-                payload["options"] = [ _brief(o) for o in options[:3] ]
+                payload["options"] = [ _brief(o) for o in options[: max(1, RECOMMENDER_MAX_OPTIONS) ] ]
             except Exception as exc:
                 _log("Itinerary aggregator failed", error=str(exc))
         # If we still don't have a message (no options), provide a short, clean candidate list
@@ -1986,6 +2025,15 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 reason = c.get("reason") or ""
                 msg_lines.append(f"- {idx}) {city}, {country} ({code}) — {reason}")
             payload["message"] = "\n".join(msg_lines)
+        # Log payload size to help diagnose occasional agent runtime size limits
+        try:
+            _resp_bytes = len(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+        except Exception:
+            _resp_bytes = None
+        try:
+            _msg_bytes2 = len((payload.get("message") or "").encode("utf-8")) if isinstance(payload.get("message"), str) else None
+        except Exception:
+            _msg_bytes2 = None
         _log(
             "Destination recommendations prepared",
             origin=origin_code,
@@ -1993,6 +2041,8 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             monthRange=month_range_text,
             themeTags=theme_tags,
             candidates=len(candidates),
+            messageBytes=_msg_bytes2,
+            responseBytes=_resp_bytes,
         )
         return _wrap_function(event, 200, payload)
 

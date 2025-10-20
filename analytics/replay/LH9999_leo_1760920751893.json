@@ -1,0 +1,44 @@
+{
+  "flight": "LH9999",
+  "session": "0aae5c0f-61e4-407a-83cf-bda1d58cd552",
+  "bedrockSessionId": "8a56ad78-cc6e-499b-bd8f-82e77bcc701f",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hello! I'm here to help you explore exciting travel options with Lufthansa Group. If you're thinking about flying somewhere soon, what kind of adventure are you dreaming of today?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "That sounds wonderful! To confirm, you'd like to travel to <strong>Zurich</strong> next Saturday. Let's convert that date to a format we can use for searching flights.",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "I can be connecting flight",
+      "assistant": "Got it! We'll look for flights that might include a connecting option. Let's first convert the date.",
+      "trace": []
+    },
+    {
+      "turn": 4,
+      "user": "Show me the alternatives",
+      "assistant": "It seems there are no direct flights available for your travel dates. However, here are some alternative options that might suit your plans, including those with connections:",
+      "trace": []
+    },
+    {
+      "turn": 5,
+      "user": "Show me the alternatives. Inspire me",
+      "assistant": "Here are some inspiring alternatives for your journey to Zurich, including options with connections:",
+      "trace": []
+    },
+    {
+      "turn": 6,
+      "user": "Yes. Show me the alternatives",
+      "assistant": "Here are some inspiring alternatives for your journey to Zurich, including options with connections:",
+      "trace": []
+    }
+  ]
+}

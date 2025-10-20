@@ -1,0 +1,44 @@
+{
+  "flight": "LH1378",
+  "session": "2a422dff-3f11-44e9-aee7-bdca3aa8ec0b",
+  "bedrockSessionId": "d90666d1-a551-4733-835d-253a58c057ac",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hello and welcome aboard the Lufthansa Group experience. I am Aris, your digital travel orchestrator. Tell me—what kind of journey are you envisioning today?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Could you please specify the departure airport? If you don't have one in mind, we can default to Zagreb (ZAG).",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Correct. Use default",
+      "assistant": "It appears there are no direct flights available from Zagreb to Zurich on the date you specified. Would you like to adjust the travel dates or consider nearby Lufthansa Group destinations for your journey?",
+      "trace": []
+    },
+    {
+      "turn": 4,
+      "user": "Zagreb to Zurich, departure, 25.10.2025",
+      "assistant": "I'm sorry, but it seems there are no direct flights available from Zagreb to Zurich on October 25, 2025. Would you like to adjust the travel dates or consider nearby Lufthansa Group destinations for your journey?",
+      "trace": []
+    },
+    {
+      "turn": 5,
+      "user": "01.11.2025",
+      "assistant": "I'm sorry, but it seems there are no direct flights available from Zagreb to Zurich on November 1, 2025. Would you like to adjust the travel dates or consider nearby Lufthansa Group destinations for your journey?",
+      "trace": []
+    },
+    {
+      "turn": 6,
+      "user": "Show me the alternatives",
+      "assistant": "I'm sorry, but it seems there are no alternative destinations available that fit the 'alternative' theme for your travel in November 2025. Would you like to adjust the travel dates or consider a different theme for your journey?",
+      "trace": []
+    }
+  ]
+}
