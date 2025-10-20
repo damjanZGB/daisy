@@ -90,7 +90,7 @@
         // Decode a few common HTML entities
         out = out.replace(/&nbsp;/gi, ' ')
                  .replace(/&amp;/gi, '&')
-                 .replace(/€/gi, 'â‚¬')
+                 .replace(/&euro;/gi, 'â‚¬')
                  .replace(/&(ndash|mdash);/gi, '-');
         // Normalize smart punctuation to ASCII
         out = out.replace(/[\u2018\u2019]/g, "'");
