@@ -1,0 +1,44 @@
+{
+  "flight": "LH1378",
+  "session": "2a422dff-3f11-44e9-aee7-bdca3aa8ec0b",
+  "bedrockSessionId": "1a58919b-7ac9-4ed5-bcf4-d5245f936671",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hello! Welcome to Lufthansa Group. I am Aris, your digital travel orchestrator. Tell me—what kind of journey are you envisioning today?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Thank you for sharing your travel plans. To confirm, you would like to travel to Zurich next Saturday. Let me convert that date to ISO format for our search.",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Correct. Use default",
+      "assistant": "Great! For the origin, we'll use the default, which is Zapresic, Croatia (ZAG). Let's confirm this and proceed with the search.",
+      "trace": []
+    },
+    {
+      "turn": 4,
+      "user": "Zagreb to Zurich, departure, 25.10.2025",
+      "assistant": "Thank you for confirming. To proceed, I'll convert the departure date to ISO format and then search for flights.",
+      "trace": []
+    },
+    {
+      "turn": 5,
+      "user": "01.11.2025",
+      "assistant": "Thank you for providing the return date. I'll convert both dates to ISO format and then search for flights.",
+      "trace": []
+    },
+    {
+      "turn": 6,
+      "user": "Show me the alternatives",
+      "assistant": "I'm sorry, but there are currently no Lufthansa Group flights available for your selected dates and route. However, I can suggest alternative dates or nearby Lufthansa Group destinations if you'd like.",
+      "trace": []
+    }
+  ]
+}
