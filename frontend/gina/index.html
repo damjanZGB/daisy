@@ -608,9 +608,15 @@
           }
           const botMsg = { id: uid(), role: 'assistant', text: reply || 'No text response.', meta, ts: new Date().toISOString() };
           setMessages(m => [...m, botMsg]);
-          // If user just confirmed/held/booking and we have an itinerary, generate a PDF link as last message
-          if (/(confirm|confirmed|book|hold)/i.test(input) && parsedOptions && parsedOptions.length) {
-            const blob = await generatePdf(parsedOptions[0]);
+          // If user asked to confirm/hold/book OR explicitly asked for a PDF/download,
+          // generate a PDF from the latest known itinerary options.
+          const wantsPdf = /\b(pdf|download( log)?|itinerary)\b/i.test(input) && /(\b(pdf|itinerary)\b|\bdownload\b)/i.test(input);
+          // Use parsedOptions if it is a non-empty array; otherwise, fall back to lastItinerary.
+          const source = Array.isArray(parsedOptions) && parsedOptions.length > 0
+            ? parsedOptions
+            : lastItinerary;
+          if (wantsPdf && source && source.length) {
+            const blob = await generatePdf(source[0]);
             if (blob) {
               const url = URL.createObjectURL(blob);
               const pdfMsg = { id: uid(), role: 'assistant', text: 'Your booking is confirmed. Download your itinerary (PDF):', meta: { pdfUrl: url, pdfName: 'itinerary.pdf' }, ts: new Date().toISOString() };

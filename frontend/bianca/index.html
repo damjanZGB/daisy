@@ -199,6 +199,7 @@
       const [messages, setMessages] = useState([
         { id: uid(), role: 'assistant', text: INITIAL_ASSISTANT_TEXT, ts: new Date().toISOString() }
       ]);
+      const [lastItinerary, setLastItinerary] = useState(null);
       const transcriptSentRef = useRef(0);
       const deriveLookupUrl = (base) => {
         try {
@@ -644,12 +645,17 @@
           const data = await res.json();
           const reply = sanitizeAssistantText((data.text || data.responseText || data.answer || '').trim());
           const meta = data.cid ? `cid ${data.cid}` : undefined;
-          // Parse itinerary options and optionally emit a PDF link on confirm/hold/book
+          // Parse itinerary options and optionally emit a PDF link on confirm/hold/book or pdf/download
           const parsedOptions = parseItineraryOptions(reply);
+          if (parsedOptions && parsedOptions.length) {
+            setLastItinerary(parsedOptions);
+          }
           const botMsg = { id: uid(), role: 'assistant', text: reply || 'No text response.', meta, ts: new Date().toISOString() };
           setMessages(m => [...m, botMsg]);
-          if (/(confirm|confirmed|book|hold)/i.test(text) && parsedOptions && parsedOptions.length) {
-            const blob = await generatePdf(parsedOptions[0]);
+          const wantsPdf = /(confirm|confirmed|book|hold|pdf|download|itinerary)/i.test(text);
+          const source = (parsedOptions && parsedOptions.length) ? parsedOptions : lastItinerary;
+          if (wantsPdf && source && source.length) {
+            const blob = await generatePdf(source[0]);
             if (blob) {
               const url = URL.createObjectURL(blob);
               const pdfMsg = { id: uid(), role: 'assistant', text: 'Your booking is confirmed. Download your itinerary (PDF):', meta: { pdfUrl: url, pdfName: 'itinerary.pdf' }, ts: new Date().toISOString() };
