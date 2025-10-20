@@ -78,9 +78,17 @@
     const sanitizeAssistantText = (t) => {
       if (!t) return '';
       let out = String(t);
+      // Remove Bedrock askuser/sources wrappers
       out = out.replace(/<user__askuser[^>]*question=\"([^\"]+)\"[^>]*>/gi, '$1');
       out = out.replace(/<\/user__askuser>/gi, '');
       out = out.replace(/<sources>[\s\S]*?<\/sources>/gi, '');
+      // Normalize smart punctuation to ASCII
+      out = out.replace(/[\u2018\u2019]/g, "'");
+      out = out.replace(/[\u201C\u201D]/g, '"');
+      out = out.replace(/[\u2013\u2014]/g, '-');
+      // Replace degree symbol with plain C (e.g., 26°C -> 26 C)
+      out = out.replace(/\s*\u00B0\s*C/gi, ' C');
+      // Collapse excessive blank lines
       out = out.replace(/\n{3,}/g, '\n\n');
       return out.trim();
     };

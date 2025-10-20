@@ -75,15 +75,21 @@
     })();
     const { useState, useEffect, useRef, useMemo, useCallback } = React;
     // Sanitizer: strip askuser/sources markers and normalize spacing
-    const sanitizeAssistantText = (t) => {
-      if (!t) return '';
-      let out = String(t);
-      out = out.replace(/<user__askuser[^>]*question=\"([^\"]+)\"[^>]*>/gi, '$1');
-      out = out.replace(/<\/user__askuser>/gi, '');
-      out = out.replace(/<sources>[\s\S]*?<\/sources>/gi, '');
-      out = out.replace(/\n{3,}/g, '\n\n');
-      return out.trim();
-    };
+      const sanitizeAssistantText = (t) => {
+        if (!t) return '';
+        let out = String(t);
+        // Remove wrappers
+        out = out.replace(/<user__askuser[^>]*question=\"([^\"]+)\"[^>]*>/gi, '$1');
+        out = out.replace(/<\/user__askuser>/gi, '');
+        out = out.replace(/<sources>[\s\S]*?<\/sources>/gi, '');
+        // Normalize smart punctuation to ASCII
+        out = out.replace(/[\u2018\u2019]/g, "'");
+        out = out.replace(/[\u201C\u201D]/g, '"');
+        out = out.replace(/[\u2013\u2014]/g, '-');
+        out = out.replace(/\s*\u00B0\s*C/gi, ' C');
+        out = out.replace(/\n{3,}/g, '\n\n');
+        return out.trim();
+      };
     // Parse numbered itinerary options with optional THEN lines
     const parseItineraryOptions = (text) => {
       const lines = String(text||'').split(/\r?\n/);

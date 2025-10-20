@@ -2121,15 +2121,14 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 _log("Itinerary aggregator failed", error=str(exc))
         # If we still don't have a message (no options), provide a short, clean candidate list
         if not payload.get("message"):
-            msg_lines = [
-                "Here are destination ideas that fit your theme (I can expand dates to find flights):"
-            ]
+            header = "Inspiration — top matches (ASCII)"
+            msg_lines = [header]
             for idx, c in enumerate(candidates[:5], start=1):
                 city = c.get("city") or "?"
                 country = c.get("country") or "?"
                 code = c.get("code") or "?"
-                reason = c.get("reason") or ""
-                msg_lines.append(f"- {idx}) {city}, {country} ({code}) — {reason}")
+                reason = (c.get("reason") or "").replace("°", " ").replace("\u00B0", " ")
+                msg_lines.append(f"{idx}) {city}, {country} ({code}) - {reason}")
             payload["message"] = "\n".join(msg_lines)
         # Log payload size to help diagnose occasional agent runtime size limits
         try:
