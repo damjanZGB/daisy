@@ -186,6 +186,7 @@
               } 
               catch(_){} 
             }
+          form.flatten();
           const [pg]=await finalDoc.copyPages(src,[0]); finalDoc.addPage(pg);
         }
         if (finalDoc.getPageCount() === 0) { finalDoc.addPage(); } const bytes=await finalDoc.save();
