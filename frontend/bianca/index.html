@@ -311,7 +311,7 @@
         }
       })();
       const locationLabel = locationInfo?.label || 'Detecting location...';
-      const originLabel = locationInfo?.inferredOrigin ? `Default origin: ${locationInfo.inferredOrigin}` : '';
+      const detecting = /detecting/i.test(String(locationLabel));
       const statusClass = proxyOnline ? 'bg-emerald-400' : 'bg-red-500';
       const statusTitle = proxyOnline ? 'Proxy online' : 'Proxy offline';
       return (
@@ -327,8 +327,13 @@
             <div className="flex items-center gap-2 text-xs text-white/70">
               <span className={`h-2.5 w-2.5 rounded-full ${statusClass}`} title={statusTitle}></span>
               <div className="text-right sm:text-left">
-                <div>{locationLabel}</div>
-                <div className="text-white/50">{formattedTime}{originLabel}</div>
+                <div className="flex items-center gap-1.5">
+                  {detecting ? (
+                    <span className="inline-block h-2.5 w-2.5 border-2 border-white/40 border-t-transparent rounded-full animate-spin" aria-label="Detecting location" />
+                  ) : null}
+                  <span>{locationLabel}</span>
+                </div>
+                <div className="text-white/50">{formattedTime}</div>
               </div>
             </div>
           </div>
@@ -391,7 +396,7 @@
         label: 'Detecting location...',
         tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
         localTime: new Date(),
-        inferredOrigin: localStorage.getItem('inferred_origin') || null,
+        inferredOrigin: (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('inferred_origin')) || null,
       });
       const [proxyOnline, setProxyOnline] = useState(true);
       const locationHintSentRef = useRef(null);
@@ -466,8 +471,8 @@
             localTime: new Date(),
             inferredOrigin: inferred || prev.inferredOrigin || null,
           }));
-          if (inferred) {
-            localStorage.setItem('inferred_origin', inferred);
+          if (inferred && typeof sessionStorage !== 'undefined') {
+            try { sessionStorage.setItem('inferred_origin', inferred); } catch {}
           }
         };
         const updateFromCoords = async (lat, lon) => {
@@ -478,7 +483,7 @@
             const locality = data.city || data.locality || data.principalSubdivision || '';
             const country = data.countryName || data.countryCode || '';
             const label = [locality, country].filter(Boolean).join(', ') || 'Current location';
-            let inferred = await inferIata({ lat, lon, term: locality });
+            let inferred = await inferIata({ lat, lon });
             if (!inferred && country) inferred = await inferIata({ term: country });
             applyLocation(label, Intl.DateTimeFormat().resolvedOptions().timeZone, inferred);
             return true;
@@ -498,8 +503,11 @@
             const label = [city, region, country].filter(Boolean).join(', ') || 'Approximate location';
             const lat = Number(data.latitude);
             const lon = Number(data.longitude);
-            let inferred = await inferIata({ term: city, lat, lon });
-            if (!inferred && country) inferred = await inferIata({ term: country });
+            let inferred = await inferIata({ lat, lon });
+            if (!inferred && (isNaN(lat) || isNaN(lon))) {
+              if (city) inferred = await inferIata({ term: city });
+              if (!inferred && country) inferred = await inferIata({ term: country });
+            }
             applyLocation(label, tz, inferred);
           } catch {
             applyLocation('Location unavailable', Intl.DateTimeFormat().resolvedOptions().timeZone, null);
