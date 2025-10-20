@@ -1,0 +1,27 @@
+{
+  "flight": "LH9998",
+  "session": "fc6c9c4f-6c3e-4a9e-9a9a-999899989998",
+  "bedrockSessionId": "eb21180b-9430-42fa-8f39-04f76b0e9f7d",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Family city break in April weekend",
+      "assistant": "Could you please confirm the default origin city, Zapresic, Croatia (ZAG)? If not, please specify your preferred departure city. Also, could you tell me which weekend in April you're considering for your city break?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "Any nonstop suggestions?",
+      "assistant": "",
+      "trace": [],
+      "error": "The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    },
+    {
+      "turn": 3,
+      "user": "Show me alternative dates",
+      "assistant": "Could you please specify the exact weekend in April you're considering for your city break?",
+      "trace": []
+    }
+  ]
+}

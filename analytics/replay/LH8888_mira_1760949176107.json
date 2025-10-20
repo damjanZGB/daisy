@@ -1,0 +1,27 @@
+{
+  "flight": "LH8888",
+  "session": "fb5b9b3f-6c3e-4a9e-9a9a-888888888888",
+  "bedrockSessionId": "a4e66f0c-62e8-477e-8049-e72b3e077dbb",
+  "aliasKey": "mira",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Cold place for skiing in January",
+      "assistant": "",
+      "trace": [],
+      "error": "The Lambda response is malformed. Only TEXT is supported for functionContentType"
+    },
+    {
+      "turn": 2,
+      "user": "Prefer shortest travel time",
+      "assistant": "Could you please provide the origin, destination, and travel dates for your trip? We'll focus on finding the shortest travel time.",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Hold the best value option",
+      "assistant": "To find the best value option with the shortest travel time, could you please specify the origin, destination, and travel dates?",
+      "trace": []
+    }
+  ]
+}

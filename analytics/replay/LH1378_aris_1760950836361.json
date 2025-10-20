@@ -1,0 +1,45 @@
+{
+  "flight": "LH1378",
+  "session": "2a422dff-3f11-44e9-aee7-bdca3aa8ec0b",
+  "bedrockSessionId": "e6a2a6ff-37db-4bfa-9c3d-2ac70098b3c0",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hello! I am Paul, your Digital Travel Assistant. How can I assist you with your travel plans today? Are you looking for a specific destination, dates, or any particular preferences?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Could you please confirm the departure city? If you haven't specified one, we'll use the default origin, Zapresic, Croatia.",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Correct. Use default",
+      "assistant": "",
+      "trace": [],
+      "error": "Dependency resource: received model timeout/error exception from Bedrock. Try the request again."
+    },
+    {
+      "turn": 4,
+      "user": "Zagreb to Zurich, departure, 25.10.2025",
+      "assistant": "Thank you for the details. Let me confirm the date for you.",
+      "trace": []
+    },
+    {
+      "turn": 5,
+      "user": "01.11.2025",
+      "assistant": "I am momentarily unable to retrieve flight details. Let us refine the dates or select a nearby airport.",
+      "trace": []
+    },
+    {
+      "turn": 6,
+      "user": "Show me the alternatives",
+      "assistant": "I am momentarily unable to retrieve flight details. Let us refine the dates or select a nearby airport.",
+      "trace": []
+    }
+  ]
+}

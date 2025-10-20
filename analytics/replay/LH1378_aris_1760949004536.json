@@ -1,0 +1,44 @@
+{
+  "flight": "LH1378",
+  "session": "2a422dff-3f11-44e9-aee7-bdca3aa8ec0b",
+  "bedrockSessionId": "bb81972d-a52d-4016-9270-a70f4a446150",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "How can I assist you with your travel plans today?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Unfortunately, there are no direct flights to Zurich on October 25, 2025. However, here are some alternative options:   1. **October 26, 2025**: Departing from Zapresic, Croatia (ZAG) at 17:50 and arriving in Zurich (ZRH) at 08:25 the next day. This flight has 1 stop and is operated by Austrian Airlines (OS). The total price is €246.20.   2. **November 15, 2025**: Departing from Zapresic, Croatia (ZAG) at 18:40 and arriving in Zurich (ZRH) at 21:45 the same day. This flight has 1 stop and is operated by Lufthansa (LH). The total price is €177.98.   3. **November 22, 2025**: Departing from Zapresic, Croatia (ZAG) at 18:40 and arriving in Zurich (ZRH) at 21:45 the same day. This flight has 1 stop and is operated by Lufthansa (LH). The total price is €177.98.   Which option would you prefer, or would you like to adjust the travel dates?",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Correct. Use default",
+      "assistant": "Given the unavailability of direct flights on October 25, 2025, the first alternative option will be considered the default choice for your travel plans:   **October 26, 2025**: Departing from Zapresic, Croatia (ZAG) at 17:50 and arriving in Zurich (ZRH) at 08:25 the next day. This flight has 1 stop and is operated by Austrian Airlines (OS). The total price is €246.20.   Please confirm if this itinerary works for you or if you would like to adjust the travel dates.",
+      "trace": []
+    },
+    {
+      "turn": 4,
+      "user": "Zagreb to Zurich, departure, 25.10.2025",
+      "assistant": "Unfortunately, there are no direct flights to Zurich on October 25, 2025. However, here are some alternative options:   1. **October 26, 2025**: Departing from Zagreb (ZAG) at 17:50 and arriving in Zurich (ZRH) at 08:25 the next day. This flight has 1 stop and is operated by Austrian Airlines (OS). The total price is €246.20.   2. **November 15, 2025**: Departing from Zagreb (ZAG) at 18:40 and arriving in Zurich (ZRH) at 21:45 the same day. This flight has 1 stop and is operated by Lufthansa (LH). The total price is €177.98.   Which option would you prefer, or would you like to adjust the travel dates?",
+      "trace": []
+    },
+    {
+      "turn": 5,
+      "user": "01.11.2025",
+      "assistant": "Unfortunately, there are no direct flights to Zurich on November 1, 2025. However, here are some alternative options:   1. **October 31, 2025**: Departing from Zagreb (ZAG) at 11:55 and arriving in Zurich (ZRH) at 11:10 the next day. This flight has 1 stop and is operated by Eurowings (EW) and Swiss (LX). The total price is €219.04.   2. **November 2, 2025**: Departing from Zagreb (ZAG) at 13:20 and arriving in Zurich (ZRH) at 11:35 the next day. This flight has 1 stop and is operated by Eurowings (EW) and Swiss (LX). The total price is €237.04.   3. **November 3, 2025**: Departing from Zagreb (ZAG) at 18:40 and arriving in Zurich (ZRH) at 21:45 the same day. This flight has 1 stop and is operated by Lufthansa (LH). The total price is €237.98.   4. **October 29, 2025**: Departing from Zagreb (ZAG) at 18:40 and arriving in Zurich (ZRH) at 21:45 the same day. This flight has 1 stop and is operated by Lufthansa (LH). The total price is €237.98.   5. **November 29, 2025**: Departing from Zagreb (ZAG) at 18:40 and arriving in Zurich (ZRH) at 21:45 the same day. This flight has 1 stop and is operated by Lufthansa (LH). The total price is €177.98.   Which option would you prefer, or would you like to adjust the travel dates?",
+      "trace": []
+    },
+    {
+      "turn": 6,
+      "user": "Show me the alternatives",
+      "assistant": "Here are the alternative flight options for your travel from Zagreb to Zurich:   1. **October 31, 2025**: Departing from Zagreb (ZAG) at 11:55 and arriving in Zurich (ZRH) at 11:10 the next day. This flight has 1 stop and is operated by Eurowings (EW) and Swiss (LX). The total price is €219.04.   2. **November 2, 2025**: Departing from Zagreb (ZAG) at 13:20 and arriving in Zurich (ZRH) at 11:35 the next day. This flight has 1 stop and is operated by Eurowings (EW) and Swiss (LX). The total price is €237.04.   3. **November 3, 2025**: Departing from Zagreb (ZAG) at 18:40 and arriving in Zurich (ZRH) at 21:45 the same day. This flight has 1 stop and is operated by Lufthansa (LH). The total price is €237.98.   4. **October 29, 2025**: Departing from Zagreb (ZAG) at 18:40 and arriving in Zurich (ZRH) at 21:45 the same day. This flight has 1 stop and is operated by Lufthansa (LH). The total price is €237.98.   5. **November 29, 2025**: Departing from Zagreb (ZAG) at 18:40 and arriving in Zurich (ZRH) at 21:45 the same day. This flight has 1 stop and is operated by Lufthansa (LH). The total price is €177.98.",
+      "trace": []
+    }
+  ]
+}

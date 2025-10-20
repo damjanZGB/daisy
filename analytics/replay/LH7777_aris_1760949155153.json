@@ -1,0 +1,27 @@
+{
+  "flight": "LH7777",
+  "session": "fa4a9a2f-6c3e-4a9e-9a9a-777777777777",
+  "bedrockSessionId": "17cc725c-5a01-41bc-90c9-eed94fa0a74f",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Some warm place with beach in March next year",
+      "assistant": "",
+      "trace": [],
+      "error": "The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    },
+    {
+      "turn": 2,
+      "user": "Yes, show me a few options",
+      "assistant": "Hello! To provide you with the best flight options, could you please tell me your intended departure city, destination, and travel dates? If you're unsure about airport codes, just mention the city name, and I'll find the IATA code for you.",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Option 1 looks good",
+      "assistant": "Thank you for your interest! To proceed, could you please specify the departure city, destination, and travel dates for your trip? This will help me find the best flight options for you.",
+      "trace": []
+    }
+  ]
+}

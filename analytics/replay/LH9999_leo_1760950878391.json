@@ -1,0 +1,44 @@
+{
+  "flight": "LH9999",
+  "session": "0aae5c0f-61e4-407a-83cf-bda1d58cd552",
+  "bedrockSessionId": "f8c552de-554e-4d07-9512-cac2c18f7653",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul, your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "It seems there are no direct flights available for next Saturday. However, here are two alternative options for you:<br/>\n1) Departing on October 26, 2025, with 1 stop, duration of 14h 35m, and a price of **246 EUR**.<br/>\n2) Departing on November 15, 2025, with 1 stop, duration of 3h 5m, and a price of **178 EUR**.<br/>\nWhich option would you prefer, or do you need further assistance?",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "I can be connecting flight",
+      "assistant": "Great! Both alternatives include a connecting flight. Which one would you like to proceed with, or would you prefer to adjust the travel date?",
+      "trace": []
+    },
+    {
+      "turn": 4,
+      "user": "Show me the alternatives",
+      "assistant": "Here are the two alternative options for you:<br/>\n1) Departing on October 26, 2025, with 1 stop, duration of 14h 35m, and a price of **246 EUR**.<br/>\n2) Departing on November 15, 2025, with 1 stop, duration of 3h 5m, and a price of **178 EUR**.<br/>\nWhich option would you prefer, or do you need further assistance?",
+      "trace": []
+    },
+    {
+      "turn": 5,
+      "user": "Show me the alternatives. Inspire me",
+      "assistant": "Here are the two alternative options for you, each with its own unique adventure:<br/>\n1) Departing on October 26, 2025, with 1 stop, duration of 14h 35m, and a price of **246 EUR**. Imagine the thrill of exploring Zurich's vibrant culture and stunning architecture after a long journey!<br/>\n2) Departing on November 15, 2025, with 1 stop, duration of 3h 5m, and a price of **178 EUR**. Picture yourself arriving in Zurich just in time to experience the city's breathtaking autumn scenery and cozy cafes!<br/>\nWhich option would you prefer, or do you need further assistance?",
+      "trace": []
+    },
+    {
+      "turn": 6,
+      "user": "Yes. Show me the alternatives",
+      "assistant": "Here are the two alternative options for you:<br/>\n1) Departing on October 26, 2025, with 1 stop, duration of 14h 35m, and a price of **246 EUR**.<br/>\n2) Departing on November 15, 2025, with 1 stop, duration of 3h 5m, and a price of **178 EUR**.<br/>\nWhich option would you prefer, or do you need further assistance?",
+      "trace": []
+    }
+  ]
+}

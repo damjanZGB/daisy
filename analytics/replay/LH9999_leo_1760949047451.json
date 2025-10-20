@@ -1,0 +1,44 @@
+{
+  "flight": "LH9999",
+  "session": "0aae5c0f-61e4-407a-83cf-bda1d58cd552",
+  "bedrockSessionId": "606189ab-562a-4bc6-818b-e7337722a6bc",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul, your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "It seems there are no direct flights to Zurich on the requested date. However, here are some alternatives:\\n\\n1. **Flight OS10**: Departing on 2025-10-26 at 17:50, arriving at 08:25 the next day. 1 stop. **Price: €246.20. 1 stop.**\\n\\n2. **Flight LH6**: Departing on 2025-11-15 at 18:40, arriving at 21:45 the same day. 1 stop. **Price: €177.98. 1 stop.**\\n\\nWhich option would you prefer?",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "I can be connecting flight",
+      "assistant": "Great! Here are the connecting flight options again:\\n\\n1. **Flight OS10**: Departing on 2025-10-26 at 17:50, arriving at 08:25 the next day. 1 stop. **Price: €246.20. 1 stop.**\\n\\n2. **Flight LH6**: Departing on 2025-11-15 at 18:40, arriving at 21:45 the same day. 1 stop. **Price: €177.98. 1 stop.**\\n\\nWhich one would you like to book?",
+      "trace": []
+    },
+    {
+      "turn": 4,
+      "user": "Show me the alternatives",
+      "assistant": "Here are the connecting flight options again:\\n\\n1. **Flight OS10**: Departing on 2025-10-26 at 17:50, arriving at 08:25 the next day. 1 stop. **Price: €246.20. 1 stop.**\\n\\n2. **Flight LH6**: Departing on 2025-11-15 at 18:40, arriving at 21:45 the same day. 1 stop. **Price: €177.98. 1 stop.**\\n\\nWhich one would you like to book?",
+      "trace": []
+    },
+    {
+      "turn": 5,
+      "user": "Show me the alternatives. Inspire me",
+      "assistant": "Here are the connecting flight options again, with some inspiration for each:\\n\\n1. **Flight OS10**: Departing on 2025-10-26 at 17:50, arriving at 08:25 the next day. 1 stop. **Price: €246.20. 1 stop.**\\n\\n   *Inspiration*: This flight offers a longer journey with an overnight stay, providing a unique opportunity to experience a different city before continuing to Zurich.\\n\\n2. **Flight LH6**: Departing on 2025-11-15 at 18:40, arriving at 21:45 the same day. 1 stop. **Price: €177.98. 1 stop.**\\n\\n   *Inspiration*: This shorter journey keeps you in the air for less time, allowing you to reach Zurich sooner and dive straight into your adventure.\\n\\nWhich one would you like to book?",
+      "trace": []
+    },
+    {
+      "turn": 6,
+      "user": "Yes. Show me the alternatives",
+      "assistant": "Here are the connecting flight options again:\\n\\n1. **Flight OS10**: Departing on 2025-10-26 at 17:50, arriving at 08:25 the next day. 1 stop. **Price: €246.20. 1 stop.**\\n\\n2. **Flight LH6**: Departing on 2025-11-15 at 18:40, arriving at 21:45 the same day. 1 stop. **Price: €177.98. 1 stop.**\\n\\nWhich one would you like to book?",
+      "trace": []
+    }
+  ]
+}
