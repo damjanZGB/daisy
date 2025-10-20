@@ -1,0 +1,74 @@
+{
+  "flight": "LH6814",
+  "session": "03b364a6-904f-4eba-ac72-9bc8bae96966",
+  "bedrockSessionId": "dcd28295-856f-47fd-9099-8644904d4c7b",
+  "aliasKey": "mira",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hello! I am Mira, your Lufthansa Group digital travel companion. Let us imagine together what kind of journey would truly feel right for you. To start, could you share what kind of memories or experiences you hope to create on your trip?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "That sounds wonderful! To confirm, you would like to travel to Zurich next Saturday. Could you please confirm the exact date you have in mind?",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Next saturday",
+      "assistant": "Thank you for confirming! To confirm, you would like to travel to Zurich on 2025-10-25. Could you also confirm your departure airport? If you need help finding the nearest airport, I can assist with that.",
+      "trace": []
+    },
+    {
+      "turn": 4,
+      "user": "Closest ariport to me.",
+      "assistant": "I'm sorry, but I couldn't find the closest airport based on the term \"closest airport.\" Could you please provide your location or city to help me find the nearest airport?",
+      "trace": []
+    },
+    {
+      "turn": 5,
+      "user": "Nearest airport to my location",
+      "assistant": "I understand. To find the nearest airport to your location, could you please provide your city or region?",
+      "trace": []
+    },
+    {
+      "turn": 6,
+      "user": "ZAG",
+      "assistant": "Thank you for providing your location. To confirm, you would like to travel to Zurich on 2025-10-25, departing from Zagreb Franjo Tuđman International Airport (ZAG). Could you please confirm if this information is correct?",
+      "trace": []
+    },
+    {
+      "turn": 7,
+      "user": "Yes",
+      "assistant": "I'm sorry, but I couldn't find any matching flights for your travel dates. Would you like to adjust the dates or consider nearby Lufthansa Group hubs for your journey to Zurich?",
+      "trace": []
+    },
+    {
+      "turn": 8,
+      "user": "Show me the alternatives",
+      "assistant": "I'm sorry, but I couldn't find any matching flights for your travel dates. Would you like to adjust the dates or consider nearby Lufthansa Group hubs for your journey to Zurich?",
+      "trace": []
+    },
+    {
+      "turn": 9,
+      "user": "Zagreb, zurich, 01.11.2025, one passenger return 03.11.2025",
+      "assistant": "Thank you for providing the details. To confirm, you would like to travel from Zagreb to Zurich on November 1, 2025, and return on November 3, 2025, for one passenger. Is this information correct?",
+      "trace": []
+    },
+    {
+      "turn": 10,
+      "user": "Yes",
+      "assistant": "I'm sorry, but I couldn't find any flights matching your travel dates. Would you like to adjust the dates or consider nearby Lufthansa Group hubs for your journey to Zurich?",
+      "trace": []
+    },
+    {
+      "turn": 11,
+      "user": "Show me the alternatives same departure airport same destination",
+      "assistant": "Thank you for your patience. To find alternative destinations from Zagreb, I will now look for other Lufthansa Group destinations that might suit your travel dates.",
+      "trace": []
+    }
+  ]
+}

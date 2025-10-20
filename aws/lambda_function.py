@@ -1827,6 +1827,74 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             except Exception:
                 pass
             note = f"Using your nearest airport as departure location ({origin}). Say 'change departure location' to update it."
+        # Build textual summary for offers so the agent surfaces concrete details
+        offer_text_block = None
+        if offers:
+            try:
+                def _hhmm(ts: Optional[str]) -> str:
+                    try:
+                        if not ts:
+                            return "?"
+                        t = str(ts).replace("T", " ").replace("Z", "").split(" ")[1]
+                        return t[:5]
+                    except Exception:
+                        return "?"
+                lines2: List[str] = []
+                for idx, off in enumerate(offers[: min(3, len(offers))], start=1):
+                    dep2 = off.get("departureAirport") or "?"
+                    arr2 = off.get("arrivalAirport") or "?"
+                    dt2 = _hhmm(off.get("departureTime"))
+                    dur2 = off.get("duration") or "?"
+                    price2 = off.get("totalPrice")
+                    curr2 = off.get("currency") or currency or ""
+                    try:
+                        price_txt2 = f"{float(price2):.0f} {curr2}".strip() if price2 is not None else "?"
+                    except Exception:
+                        price_txt2 = f"{price2} {curr2}".strip()
+                    stops2 = off.get("stops")
+                    stops_txt2 = "nonstop" if stops2 == 0 else (f"{stops2} stop" if stops2 == 1 else f"{stops2} stops")
+                    # first segment carrier/flight if present
+                    segs2 = off.get("segments")
+                    seg02 = segs2[0] if isinstance(segs2, list) and segs2 else None
+                    c02 = (seg02.get("carrier") or seg02.get("marketingCarrier") or seg02.get("operatingCarrier")) if isinstance(seg02, dict) else None
+                    fn02 = (seg02.get("flightNumber") if isinstance(seg02, dict) else None) or ""
+                    c02fn = f"{c02}{fn02}".strip() if (c02 or fn02) else None
+                    parts2 = [
+                        f"{idx}) {dep2} {dt2}",
+                        "->",
+                        f"{arr2}",
+                        "|",
+                        departure_date,
+                        "|",
+                        stops_txt2,
+                        "|",
+                        dur2,
+                    ]
+                    if c02fn:
+                        parts2.extend(["|", c02fn])
+                    parts2.extend(["|", f"**{price_txt2}**"])
+                    lines2.append(" ".join(str(p) for p in parts2 if str(p)))
+                    # carriers line
+                    carriers2 = off.get("carriers") or []
+                    carriers_txt2 = ",".join(carriers2) if isinstance(carriers2, list) else str(carriers2 or "")
+                    if carriers_txt2:
+                        lines2.append(f"    - Carriers: {carriers_txt2}")
+                    # THEN lines (limited) when verbose
+                    if RECOMMENDER_VERBOSE and isinstance(segs2, list) and segs2:
+                        for s in segs2[:2]:
+                            try:
+                                sc = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
+                                sfn = s.get("flightNumber") or ""
+                                sfrom = s.get("from") or "?"
+                                sdt = _hhmm(s.get("departureTime") or s.get("depTime"))
+                                sto = s.get("to") or "?"
+                                sat = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
+                                lines2.append(f"    - THEN {sc}{sfn} {sfrom} {sdt} -> {sto} {sat}")
+                            except Exception:
+                                continue
+                offer_text_block = "\n".join(lines2)
+            except Exception:
+                offer_text_block = None
         # Build textual alternatives list if applicable
         def _alt_lines(alts: List[Dict[str, Any]]) -> List[str]:
             lines: List[str] = []
@@ -2049,6 +2117,32 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
                     # Header line with bold price
                     header = f"{idx}) {label} - {dep} → {arr} • {opt.get('date')} • {stops_txt} • {dur} • **{price}**"
+                    # Rebuild header to include first carrier/flight and departure HH:MM when available
+                    try:
+                        segs = offer.get("segments")
+                        seg0 = segs[0] if isinstance(segs, list) and segs else None
+                        c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                        fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                        # dep_time may be full ISO; convert to HH:MM
+                        dt0 = _hhmm((seg0.get("departureTime") if isinstance(seg0, dict) else None) or dep_time)
+                        c0fn = f"{c0}{fn0}".strip() if c0 or fn0 else (carriers[0] if isinstance(carriers, list) and carriers else "")
+                        header_parts = [
+                            f"{idx}) {label} - {dep} {dt0}".strip(),
+                            "->",
+                            f"{arr}",
+                            "|",
+                            f"{opt.get('date')}",
+                            "|",
+                            f"{stops_txt}",
+                            "|",
+                            f"{dur}",
+                        ]
+                        if c0fn:
+                            header_parts.extend(["|", c0fn])
+                        header_parts.extend(["|", f"**{price}**"])
+                        header = " ".join(str(p) for p in header_parts if str(p))
+                    except Exception:
+                        pass
                     lines.append(header)
                     if carriers_txt:
                         lines.append(f"    - Carriers: {carriers_txt}")
@@ -2092,7 +2186,28 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                             _dur2 = _offer2.get("duration") or "?"
                             _stops2 = _opt2.get("stops")
                             _stops_txt2 = "nonstop" if _stops2 == 0 else (f"{_stops2} stop" if _stops2 == 1 else f"{_stops2} stops")
-                            _header2 = f"{_idx2}) {_opt2.get('label') or 'Option'} - {_dep2} -> {_arr2} | {_opt2.get('date')} | {_stops_txt2} | {_dur2} | **{_price2}**"
+                            # Add first segment carrier/flight and departure HH:MM when available in compact header
+                            _segs2 = _offer2.get("segments")
+                            _seg0 = _segs2[0] if isinstance(_segs2, list) and _segs2 else None
+                            _c0 = (_seg0.get("carrier") or _seg0.get("marketingCarrier") or _seg0.get("operatingCarrier")) if isinstance(_seg0, dict) else None
+                            _fn0 = (_seg0.get("flightNumber") if isinstance(_seg0, dict) else None) or ""
+                            _dt0 = _hhmm((_seg0.get("departureTime") if isinstance(_seg0, dict) else None) or _offer2.get("departureTime") or "")
+                            _c0fn = f"{_c0}{_fn0}".strip() if (_c0 or _fn0) else ""
+                            _pieces = [
+                                f"{_idx2}) {_opt2.get('label') or 'Option'} - {_dep2} {_dt0}".strip(),
+                                "->",
+                                f"{_arr2}",
+                                "|",
+                                f"{_opt2.get('date')}",
+                                "|",
+                                f"{_stops_txt2}",
+                                "|",
+                                f"{_dur2}",
+                            ]
+                            if _c0fn:
+                                _pieces.extend(["|", _c0fn])
+                            _pieces.extend(["|", f"**{_price2}**"])
+                            _header2 = " ".join(str(x) for x in _pieces if str(x))
                             compact_lines.append(_header2)
                             _carriers2 = _offer2.get("carriers") or []
                             _carriers_txt2 = ",".join(_carriers2) if isinstance(_carriers2, list) else str(_carriers2 or "")
@@ -2130,6 +2245,14 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 # Return minimal options only (avoid large payloads)
                 def _brief(o: Dict[str, Any]) -> Dict[str, Any]:
                     off = o.get("offer") or {}
+                    first_seg = (off.get("segments") or [None])[0]
+                    dep_time0 = None
+                    carrier0 = None
+                    flight_no0 = None
+                    if isinstance(first_seg, dict):
+                        dep_time0 = first_seg.get("departureTime")
+                        carrier0 = first_seg.get("carrier") or first_seg.get("marketingCarrier") or first_seg.get("operatingCarrier")
+                        flight_no0 = first_seg.get("flightNumber")
                     return {
                         "label": o.get("label"),
                         "pitch": o.get("pitch"),
@@ -2140,6 +2263,11 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                         "duration": off.get("duration"),
                         "stops": o.get("stops"),
                         "carriers": off.get("carriers"),
+                        "departureAirport": off.get("departureAirport"),
+                        "arrivalAirport": off.get("arrivalAirport"),
+                        "departureTime": dep_time0 or off.get("departureTime"),
+                        "firstCarrier": carrier0,
+                        "firstFlightNumber": flight_no0,
                         "id": off.get("id"),
                     }
                 payload["options"] = [ _brief(o) for o in options[: max(1, RECOMMENDER_MAX_OPTIONS) ] ]
@@ -2360,6 +2488,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 },
                 **({"note": note, "message": note} if note else {}),
                 "offers": offers,
+                **({"message": offer_text_block} if offer_text_block else {}),
                 **({
                     "message": alt_text_block,
                     "alternatives": alternatives,
