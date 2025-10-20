@@ -213,11 +213,31 @@ async function run() {
       const file = path.join(OUTPUT_DIR, `${s.flight}_${s.aliasKey}_${Date.now()}.json`);
       fs.writeFileSync(file, JSON.stringify(out, null, 2));
       try {
-        const inv = await client.send(new ListInvocationsCommand({ sessionIdentifier: bedrockSessionId }));
+        // Small delay to allow trace/steps to persist server-side
+        await sleep(600);
+        const inv = await client.send(new ListInvocationsCommand({
+          agentId: AGENT_ID,
+          agentAliasId: aliasId,
+          sessionIdentifier: bedrockSessionId,
+        }));
         fs.writeFileSync(file.replace('.json','_inv.json'), JSON.stringify(inv, null, 2));
-        if (inv.invocationSummaries?.length) {
-          const steps = await client.send(new ListInvocationStepsCommand({ sessionIdentifier: bedrockSessionId, invocationId: inv.invocationSummaries[0].invocationId }));
-          fs.writeFileSync(file.replace('.json','_steps.json'), JSON.stringify(steps, null, 2));
+        if (Array.isArray(inv.invocationSummaries) && inv.invocationSummaries.length) {
+          // Fetch steps for each invocationId to improve tool-call detection
+          const allSteps = [];
+          for (const s of inv.invocationSummaries) {
+            try {
+              const steps = await client.send(new ListInvocationStepsCommand({
+                agentId: AGENT_ID,
+                agentAliasId: aliasId,
+                sessionIdentifier: bedrockSessionId,
+                invocationId: s.invocationId,
+              }));
+              allSteps.push({ invocationId: s.invocationId, steps });
+            } catch (stepErr) {
+              allSteps.push({ invocationId: s.invocationId, error: String(stepErr) });
+            }
+          }
+          fs.writeFileSync(file.replace('.json','_steps.json'), JSON.stringify(allSteps, null, 2));
         }
       } catch (e) {
         try { fs.writeFileSync(file.replace('.json','_inv_err.txt'), String(e)); } catch {}

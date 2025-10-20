@@ -1,0 +1,60 @@
+﻿{
+    "agentAliasSummaries": [
+        {
+            "agentAliasId": "D84WDVHMZR",
+            "agentAliasName": "Bianca",
+            "description": "Bianca - Pauls alter ego numero due and Ginas best friend",
+            "routingConfiguration": [
+                {
+                    "agentVersion": "99"
+                }
+            ],
+            "agentAliasStatus": "PREPARED",
+            "createdAt": "2025-10-16T23:49:30.072393+00:00",
+            "updatedAt": "2025-10-20T10:55:33.036408+00:00",
+            "aliasInvocationState": "ACCEPT_INVOCATIONS"
+        },
+        {
+            "agentAliasId": "R1YRB7NGUP",
+            "agentAliasName": "Paul",
+            "description": "Paul - the official one",
+            "routingConfiguration": [
+                {
+                    "agentVersion": "97"
+                }
+            ],
+            "agentAliasStatus": "PREPARED",
+            "createdAt": "2025-10-16T23:46:50.790966+00:00",
+            "updatedAt": "2025-10-20T10:53:09.601811+00:00",
+            "aliasInvocationState": "ACCEPT_INVOCATIONS"
+        },
+        {
+            "agentAliasId": "TSTALIASID",
+            "agentAliasName": "AgentTestAlias",
+            "description": "Test Alias for Agent",
+            "routingConfiguration": [
+                {
+                    "agentVersion": "DRAFT"
+                }
+            ],
+            "agentAliasStatus": "PREPARED",
+            "createdAt": "2025-10-13T21:25:37.508945+00:00",
+            "updatedAt": "2025-10-13T21:25:37.508945+00:00",
+            "aliasInvocationState": "ACCEPT_INVOCATIONS"
+        },
+        {
+            "agentAliasId": "UY0U7MRMDK",
+            "agentAliasName": "Gina",
+            "description": "Gina - Pauls alter ego numero uno",
+            "routingConfiguration": [
+                {
+                    "agentVersion": "98"
+                }
+            ],
+            "agentAliasStatus": "PREPARED",
+            "createdAt": "2025-10-16T23:48:12.631120+00:00",
+            "updatedAt": "2025-10-20T10:54:17.031226+00:00",
+            "aliasInvocationState": "ACCEPT_INVOCATIONS"
+        }
+    ]
+}

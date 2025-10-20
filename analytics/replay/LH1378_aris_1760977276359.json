@@ -1,0 +1,106 @@
+{
+  "flight": "LH1378",
+  "session": "2a422dff-3f11-44e9-aee7-bdca3aa8ec0b",
+  "bedrockSessionId": "de817ce9-3629-48d9-809a-b095285611be",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul , your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Could you please confirm your departure airport? If you prefer, I can use the default origin, which is Zapresic, Croatia (ZAG).",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Correct. Use default",
+      "assistant": "Here are some flight options for your trip to Zurich next Saturday:\n\n1. **Flight 601**:\n- Departure: Zapresic, Croatia (ZAG) at 09:50\n- Arrival: Belgrade, Serbia (BEG) at 11:00\n- THEN, **Flight 332**:\n- Departure: Belgrade, Serbia (BEG) at 12:00\n- Arrival: Zurich, Switzerland (ZRH) at 13:50\n- **Duration: 4h**\n- **Price: €128.77. 1 stop.**\n\n2. **Flight 460**:\n- Departure: Zapresic, Croatia (ZAG) at 09:15\n- Arrival: Zurich, Switzerland (ZRH) at 10:45\n- **Duration: 1h30m**\n- **Price: €133.34. Direct.**\n\n3. **Flight 464**:\n- Departure: Zapresic, Croatia (ZAG) at 17:50\n- Arrival: Zurich, Switzerland (ZRH) at 19:20\n- **Duration: 1h30m**\n- **Price: €133.34. Direct.**\n\n4. **Flight 384**:\n- Departure: Zapresic, Croatia (ZAG) at 14:25\n- Arrival: Dubrovnik, Croatia (DBV) at 15:20\n- THEN, **Flight 5204**:\n- Departure: Dubrovnik, Croatia (DBV) at 19:40\n- Arrival: Zurich, Switzerland (ZRH) at 21:30\n- **Duration: 7h5m**\n- **Price: €165.67. 1 stop.**\n\n5. **Flight 781**:\n- Departure: Zapresic, Croatia (ZAG) at 19:15\n- Arrival: Athens, Greece (ATH) at 22:05\n- THEN, **Flight 850**:\n- Departure: Athens, Greece (ATH) at 08:30\n- Arrival: Zurich, Switzerland (ZRH) at 10:20\n- **NEXT DAY**\n- **Duration: 15h5m**\n- **Price: €185.06. 1 stop.**",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 4,
+      "user": "Zagreb to Zurich, departure, 25.10.2025",
+      "assistant": "Could you please confirm your departure airport? Zagreb, Croatia (ZAG) is the default origin.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 5,
+      "user": "01.11.2025",
+      "assistant": "Here are some flight options for your trip from Zagreb to Zurich on October 25, 2025:\n\n1. **Flight 601**:\n- Departure: Zagreb, Croatia (ZAG) at 09:50\n- Arrival: Belgrade, Serbia (BEG) at 11:00\n- THEN, **Flight 332**:\n- Departure: Belgrade, Serbia (BEG) at 12:00\n- Arrival: Zurich, Switzerland (ZRH) at 13:50\n- **Duration: 4h**\n- **Price: €128.77. 1 stop.**\n\n2. **Flight 460**:\n- Departure: Zagreb, Croatia (ZAG) at 09:15\n- Arrival: Zurich, Switzerland (ZRH) at 10:45\n- **Duration: 1h30m**\n- **Price: €133.34. Direct.**\n\n3. **Flight 464**:\n- Departure: Zagreb, Croatia (ZAG) at 17:50\n- Arrival: Zurich, Switzerland (ZRH) at 19:20\n- **Duration: 1h30m**\n- **Price: €133.34. Direct.**\n\n4. **Flight 384**:\n- Departure: Zagreb, Croatia (ZAG) at 14:25\n- Arrival: Dubrovnik, Croatia (DBV) at 15:20\n- THEN, **Flight 5204**:\n- Departure: Dubrovnik, Croatia (DBV) at 19:40\n- Arrival: Zurich, Switzerland (ZRH) at 21:30\n- **NEXT DAY**\n- **Duration: 7h5m**\n- **Price: €165.67. 1 stop.**\n\n5. **Flight 781**:\n- Departure: Zagreb, Croatia (ZAG) at 19:15\n- Arrival: Athens, Greece (ATH) at 22:05\n- THEN, **Flight 850**:\n- Departure: Athens, Greece (ATH) at 08:30\n- Arrival: Zurich, Switzerland (ZRH) at 10:20\n- **NEXT DAY**\n- **Duration: 15h5m**\n- **Price: €185.06. 1 stop.**",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 6,
+      "user": "Show me the alternatives",
+      "assistant": "Here are the remaining flight options for your trip from Zagreb to Zurich on October 25, 2025:\n\n6. **Flight 614**:\n- Departure: Zagreb, Croatia (ZAG) at 18:05\n- Arrival: Warsaw, Poland (WAW) at 19:35\n- THEN, **Flight 411**:\n- Departure: Warsaw, Poland (WAW) at 07:30\n- Arrival: Zurich, Switzerland (ZRH) at 09:35\n- **NEXT DAY**\n- **Duration: 15h30m**\n- **Price: €197.32. 1 stop.**\n\n7. **Flight 5396**:\n- Departure: Zagreb, Croatia (ZAG) at 06:00\n- Arrival: Frankfurt, Germany (FRA) at 07:45\n- THEN, **Flight 1069**:\n- Departure: Frankfurt, Germany (FRA) at 08:50\n- Arrival: Zurich, Switzerland (ZRH) at 09:45\n- **Duration: 3h45m**\n- **Price: €200.45. 1 stop.**\n\n8. **Flight 5396**:\n- Departure: Zagreb, Croatia (ZAG) at 06:00\n- Arrival: Frankfurt, Germany (FRA) at 07:45\n- THEN, **Flight 1186**:\n- Departure: Frankfurt, Germany (FRA) at 09:45\n- Arrival: Zurich, Switzerland (ZRH) at 10:40\n- **Duration: 4h40m**\n- **Price: €200.45. 1 stop.**\n\n9. **Flight 416**:\n- Departure: Zagreb, Croatia (ZAG) at 09:05\n- Arrival: Frankfurt, Germany (FRA) at 10:40\n- THEN, **Flight 1190**:\n- Departure: Frankfurt, Germany (FRA) at 13:10\n- Arrival: Zurich, Switzerland (ZRH) at 14:05\n- **Duration: 5h**\n- **Price: €202.45. 1 stop.**\n\n10. **Flight 410**:\n- Departure: Zagreb, Croatia (ZAG) at 07:40\n- Arrival: Frankfurt, Germany (FRA) at 09:15\n- THEN, **Flight 1190**:\n- Departure: Frankfurt, Germany (FRA) at 13:10\n- Arrival: Zurich, Switzerland (ZRH) at 14:05\n- **Duration: 6h25m**\n- **Price: €202.45. 1 stop.**",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 7,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "Here are some round-trip flight options for your trip from Zagreb to Zurich:\n\n1. **Flight 460**:\n- Departure: Zagreb, Croatia (ZAG) at 08:45\n- Arrival: Zurich, Switzerland (ZRH) at 10:05\n- THEN, **Flight 461**:\n- Departure: Zurich, Switzerland (ZRH) at 11:05\n- Arrival: Zagreb, Croatia (ZAG) at 12:10\n- **Duration: 2h20m**\n- **Price: €203.07. 1 stop.**\n\n2. **Flight 460**:\n- Departure: Zagreb, Croatia (ZAG) at 08:45\n- Arrival: Zurich, Switzerland (ZRH) at 10:05\n- THEN, **Flight 465**:\n- Departure: Zurich, Switzerland (ZRH) at 19:55\n- Arrival: Zagreb, Croatia (ZAG) at 21:00\n- **NEXT DAY**\n- **Duration: 2h20m**\n- **Price: €203.07. 1 stop.**\n\n3. **Flight 464**:\n- Departure: Zagreb, Croatia (ZAG) at 17:55\n- Arrival: Zurich, Switzerland (ZRH) at 19:15\n- THEN, **Flight 461**:\n- Departure: Zurich, Switzerland (ZRH) at 11:05\n- Arrival: Zagreb, Croatia (ZAG) at 12:10\n- **Duration: 2h20m**\n- **Price: €203.07. 1 stop.**\n\n4. **Flight 464**:\n- Departure: Zagreb, Croatia (ZAG) at 17:55\n- Arrival: Zurich, Switzerland (ZRH) at 19:15\n- THEN, **Flight 465**:\n- Departure: Zurich, Switzerland (ZRH) at 19:55\n- Arrival: Zagreb, Croatia (ZAG) at 21:00\n- **NEXT DAY**\n- **Duration: 2h20m**\n- **Price: €203.07. 1 stop.**\n\n5. **Flight 460**:\n- Departure: Zagreb, Croatia (ZAG) at 08:45\n- Arrival: Zurich, Switzerland (ZRH) at 10:05\n- THEN, **Flight 786**:\n- Departure: Zurich, Switzerland (ZRH) at 07:30\n- Arrival: Brussels, Belgium (BRU) at 08:50\n- THEN, **Flight 457**:\n- Departure: Brussels, Belgium (BRU) at 10:30\n- Arrival: Zagreb, Croatia (ZAG) at 12:10\n- **NEXT DAY**\n- **Duration: 2h20m**\n- **Price: €261.72. 2 stops.**\n\n6. **Flight 464**:\n- Departure: Zagreb, Croatia (ZAG) at 17:55\n- Arrival: Zurich, Switzerland (ZRH) at 19:15\n- THEN, **Flight 786**:\n- Departure: Zurich, Switzerland (ZRH) at 07:30\n- Arrival: Brussels, Belgium (BRU) at 08:50\n- THEN, **Flight 457**:\n- Departure: Brussels, Belgium (BRU) at 10:30\n- Arrival: Zagreb, Croatia (ZAG) at 12:10\n- **NEXT DAY**\n- **Duration: 2h20m**\n- **Price: €261.72. 2 stops.**\n\n7. **Flight 460**:\n- Departure: Zagreb",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    }
+  ]
+}

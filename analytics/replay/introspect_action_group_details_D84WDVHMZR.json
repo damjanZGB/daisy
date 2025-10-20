@@ -1,0 +1,70 @@
+﻿{
+    "agentActionGroup": {
+        "agentId": "JDLTXAKYJY",
+        "agentVersion": "99",
+        "actionGroupId": "8QPJXRIZN5",
+        "actionGroupName": "daisy_in_action",
+        "createdAt": "2025-10-20T10:55:33.892545+00:00",
+        "updatedAt": "2025-10-20T10:55:33.892545+00:00",
+        "actionGroupExecutor": {
+            "lambda": "arn:aws:lambda:us-west-2:083756035354:function:daisy_in_action-0k2c0"
+        },
+        "apiSchema": {
+            "payload": "openapi: 3.0.3\ninfo:\n  title: dAIsy Tools û Amadeus & IATA\n  version: 1.0.1\n  description: HTTP tools for the Bedrock Agent to search flights via Amadeus and to resolve IATA codes deterministically.\nservers:\n  - url: https://proxy-daisy.onrender.com\npaths:\n  /tools/amadeus/search:\n    description: Amadeus Flight Offers Search adapter exposed by your proxy server.\n    post:\n      operationId: amadeusSearch\n      summary: Search flight offers via Amadeus\n      description: >\n        Calls Amadeus Flight Offers Search with common parameters and returns a simplified list of offers\n        alongside the raw Amadeus payload for traceability.\n      requestBody:\n        required: true\n        content:\n          application/json:\n            schema:\n              type: object\n              required: [originLocationCode, destinationLocationCode, departureDate, adults]\n              properties:\n                originLocationCode:\n                  type: string\n                  example: MUC\n                  description: IATA code of the origin airport or city.\n                destinationLocationCode:\n                  type: string\n                  example: ZRH\n                  description: IATA code of the destination airport or city.\n                departureDate:\n                  type: string\n                  example: \"2025-11-05\"\n                  description: Outbound date in ISO format YYYY-MM-DD.\n                returnDate:\n                  type: string\n                  nullable: true\n                  description: Optional return date in ISO format YYYY-MM-DD.\n                adults:\n                  type: integer\n                  minimum: 1\n                  default: 1\n                  description: Number of adult passengers.\n                children:\n                  type: integer\n                  minimum: 0\n                  description: Number of children (2û11).\n                infants:\n                  type: integer\n                  minimum: 0\n                  description: Number of infants (under 2).\n                nonStop:\n                  type: boolean\n                  default: false\n                  description: If true, restrict to non-stop itineraries.\n                travelClass:\n                  type: string\n                  enum: [ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST]\n                  description: Preferred cabin class.\n                currencyCode:\n                  type: string\n                  example: EUR\n                  description: Target currency for pricing totals.\n                max:\n                  type: integer\n                  minimum: 1\n                  maximum: 250\n                  default: 10\n                  description: Maximum number of offers to return.\n      responses:\n        \"200\":\n          description: A normalized list of flight offers plus the original Amadeus response.\n          content:\n            application/json:\n              schema:\n                type: object\n                properties:\n                  offers:\n                    type: array\n                    description: Simplified offers for quick ranking and display.\n                    items:\n                      type: object\n                      properties:\n                        id: { type: string, description: Amadeus offer id }\n                        price: { type: string, description: Total price }\n                        currency: { type: string, description: Currency code }\n                        itineraries:\n                          type: array\n                          items:\n                            type: object\n                            properties:\n                              duration: { type: string }\n                              segments:\n                                type: array\n                                items:\n                                  type: object\n                                  properties:\n                                    carrierCode: { type: string }\n                                    number: { type: string }\n                                    departure: { type: string }\n                                    departureTime: { type: string }\n                                    arrival: { type: string }\n                                    arrivalTime: { type: string }\n                                    aircraft: { type: string }\n                  raw:\n                    type: object\n                    description: Original Amadeus API JSON for auditing.\n        \"400\":\n          description: Invalid request payload.\n        \"500\":\n          description: Server or upstream error.\n  /tools/iata/lookup:\n    description: Deterministic IATA resolver backed by your local JSON map.\n    get:\n      operationId: iataLookup\n      summary: Resolve IATA code or city/airport name\n      description: Returns up to 20 best matches for an IATA code prefix or a partial city/airport name.\n      parameters:\n        - in: query\n          name: term\n          required: true\n          schema:\n            type: string\n          description: IATA code (e.g., 'MUC') or partial city/airport name (e.g., 'Munich').\n      responses:\n        \"200\":\n          description: Matching IATA records.\n          content:\n            application/json:\n              schema:\n                type: object\n                properties:\n                  matches:\n                    type: array\n                    items:\n                      type: object\n                      properties:\n                        code: { type: string, description: IATA code }\n                        name: { type: string, description: Airport or city name }\n                        city: { type: string, description: City name }\n                        country: { type: string, description: Country name }\n                        type: { type: string, enum: [airport, city], description: Record type }\n"
+        },
+        "actionGroupState": "ENABLED"
+    }
+}
+
+
+{
+    "agentActionGroup": {
+        "agentId": "JDLTXAKYJY",
+        "agentVersion": "99",
+        "actionGroupId": "DFAEASLNVH",
+        "actionGroupName": "DestinationRecommender",
+        "description": "Recommend a destination to a user",
+        "createdAt": "2025-10-20T10:55:33.892545+00:00",
+        "updatedAt": "2025-10-20T10:55:33.892545+00:00",
+        "actionGroupExecutor": {
+            "lambda": "arn:aws:lambda:us-west-2:083756035354:function:daisy_in_action-0k2c0"
+        },
+        "functionSchema": {
+            "functions": [
+                {
+                    "name": "recommend_destinations",
+                    "description": "Suggest LH-Group destinations for a given theme and month, optionally returning top flight options.",
+                    "parameters": {
+                        "month": {
+                            "description": "Target month or range. Accepts phrases (e.g., 'March next year') or 'YYYY-MM' or range 'YYYY-MM..YYYY-MM'.",
+                            "type": "string",
+                            "required": false
+                        },
+                        "maxCandidates": {
+                            "description": "Maximum number of destination candidates to return (default 8).",
+                            "type": "number",
+                            "required": false
+                        },
+                        "withItineraries": {
+                            "description": "If true and origin is known, also search best itineraries for top candidates.",
+                            "type": "boolean",
+                            "required": false
+                        },
+                        "originCode": {
+                            "description": "Origin IATA code (defaults to session's inferred origin if omitted).",
+                            "type": "string",
+                            "required": false
+                        },
+                        "themeTags": {
+                            "description": "JSON array or comma-separated list of themes, e.g. ['beach','warm'] or 'beach,warm'.",
+                            "type": "string",
+                            "required": false
+                        }
+                    },
+                    "requireConfirmation": "DISABLED"
+                }
+            ]
+        },
+        "actionGroupState": "ENABLED"
+    }
+}

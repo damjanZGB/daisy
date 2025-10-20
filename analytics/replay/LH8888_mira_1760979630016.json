@@ -1,0 +1,64 @@
+{
+  "flight": "LH8888",
+  "session": "fb5b9b3f-6c3e-4a9e-9a9a-888888888888",
+  "bedrockSessionId": "fce1fe31-cd8d-4e35-a2bd-e421c73dc4fc",
+  "aliasKey": "mira",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Cold place for skiing in January",
+      "assistant": "Here are some cold places for skiing in January that have a high likelihood of snow:\n1. **Innsbruck, Austria (INN)** - with a snow reliability of 0.9\n2. **Salzburg, Austria (SZG)** - with a snow reliability of 0.85\n3. **Geneva, Switzerland (GVA)** - with a snow reliability of 0.8\n4. **Grenoble, France (GNB)** - with a snow reliability of 0.8\n5. **Chambery, France (CMF)** - with a snow reliability of 0.8\n\nWould you like more information on any of these destinations?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "Prefer shortest travel time",
+      "assistant": "Which of these destinations would you prefer for the shortest travel time?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Hold the best value option",
+      "assistant": "Which of these destinations would you prefer for the shortest travel time and the best value?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "Here are the flight options from ZAG to ZRH for your specified dates with 1 adult:\n\n1. **Flight 460**:\n   - Departure: ZAG on 2025-12-10 at 08:45\n   - Arrival: ZRH on 2025-12-10 at 10:05\n   - THEN, **Flight 461**\n   - Departure: ZRH on 2025-12-12 at 11:05\n   - Arrival: ZAG on 2025-12-12 at 12:10\n   - **Price: €203.07. 1 stop.**\n\n2. **Flight 460**:\n   - Departure: ZAG on 2025-12-10 at 08:45\n   - Arrival: ZRH on 2025-12-10 at 10:05\n   - THEN, **Flight 465**\n   - Departure: ZRH on 2025-12-12 at 19:55\n   - Arrival: ZAG on 2025-12-12 at 21:00\n   - **Price: €203.07. 1 stop.**\n\n3. **Flight 464**:\n   - Departure: ZAG on 2025-12-10 at 17:55\n   - Arrival: ZRH on 2025-12-10 at 19:15\n   - THEN, **Flight 461**\n   - Departure: ZRH on 2025-12-12 at 11:05\n   - Arrival: ZAG on 2025-12-12 at 12:10\n   - **Price: €203.07. 1 stop.**\n\n4. **Flight 464**:\n   - Departure: ZAG on 2025-12-10 at 17:55\n   - Arrival: ZRH on 2025-12-10 at 19:15\n   - THEN, **Flight 465**\n   - Departure: ZRH on 2025-12-12 at 19:55\n   - Arrival: ZAG on 2025-12-12 at 21:00\n   - **Price: €203.07. 1 stop.**\n\n5. **Flight 460**:\n   - Departure: ZAG on 2025-12-10 at 08:45\n   - Arrival: ZRH on 2025-12-10 at 10:05\n   - THEN, **Flight 786**\n   - Departure: ZRH on 2025-12-12 at 07:30\n   - Arrival: BRU on 2025-12-12 at 08:50\n   - THEN, **Flight 457**\n   - Departure: BRU on 2025-12-12 at 10:30\n   - Arrival: ZAG on 2025-12-12 at 12:10\n   - **Price: €261.72. 2 stops.**\n\nWould you like to know more details about any of these options?",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    }
+  ]
+}

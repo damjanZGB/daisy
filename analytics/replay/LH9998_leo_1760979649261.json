@@ -1,0 +1,64 @@
+{
+  "flight": "LH9998",
+  "session": "fc6c9c4f-6c3e-4a9e-9a9a-999899989998",
+  "bedrockSessionId": "7a1d3bcd-866f-4bfb-82ad-4b092e82f13e",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Family city break in April weekend",
+      "assistant": "Hi, I am Paul, your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today? Could you please let me know your departure city for the city break?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "Any nonstop suggestions?",
+      "assistant": "To provide nonstop suggestions for your family city break in April, could you please let me know your departure city?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Show me alternative dates",
+      "assistant": "To show you alternative dates for your city break, could you please let me know your departure city and the city you'd like to visit in April?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "Here are the flight options for your trip from ZAG to ZRH:\n\n1. **Flight 460**:\n   - Departure: ZAG at 08:45 on 2025-12-10\n   - Arrival: ZRH at 10:05 on 2025-12-10\n   - Return: ZRH at 11:05 on 2025-12-12\n   - Arrival: ZAG at 12:10 on 2025-12-12\n   - **Price: €203.07. 0 stops.**\n\n2. **Flight 464**:\n   - Departure: ZAG at 17:55 on 2025-12-10\n   - Arrival: ZRH at 19:15 on 2025-12-10\n   - Return: ZRH at 11:05 on 2025-12-12\n   - Arrival: ZAG at 12:10 on 2025-12-12\n   - **Price: €203.07. 0 stops.**\n\n3. **Flight 460**:\n   - Departure: ZAG at 08:45 on 2025-12-10\n   - Arrival: ZRH at 10:05 on 2025-12-10\n   - Return: ZRH at 19:55 on 2025-12-12\n   - Arrival: ZAG at 21:00 on 2025-12-12\n   - **Price: €203.07. 0 stops.**\n\n4. **Flight 464**:\n   - Departure: ZAG at 17:55 on 2025-12-10\n   - Arrival: ZRH at 19:15 on 2025-12-10\n   - Return: ZRH at 19:55 on 2025-12-12\n   - Arrival: ZAG at 21:00 on 2025-12-12\n   - **Price: €203.07. 0 stops.**\n\n5. **Flight 460**:\n   - Departure: ZAG at 08:45 on 2025-12-10\n   - Arrival: ZRH at 10:05 on 2025-12-10\n   - Return: ZRH at 07:30 on 2025-12-12\n   - Arrival: BRU at 08:50 on 2025-12-12\n   - BRU to ZAG at 10:30 on 2025-12-12\n   - Arrival: ZAG at 12:10 on 2025-12-12\n   - **Price: €261.72. 2 stops.**\n\nThe prices are in EUR. Let me know if you need more details on any of these options or if you'd like to proceed with any booking.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    }
+  ]
+}

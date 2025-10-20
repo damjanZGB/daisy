@@ -1,0 +1,106 @@
+{
+  "flight": "LH9999",
+  "session": "0aae5c0f-61e4-407a-83cf-bda1d58cd552",
+  "bedrockSessionId": "f2bde043-facb-4756-9f3c-5fe37f05d021",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul , your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Here are some flight options for your trip to Zurich next Saturday:\n\n1. **Flight 601**:\n   - Departure: ZAG at 09:50\n   - Arrival: BEG at 11:00\n   - THEN, **Flight 332**:\n   - Departure: BEG at 12:00\n   - Arrival: ZRH at 13:50\n   - **Price: €128.77. 1 stop.**\n\n2. **Flight 460**:\n   - Departure: ZAG at 09:15\n   - Arrival: ZRH at 10:45\n   - **Price: €133.34. Direct.**\n\n3. **Flight 464**:\n   - Departure: ZAG at 17:50\n   - Arrival: ZRH at 19:20\n   - **Price: €133.34. Direct.**\n\n4. **Flight 781**:\n   - Departure: ZAG at 19:15\n   - Arrival: ATH at 22:05\n   - THEN, **Flight 850**:\n   - Departure: ATH at 08:30 (NEXT DAY)\n   - Arrival: ZRH at 10:20 (NEXT DAY)\n   - **Price: €145.06. 1 stop.**\n\n5. **Flight 384**:\n   - Departure: ZAG at 14:25\n   - Arrival: DBV at 15:20\n   - THEN, **Flight 5204**:\n   - Departure: DBV at 19:40\n   - Arrival: ZRH at 21:30\n   - **Price: €165.67. 1 stop.**\n\nThanks for exploring with Lufthansa Group. May your next flight open new horizons!",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 3,
+      "user": "I can be connecting flight",
+      "assistant": "Here are some connecting flight options for your trip to Zurich next Saturday:\n\n1. **Flight 601**:\n   - Departure: ZAG at 09:50\n   - Arrival: BEG at 11:00\n   - THEN, **Flight 332**:\n   - Departure: BEG at 12:00\n   - Arrival: ZRH at 13:50\n   - **Price: €128.77. 1 stop.**\n\n4. **Flight 781**:\n   - Departure: ZAG at 19:15\n   - Arrival: ATH at 22:05\n   - THEN, **Flight 850**:\n   - Departure: ATH at 08:30 (NEXT DAY)\n   - Arrival: ZRH at 10:20 (NEXT DAY)\n   - **Price: €145.06. 1 stop.**\n\n5. **Flight 384**:\n   - Departure: ZAG at 14:25\n   - Arrival: DBV at 15:20\n   - THEN, **Flight 5204**:\n   - Departure: DBV at 19:40\n   - Arrival: ZRH at 21:30\n   - **Price: €165.67. 1 stop.**\n\n6. **Flight 416**:\n   - Departure: ZAG at 09:05\n   - Arrival: FRA at 10:40\n   - THEN, **Flight 1069**:\n   - Departure: FRA at 08:50\n   - Arrival: ZRH at 09:45\n   - **Price: €200.45. 1 stop.**\n\n7. **Flight 410**:\n   - Departure: ZAG at 07:40\n   - Arrival: FRA at 09:15\n   - THEN, **Flight 1190**:\n   - Departure: FRA at 13:10\n   - Arrival: ZRH at 14:05\n   - **Price: €202.45. 1 stop.**\n\nThanks for exploring with Lufthansa Group. May your next flight open new horizons!",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 4,
+      "user": "Show me the alternatives",
+      "assistant": "Here are some additional connecting flight options for your trip to Zurich next Saturday:\n\n8. **Flight 614**:\n   - Departure: ZAG at 18:05\n   - Arrival: WAW at 19:35\n   - THEN, **Flight 411**:\n   - Departure: WAW at 07:30 (NEXT DAY)\n   - Arrival: ZRH at 09:35 (NEXT DAY)\n   - **Price: €197.32. 1 stop.**\n\n9. **Flight 5396**:\n   - Departure: ZAG at 06:00\n   - Arrival: FRA at 07:45\n   - THEN, **Flight 1069**:\n   - Departure: FRA at 08:50\n   - Arrival: ZRH at 09:45\n   - **Price: €200.45. 1 stop.**\n\n10. **Flight 1186**:\n    - Departure: FRA at 09:45\n    - Arrival: ZRH at 10:40\n    - **Price: €200.45. Direct.**\n\n11. **Flight 416**:\n    - Departure: ZAG at 09:05\n    - Arrival: FRA at 10:40\n    - THEN, **Flight 1190**:\n    - Departure: FRA at 13:10\n    - Arrival: ZRH at 14:05\n    - **Price: €202.45. 1 stop.**\n\n12. **Flight 410**:\n    - Departure: ZAG at 07:40\n    - Arrival: FRA at 09:15\n    - THEN, **Flight 1190**:\n    - Departure: FRA at 13:10\n    - Arrival: ZRH at 14:05\n    - **Price: €202.45. 1 stop.**\n\nThanks for exploring with Lufthansa Group. May your next flight open new horizons!",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 5,
+      "user": "Show me the alternatives. Inspire me",
+      "assistant": "Here are some additional connecting flight options for your trip to Zurich next Saturday, along with some inspiration for your journey:\n\n8. **Flight 614**:\n   - Departure: ZAG at 18:05\n   - Arrival: WAW at 19:35\n   - THEN, **Flight 411**:\n   - Departure: WAW at 07:30 (NEXT DAY)\n   - Arrival: ZRH at 09:35 (NEXT DAY)\n   - **Price: €197.32. 1 stop.**\n   - Inspiration: Warsaw, Poland is known for its rich history, vibrant culture, and stunning architecture. Consider exploring the Royal Castle, the Warsaw Uprising Museum, or the beautiful Łazienki Park before continuing your journey to Zurich.\n\n9. **Flight 5396**:\n   - Departure: ZAG at 06:00\n   - Arrival: FRA at 07:45\n   - THEN, **Flight 1069**:\n   - Departure: FRA at 08:50\n   - Arrival: ZRH at 09:45\n   - **Price: €200.45. 1 stop.**\n   - Inspiration: Frankfurt, Germany is a city of innovation, finance, and culture. Take a stroll through the historic Old Town, visit the famous Römer square, or explore the futuristic skyline of the city center before your flight to Zurich.\n\n10. **Flight 1186**:\n    - Departure: FRA at 09:45\n    - Arrival: ZRH at 10:40\n    - **Price: €200.45. Direct.**\n    - Inspiration: Enjoy a direct flight from Frankfurt to Zurich, allowing you to maximize your time in Zurich. Explore the city's iconic landmarks such as the Swiss National Museum, the Old Town, or the stunning Lake Zurich.\n\n11. **Flight 416**:\n    - Departure: ZAG at 09:05\n    - Arrival: FRA at 10:40\n    - THEN, **Flight 1190**:\n    - Departure: FRA at 13:10\n    - Arrival: ZRH at 14:05\n    - **Price: €202.45. 1 stop.**\n    - Inspiration: Frankfurt offers a blend of modernity and tradition. Visit the Goethe House, the St. Paul's Church, or the Palmengarten botanical garden before continuing your journey to Zurich.\n\n12. **Flight 410**:\n    - Departure: ZAG at 07:40\n    - Arrival: FRA at 09:15\n    - THEN, **Flight 1190**:\n    - Departure: FRA at 13:10\n    - Arrival: ZRH at 14:05\n    - **Price: €202.45. 1 stop.**\n    - Inspiration: Frankfurt's diverse culinary scene offers a variety of international cuisines. Consider trying local specialties like Apfelwein (apple wine) or currywurst before your flight to Zurich.\n\nThanks for exploring with Lufthansa Group. May your next flight open new horizons!",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 6,
+      "user": "Yes. Show me the alternatives",
+      "assistant": "Here are some additional connecting flight options for your trip to Zurich next Saturday:\n\n13. **Flight 5396**:\n   - Departure: ZAG at 06:00\n   - Arrival: FRA at 07:45\n   - THEN, **Flight 1069**:\n   - Departure: FRA at 08:50\n   - Arrival: ZRH at 09:45\n   - **Price: €200.45. 1 stop.**\n\n14. **Flight 1186**:\n    - Departure: FRA at 09:45\n    - Arrival: ZRH at 10:40\n    - **Price: €200.45. Direct.**\n\n15. **Flight 416**:\n    - Departure: ZAG at 09:05\n    - Arrival: FRA at 10:40\n    - THEN, **Flight 1190**:\n    - Departure: FRA at 13:10\n    - Arrival: ZRH at 14:05\n    - **Price: €202.45. 1 stop.**\n\n16. **Flight 410**:\n    - Departure: ZAG at 07:40\n    - Arrival: FRA at 09:15\n    - THEN, **Flight 1190**:\n    - Departure: FRA at 13:10\n    - Arrival: ZRH at 14:05\n    - **Price: €202.45. 1 stop.**\n\nThanks for exploring with Lufthansa Group. May your next flight open new horizons!",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 7,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "Here are some round-trip flight options for your trip from ZAG to ZRH:\n\n1. **Flight 460**:\n   - Departure: ZAG at 08:45\n   - Arrival: ZRH at 10:05\n   - THEN, **Flight 461**:\n   - Departure: ZRH at 11:05\n   - Arrival: ZAG at 12:10\n   - **Price: €203.07**\n\n2. **Flight 460**:\n   - Departure: ZAG at 08:45\n   - Arrival: ZRH at 10:05\n   - THEN, **Flight 465**:\n   - Departure: ZRH at 19:55\n   - Arrival: ZAG at 21:00\n   - **Price: €203.07**\n\n3. **Flight 464**:\n   - Departure: ZAG at 17:55\n   - Arrival: ZRH at 19:15\n   - THEN, **Flight 461**:\n   - Departure: ZRH at 11:05\n   - Arrival: ZAG at 12:10\n   - **Price: €203.07**\n\n4. **Flight 464**:\n   - Departure: ZAG at 17:55\n   - Arrival: ZRH at 19:15\n   - THEN, **Flight 465**:\n   - Departure: ZRH at 19:55\n   - Arrival: ZAG at 21:00\n   - **Price: €203.07**\n\n5. **Flight 460**:\n   - Departure: ZAG at 08:45\n   - Arrival: ZRH at 10:05\n   - THEN, **Flight 786**:\n   - Departure: ZRH at 07:30\n   - Arrival: BRU at 08:50\n   - THEN, **Flight 457**:\n   - Departure: BRU at 10:30\n   - Arrival: ZAG at 12:10\n   - **Price: €261.72**\n\n6. **Flight 464**:\n   - Departure: ZAG at 17:55\n   - Arrival: ZRH at 19:15\n   - THEN, **Flight 786**:\n   - Departure: ZRH at 07:30\n   - Arrival: BRU at 08:50\n   - THEN, **Flight 457**:\n   - Departure: BRU at 10:30\n   - Arrival: ZAG at 12:10\n   - **Price: €261.72**\n\n7. **Flight 460**:\n   - Departure: ZAG at 08:45\n   - Arrival: ZRH at 10:05\n   - THEN, **Flight 1574**:\n   - Departure: ZRH at 07:20\n   - Arrival: VIE at 08:40\n   - THEN, **Flight 441**:\n   - Departure: VIE at 10:10\n   - Arrival: ZAG at 11:00\n   - **Price: €262.43**\n\n8. **Flight 464**:\n   - Departure: ZAG at 17:55\n   - Arrival: ZRH at 19:15\n   - THEN, **Flight 1574**:\n   - Departure: ZRH at 07:20\n   - Arrival: VIE at 08:40\n   - THEN, **Flight 441**:\n   - Departure: VIE at 10:10\n   - Arrival: ZAG at 11",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    }
+  ]
+}

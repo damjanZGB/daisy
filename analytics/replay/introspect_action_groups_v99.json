@@ -1,0 +1,30 @@
+﻿{
+    "actionGroupSummaries": [
+        {
+            "actionGroupId": "8QPJXRIZN5",
+            "actionGroupName": "daisy_in_action",
+            "actionGroupState": "ENABLED",
+            "updatedAt": "2025-10-20T10:55:33.892545+00:00"
+        },
+        {
+            "actionGroupId": "DFAEASLNVH",
+            "actionGroupName": "DestinationRecommender",
+            "actionGroupState": "ENABLED",
+            "description": "Recommend a destination to a user",
+            "updatedAt": "2025-10-20T10:55:33.892545+00:00"
+        },
+        {
+            "actionGroupId": "ASTBBKPZOE",
+            "actionGroupName": "TimePhraseParser",
+            "actionGroupState": "ENABLED",
+            "description": "Convert travel date phrases to ISO",
+            "updatedAt": "2025-10-20T10:55:33.892545+00:00"
+        },
+        {
+            "actionGroupId": "QFT1TGMW5Y",
+            "actionGroupName": "UserInputAction",
+            "actionGroupState": "ENABLED",
+            "updatedAt": "2025-10-20T10:55:33.892545+00:00"
+        }
+    ]
+}
