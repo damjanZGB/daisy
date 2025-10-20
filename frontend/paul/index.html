@@ -154,7 +154,16 @@
         const hdr = String(opt?.header||'');
         const mRoute = hdr.match(/([A-Z]{3})\s*->\s*([A-Z]{3})/); const mDate = hdr.match(/(\d{4}-\d{2}-\d{2})/);
         const date = mDate ? mDate[1] : new Date().toISOString().slice(0,10);
-        if(!legs.length && mRoute){ legs.push({ carrier:'LH', flightNo:'0000', from:mRoute[1], to:mRoute[2], dep:'08:00', arr:'10:00' }); }
+        if(!legs.length){
+          if (mRoute) {
+            legs.push({ carrier:'LH', flightNo:'0000', from:mRoute[1], to:mRoute[2], dep:'08:00', arr:'10:00' });
+          } else {
+            const codes = hdr.match(/\b[A-Z]{3}\b/g) || [];
+            if (codes.length >= 2) {
+              legs.push({ carrier:'LH', flightNo:'0000', from:codes[0], to:codes[codes.length-1], dep:'08:00', arr:'10:00' });
+            }
+          }
+        }
         const finalDoc = await PDFDocument.create();
         const randInt=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
         const randGate=()=> 'ABCDEFG'[randInt(0,6)] + String(randInt(1,39)).padStart(2,'0');
@@ -189,7 +198,24 @@
           form.flatten();
           const [pg]=await finalDoc.copyPages(src,[0]); finalDoc.addPage(pg);
         }
-        if (finalDoc.getPageCount() === 0) { finalDoc.addPage(); } const bytes=await finalDoc.save();
+        if (finalDoc.getPageCount() === 0) {
+          try {
+            const fallbackSrc = await PDFDocument.load(formBytes);
+            const fallbackForm = fallbackSrc.getForm();
+            try {
+              const helv = await fallbackSrc.embedFont(window.PDFLib.StandardFonts.Helvetica);
+              fallbackForm.updateFieldAppearances(helv);
+            } catch (_) {
+              try { fallbackForm.updateFieldAppearances(); } catch(_){}
+            }
+            try { fallbackForm.flatten(); } catch(_){}
+            const [pg] = await finalDoc.copyPages(fallbackSrc, [0]);
+            finalDoc.addPage(pg);
+          } catch (e) {
+            finalDoc.addPage();
+          }
+        }
+        const bytes=await finalDoc.save();
         return new Blob([bytes],{type:'application/pdf'});
       } catch (e) { console.warn('PDF error', e); return null; }
     };
