@@ -110,5 +110,35 @@ Quick Start for a new Codex session (empty context)
 5. Run replay for the three scenarios above. If good, expand catalog and tune scoring weights.
 
 
+## STATUS UPDATE — Destination Recommender (handoff)
+
+- Catalog
+  - [x] Expanded to 93 entries; added activities: diving, tuna_fishing, fishing, safari, wildlife, wildlife_photography, cycling, hunting.
+  - [x] Cycling tags added to Tenerife (TFS), Mallorca (PMI), Lanzarote (ACE).
+  - [x] Safari gateways added: WDH, JNB, NBO, VFA, MQP (with wildlife photography tags).
+
+- Lambda recommender
+  - [x] `_canonicalize_theme_tags` maps skiing/scuba/tuna/bike/safari synonyms to catalog themes.
+  - [x] `_score_destination` activity boosts + heavier city_break distance penalty.
+  - [x] `search_best_itineraries` weekend‑biased ±14d sampling; availability-first ranking; composite scoring; time budget and call caps; gentle nonstop boost only.
+  - [x] Nonstop fallback: if zero nonstop results, retry with connections allowed (function-details + OpenAPI).
+  - [x] Formatter outputs clean ASCII message; top 3 options; THEN lines; fallback list when no flights.
+
+- Frontend (Gina)
+  - [x] Sanitizes `<user__askuser>` and `<sources>`; cleans blank lines.
+  - [x] Parses itinerary options; after “confirm/book/hold” generates a demo itinerary PDF (jsPDF) and posts a final message with a download link.
+  - [ ] Port same to Bianca and Paul.
+  - [ ] Optional: server-side PDF endpoint and signed URL.
+
+- Replay harness
+  - [x] Sanitizes `<user__askuser>`; retries transient `DependencyFailedException`.
+  - [ ] Targeted replays + summary for 5 scenarios: skiing (Dec), diving (Mar), tuna (Jul), safari (Sep), cycling (Apr).
+
+- Known issue
+  - [ ] Intermittent `DependencyFailedException: error processing Lambda response` during replay.
+    - [ ] Add response-size logging and env toggles to reduce verbosity (drop THEN lines / max 2 options) when threshold exceeded; consider S3 link for full details.
+    - [ ] Tune aggregator envs if needed: `AGGR_TIME_BUDGET_S`, `AGGR_MAX_CALLS`.
+
+
 
 
