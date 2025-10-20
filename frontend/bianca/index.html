@@ -82,6 +82,15 @@
         out = out.replace(/<user__askuser[^>]*question=\"([^\"]+)\"[^>]*>/gi, '$1');
         out = out.replace(/<\/user__askuser>/gi, '');
         out = out.replace(/<sources>[\s\S]*?<\/sources>/gi, '');
+        // Convert common HTML tags to text line breaks and strip others
+        out = out.replace(/<br\s*\/?\s*>/gi, '\n');
+        out = out.replace(/<\/?p[^>]*>/gi, '\n');
+        out = out.replace(/<[^>]+>/g, '');
+        // Decode a few common HTML entities
+        out = out.replace(/&nbsp;/gi, ' ')
+                 .replace(/&amp;/gi, '&')
+                 .replace(/&euro;/gi, '€')
+                 .replace(/&(ndash|mdash);/gi, '-');
         // Normalize smart punctuation to ASCII
         out = out.replace(/[\u2018\u2019]/g, "'");
         out = out.replace(/[\u201C\u201D]/g, '"');
@@ -135,15 +144,62 @@
       try {
         const JS = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : await ensureJsPdf();
         if (!JS) return null;
-        const doc = new JS({ unit: 'pt' });
-        let y = 40; const x = 40;
-        doc.setFont('helvetica','bold'); doc.setFontSize(14);
-        doc.text('Itinerary (Example)', x, y); y+=24;
+        const doc = new JS({ unit: 'pt', format: 'a4' });
+        const W = doc.internal.pageSize.getWidth();
+        const H = doc.internal.pageSize.getHeight();
+        const lhBlue = '#0B1F55';
+        const lhYellow = '#F7B500';
+        const pad = 36;
+        // Header bar
+        doc.setFillColor(lhBlue); doc.rect(0, 0, W, 64, 'F');
+        doc.setTextColor('#ffffff'); doc.setFont('helvetica','bold'); doc.setFontSize(18);
+        doc.text('Lufthansa Group — Boarding Pass', pad, 40);
+        // Ticket body
+        const bx = pad, by = 88, bw = W - pad*2, bh = H - by - pad;
+        doc.setDrawColor('#e5e7eb'); doc.setLineWidth(1); doc.roundedRect(bx, by, bw, bh, 8, 8, 'S');
+        // Perforation line
+        doc.setDrawColor('#d1d5db'); doc.setLineWidth(0.5);
+        doc.setLineDash([3,3], 0); doc.line(bx + bw*0.66, by, bx + bw*0.66, by + bh);
+        doc.setLineDash([],0);
+        // Parse header data
+        const header = String(opt?.header || 'Selected Option');
+        const matchRoute = header.match(/\b([A-Z]{3})\b[^\n\r]*?->[^\n\r]*?\b([A-Z]{3})\b/);
+        const fromCode = matchRoute ? matchRoute[1] : '';
+        const toCode = matchRoute ? matchRoute[2] : '';
+        const matchDate = header.match(/\b(\d{4}-\d{2}-\d{2})\b/);
+        const dateTxt = matchDate ? matchDate[1] : '';
+        const matchPrice = header.match(/\*\*([^*]+)\*\*/);
+        const priceTxt = matchPrice ? matchPrice[1].trim() : '';
+        // Left panel: route + legs
+        let x = bx + 20, y = by + 28;
+        doc.setTextColor('#111827');
+        doc.setFont('helvetica','bold'); doc.setFontSize(22);
+        doc.text(`${fromCode || 'FROM'}  →  ${toCode || 'TO'}`, x, y); y += 22;
         doc.setFont('helvetica','normal'); doc.setFontSize(12);
-        doc.text(opt.header || 'Selected Option', x, y); y+=18;
-        for (const leg of (opt.legs || [])) { if (y>760){ doc.addPage(); y=40;} doc.text(String(leg), x, y); y+=16; }
+        if (dateTxt) { doc.text(`Date: ${dateTxt}`, x, y); y += 18; }
+        if (priceTxt) { doc.text(`Price: ${priceTxt}`, x, y); y += 18; }
+        y += 6;
+        doc.setFont('helvetica','bold'); doc.text('Segments', x, y); y += 16; doc.setFont('helvetica','normal');
+        for (const legRaw of (opt.legs || [])) {
+          const leg = String(legRaw).replace(/^THEN\s*/i, '').trim();
+          if (y > by + bh - 80) { doc.addPage(); y = pad; }
+          doc.circle(x+3, y-4, 1.5, 'F');
+          doc.text(leg, x + 12, y, { maxWidth: bw*0.63 - 32 });
+          y += 16;
+        }
+        // Right stub: meta
+        const sx = bx + bw*0.69, sy = by + 32;
+        doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor('#111827');
+        doc.text('Passenger', sx, sy); doc.setFont('helvetica','normal'); doc.text('—', sx, sy+16);
+        doc.setFont('helvetica','bold'); doc.text('Flight', sx, sy+40); doc.setFont('helvetica','normal'); doc.text((fromCode && toCode) ? `${fromCode} → ${toCode}` : '-', sx, sy+56);
+        doc.setFont('helvetica','bold'); doc.text('Date', sx, sy+80); doc.setFont('helvetica','normal'); doc.text(dateTxt || '-', sx, sy+96);
+        doc.setFont('helvetica','bold'); doc.text('Price', sx, sy+120); doc.setFont('helvetica','normal'); doc.text(priceTxt || '-', sx, sy+136);
+        // Fake barcode
+        const bcY = by + bh - 60; doc.setFillColor('#111827');
+        let bxp = sx, bwbar = 2;
+        for (let i=0;i<80;i++){ const h = 30 + ((i%5)===0?12:0); doc.rect(bxp, bcY, bwbar, h, 'F'); bxp += 3.5; }
         return doc.output('blob');
-      } catch (_) { return null; }
+      } catch (e) { console.warn('PDF error', e); return null; }
     };
     const sanitizeUrl = (value) => {
       if (typeof value !== 'string') return null;

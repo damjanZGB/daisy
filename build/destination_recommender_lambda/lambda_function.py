@@ -2069,6 +2069,12 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     m = "\n".join(lines + ["", closing])
                     # Sanitize any non-ASCII separators that may slip in due to encoding
                     m = m.replace("\u001a", "->").replace("\u0007", " | ")
+                    # Convert any HTML breaks to newlines and strip stray tags so the agent displays clean text
+                    try:
+                        m = re.sub(r"<br\s*/?>", "\n", m, flags=re.IGNORECASE)
+                        m = re.sub(r"<[^>]+>", "", m)
+                    except Exception:
+                        pass
                     payload["message"] = m
                     # Compact the message if it exceeds the configured byte threshold
                     try:

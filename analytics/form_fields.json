@@ -1,0 +1,86 @@
+﻿{
+  "path": "C:\\Users\\Damjan\\source\\repos\\daisy\\frontend\\img\\lufthansa_template_empty_form.pdf",
+  "fieldCount": 20,
+  "fields": [
+    {
+      "name": "Text17",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "passenger_left",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "class",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "seat",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "flight_left",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "date_left",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "departure_left",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "seq_no_left",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "gate_left",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "from_left",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "to_left",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "from_to",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "zone_left",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "passenger_right",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "date_right",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "departure_right",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "gate_right",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "zone_right",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "seat_right",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "flight_right",
+      "type": "PDFTextField"
+    }
+  ]
+}
