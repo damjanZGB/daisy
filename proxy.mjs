@@ -377,6 +377,17 @@ function decodeAgentEventStream(buffer) {
     };
     collectTextArray(json.outputText);
     collectTextArray(json.response?.outputText);
+    // Bedrock sometimes streams via contentBlock/contentBlockDelta
+    if (json.contentBlock && typeof json.contentBlock.text === "string") {
+      chunks.push(json.contentBlock.text);
+      if (!eventRecord.decodedText) eventRecord.decodedText = [];
+      eventRecord.decodedText.push(json.contentBlock.text);
+    }
+    if (json.contentBlockDelta && json.contentBlockDelta.delta && typeof json.contentBlockDelta.delta.text === "string") {
+      chunks.push(json.contentBlockDelta.delta.text);
+      if (!eventRecord.decodedText) eventRecord.decodedText = [];
+      eventRecord.decodedText.push(json.contentBlockDelta.delta.text);
+    }
     if (typeof json.text === "string") {
       chunks.push(json.text);
     }
