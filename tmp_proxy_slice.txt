@@ -1,0 +1,2 @@
+).toISOString(), "[WARN]", ...args),
+  error: (...args) => console.error(new Da

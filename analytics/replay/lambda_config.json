@@ -1,0 +1,51 @@
+﻿{
+    "FunctionName": "daisy_in_action-0k2c0",
+    "FunctionArn": "arn:aws:lambda:us-west-2:083756035354:function:daisy_in_action-0k2c0",
+    "Runtime": "python3.12",
+    "Role": "arn:aws:iam::083756035354:role/service-role/daisy_in_action-0k2c0-role-FGL64GQRD5P",
+    "Handler": "lambda_function.lambda_handler",
+    "CodeSize": 48586,
+    "Description": "",
+    "Timeout": 90,
+    "MemorySize": 128,
+    "LastModified": "2025-10-20T16:02:44.000+0000",
+    "CodeSha256": "eNYOMrFl86magevBtuNR21F4aCURTcDFnS951nh3CQQ=",
+    "Version": "$LATEST",
+    "Environment": {
+        "Variables": {
+            "ACTION_GROUP_NAME": "daisy_in_action",
+            "AMADEUS_ENV": "test",
+            "DEFAULT_CURRENCY": "EUR",
+            "ACTION_GROUP_RECOMMENDER": "DestinationRecommender",
+            "PROXY_BASE_URL": "https://origin-daisy.onrender.com",
+            "RECOMMENDER_MAX_OPTIONS": "10",
+            "RECOMMENDER_MAX_TEXT_BYTES": "4000",
+            "LH_GROUP_ONLY": "true",
+            "RECOMMENDER_VERBOSE": "true"
+        }
+    },
+    "TracingConfig": {
+        "Mode": "PassThrough"
+    },
+    "RevisionId": "a8a26c07-b609-4cb9-8cf3-6f403030ae3e",
+    "State": "Active",
+    "LastUpdateStatus": "Successful",
+    "PackageType": "Zip",
+    "Architectures": [
+        "x86_64"
+    ],
+    "EphemeralStorage": {
+        "Size": 512
+    },
+    "SnapStart": {
+        "ApplyOn": "PublishedVersions",
+        "OptimizationStatus": "Off"
+    },
+    "RuntimeVersionConfig": {
+        "RuntimeVersionArn": "arn:aws:lambda:us-west-2::runtime:4af3157c9dfde29be4e8f128147181e8978958ec7ddea506e754af7c3741a0a2"
+    },
+    "LoggingConfig": {
+        "LogFormat": "Text",
+        "LogGroup": "/aws/lambda/daisy_in_action-0k2c0"
+    }
+}
