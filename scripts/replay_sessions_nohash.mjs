@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
 import { TextDecoder } from 'node:util';
@@ -131,11 +131,11 @@ function assessFormatting(text) {
   const hasThenCanonical = /(^|\n)\s*-\s*THEN\s+[A-Z0-9]{1,3}\s*\d{1,5}\s+[A-Z]{3}\s+\d{2}:\d{2}\s*->\s*[A-Z]{3}\s+\d{2}:\d{2}/i.test(normalized);
   const hasThenGeneric = /\bTHEN\b/i.test(normalized);
   const hasThen = hasThenCanonical || hasThenGeneric;
-  // Arrow either ASCII -> or unicode →
-  const hasArrow = /(->|→)/.test(normalized);
+  // Arrow either ASCII -> or unicode ?
+  const hasArrow = /(->|?)/.test(normalized);
   // Price: bold **123 EUR**, or currency symbol, or amount + ISO currency
   const hasPriceBold = /\*\*\s*[^*\n]*\d[\d.,]*\s*(EUR|USD|CHF|GBP)\s*\*\*/i.test(normalized);
-  const hasPriceSym = /([€$£]\s?\d[\d.,]*)/.test(normalized);
+  const hasPriceSym = /([�$�]\s?\d[\d.,]*)/.test(normalized);
   const hasPriceCode = /\b\d[\d.,]*\s*(EUR|USD|CHF|GBP|RSD|HRK)\b/i.test(normalized);
   const hasPrice = hasPriceBold || hasPriceSym || hasPriceCode;
   const checks = { hasNumbered, hasSections, hasThen, hasArrow, hasPrice };
@@ -240,5 +240,6 @@ run().catch(err => {
   console.error('Replay failed:', err);
   process.exitCode = 1;
 });
+
 
 

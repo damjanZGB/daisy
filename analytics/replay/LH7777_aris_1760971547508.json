@@ -1,0 +1,64 @@
+{
+  "flight": "LH7777",
+  "session": "fa4a9a2f-6c3e-4a9e-9a9a-777777777777",
+  "bedrockSessionId": "1d013ff9-14fc-4bf2-81a3-fe585465fa87",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Some warm place with beach in March next year",
+      "assistant": "Sorry, but I'm currently unable to provide beach destinations for March next year as the tool is temporarily unavailable. Would you like to try again later or specify another time or preference for your travel plans?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "Yes, show me a few options",
+      "assistant": "I understand. Could you please provide an alternative month or specify another destination preference so I can try to find some beach options for you?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Option 1 looks good",
+      "assistant": "Thank you for your interest. To proceed, could you please specify an alternative month or provide more details about your destination preference? This will help me tailor the options to your needs.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "Here are your flight options for your trip from ZAG to ZRH:",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    }
+  ]
+}
