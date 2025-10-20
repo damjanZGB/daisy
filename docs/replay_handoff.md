@@ -42,20 +42,23 @@ Provide this document to the next Codex session so they can continue the work.
 
 ## Updates (2025-10-20)
 
-- Proxy fallback implemented for functionResponse-only replies
+- Proxy fallback implemented for functionResponse-only or heading-only replies
   - File: `proxy.mjs:decodeAgentEventStream`
-  - When Bedrock streams no `outputText` but returns a final `functionResponse` with `responseBody.TEXT.body`, the proxy now surfaces that payload as `text`.
-  - The proxy adds `usedFunctionResponseFallback: true` in the JSON response to indicate fallback was used. `/invoke` logs also include this flag and `textLen`.
+  - If Bedrock streams no `outputText`, or only a very short heading (e.g., ends with ":"), the proxy uses the final `functionResponse.responseBody.TEXT.body` as the `text` returned to clients.
+  - Logs include `usedFunctionResponseFallback` and `textLen` for observability.
 
-- Frontend defensive fallback (all variants)
-  - Files: `frontend/paul/index.html:804`, `frontend/bianca/index.html`, `frontend/gina/index.html`, `frontend/origin/index.html`
-  - If `data.text || data.responseText || data.answer` is empty, the UI falls back to `data.finalResponse.response.functionResponse.responseBody.TEXT.body` and parses JSON if needed.
+- UI simplification (backend-owned)
+  - Files: `frontend/paul/index.html`, `frontend/bianca/index.html`, `frontend/gina/index.html`, `frontend/origin/index.html`
+  - Removed UI-side finalResponse parsing; UIs now rely solely on backend-provided `text`.
 
 - Replay analytics extensions
   - Placeholder detection added in `scripts/replay_sessions.mjs` per turn; flags `placeholders` plus `placeholder_flags` map.
     - Banned patterns flagged: "Airport Name N", "Airline Name N", "EUR X.XX", "X km", "Notes: ...", solitary "...", "TBD".
   - CloudWatch tool-call aggregation added in `scripts/extract_proxy_logs.py`:
     - Output now includes `aggregate` totals and per-session `counts` and `toolCalls` for IATA and Amadeus events.
+
+- Amadeus request alignment (spec)
+  - Proxy forwards `includedAirlineCodes`/`excludedAirlineCodes` when present and sets `Accept: application/vnd.amadeus+json`.
 
 ### Quick validation commands
 

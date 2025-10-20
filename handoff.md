@@ -58,8 +58,8 @@ Tool I/O Debug Capture (S3)
 
 Verified Behaviors (CloudWatch)
 - Tools working: OpenAPI /tools/amadeus/search calls and recommender enrichment calls succeeded (200) and returned offers during sessions LH2943, LH6638, LH6119, LH4128.
-- Function-details streaming: Bedrock may return only a final functionResponse (no streamed outputText). In such cases UI showed “No text response,” even though Lambda returned TEXT in functionResponse.
-  - Proposed fix: add proxy/client fallback to use functionResponse.responseBody.TEXT.body when streamed text is empty.
+- Function-details streaming: Bedrock may return only a final functionResponse (no streamed outputText). This previously led to “No text response.”
+  - Implemented fix: proxy surfaces TEXT from functionResponse when streamed text is empty or is just a short heading; frontend logic no longer parses finalResponse (backend owns fallback).
 
 Instruction Updates (ASCII variants)
 - Files updated:
@@ -74,14 +74,16 @@ Instruction Updates (ASCII variants)
   - Presentation: ASCII arrow ->, uppercase THEN; sections “Direct Flights” and “Connecting Flights”.
 
 Frontend (PDF and parsing)
-- Files updated: frontend/paul/index.html, frontend/origin/index.html
+- Files updated: frontend/paul/index.html, frontend/bianca/index.html, frontend/gina/index.html, frontend/origin/index.html
 - Changes:
   - Sanitizer strips Markdown; parser captures legacy bullet lines (Departure/Arrival) and canonical THEN lines.
   - generatePdf constructs legs from bullets when needed; carrier+number without space; blanks instead of random gate/zone/seat/seq; multi-page generation fixed (one page per leg).
   - Trigger words include: confirm, confirmed, book, hold, pdf, download, itinerary, ticket, boarding pass.
+  - Removed UI-level fallback for functionResponse; UI uses `text` from proxy only (backend-controlled).
 
 Amadeus API Compatibility
-- Requests sent through proxy use fields aligned with v2.8/2.9: originLocationCode, destinationLocationCode, departureDate, returnDate, adults, children, infants, travelClass, nonStop, currencyCode, includedAirlineCodes, max.
+- Requests sent through proxy use fields aligned with v2.8/2.9: originLocationCode, destinationLocationCode, departureDate, returnDate, adults, children, infants, travelClass, nonStop, currencyCode, includedAirlineCodes, excludedAirlineCodes, max.
+- Proxy now forwards `includedAirlineCodes`/`excludedAirlineCodes` when provided and sets `Accept: application/vnd.amadeus+json`.
 - Responses include simplified “offers” and “raw” canonical Amadeus payload (data[].itineraries[].segments[].carrierCode/number/departure/arrival).
 
 Examples (S3 Debug Keys, 2025-10-20)
@@ -99,6 +101,5 @@ CLI Snippets
 - Fetch tool I/O debug: aws s3 ls s3://origin-daisy-bucket/debug-tool-io/2025/10/20/ --profile reStrike --region us-west-2
 
 Open Items (handoff)
-- Implement proxy and/or frontend fallback to surface TEXT from functionResponse when no streamed outputText is present.
-- Extend replay tooling to count tool calls from CloudWatch and flag placeholder patterns.
-
+- DONE: Implement proxy fallback to surface TEXT from functionResponse when streamed text is empty/heading-only; removed frontend fallback.
+- DONE: Extend replay tooling to count tool calls from CloudWatch and flag placeholder patterns.

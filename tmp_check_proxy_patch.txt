@@ -452,8 +452,20 @@ function decodeAgentEventStream(buffer) {
     cleanedText = askUserQuestions[askUserQuestions.length - 1];
   }
   let usedFunctionResponseFallback = false;
+  let usedFunctionResponseSupplement = false;
   let responseTextFromFunction = null;
   // Fallback: if no streamed outputText, try to surface TEXT from final functionResponse
+  const hasRichContent = (s) => {
+    if (!s) return false;
+    const t = String(s);
+    return (
+      /(^|\n)\s*-\s*THEN\b/i.test(t) ||
+      /[A-Z]{3}\s*->\s*[A-Z]{3}/.test(t) ||
+      /\b(LH|LX|OS|SN|EW|4Y|EN)\s*\d{2,5}\b/i.test(t) ||
+      /€\s*\d|\bEUR\s*\d/i.test(t) ||
+      /(^|\n)\s*\d+[\)\.-]\s+/.test(t)
+    );
+  };
   const tryDeriveFunctionText = () => {
     let txt = null;
     if (finalResponse) {
@@ -475,18 +487,18 @@ function decodeAgentEventStream(buffer) {
     cleanedText = responseTextFromFunction;
     usedFunctionResponseFallback = true;
   } else if (cleanedText && responseTextFromFunction) {
-    // Simple rule: if the streamed text is very short or clearly a prompt heading, use the function response text instead
-    const short = cleanedText.length < 60;
-    const looksLikeHeading = /:\s*$/.test(cleanedText) || /options\s*:\s*$/i.test(cleanedText);
-    if ((short || looksLikeHeading)) {
-      cleanedText = responseTextFromFunction;
-      usedFunctionResponseFallback = true;
+    // Supplement if streamed text looks like a heading without the actual content
+    if (!hasRichContent(cleanedText) && hasRichContent(responseTextFromFunction)) {
+      cleanedText = `${cleanedText}\n${responseTextFromFunction}`.trim();
+      usedFunctionResponseSupplement = true;
     }
   }
   const result = { text: cleanedText, events };
   if (askUserQuestions.length > 0) result.askUserQuestions = askUserQuestions;
   if (finalResponse) result.finalResponse = finalResponse;
+  if (responseTextFromFunction) result.responseText = responseTextFromFunction;
   if (usedFunctionResponseFallback) result.usedFunctionResponseFallback = true;
+  if (usedFunctionResponseSupplement) result.usedFunctionResponseSupplement = true;
   return result;
 }
 async function awsInvokeAgent({
@@ -581,8 +593,6 @@ function buildSearchQuery(q) {
   if (q.travelClass) params.set("travelClass", q.travelClass);
   if (q.children) params.set("children", String(q.children));
   if (q.infants) params.set("infants", String(q.infants));
-  if (q.includedAirlineCodes) params.set("includedAirlineCodes", q.includedAirlineCodes);
-  if (q.excludedAirlineCodes) params.set("excludedAirlineCodes", q.excludedAirlineCodes);
   return params.toString();
 }
 function normalizeOffers(json) {
@@ -1084,7 +1094,7 @@ const server = http.createServer(async (req, res) => {
       let am;
       try {
         am = await fetch(`${AMADEUS_HOST}/v2/shopping/flight-offers?${query}`, {
-          headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.amadeus+json" },
+          headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
         });
       } catch (error) {
@@ -1280,4 +1290,5 @@ if (shouldStartServer) {
 }
 
 export { iataLookup, loadIata, interpretDatePhrase };
+
 
