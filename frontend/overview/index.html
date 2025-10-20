@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daisy Project Overview — AWS Bedrock Agent Architecture</title>
+  <style>
+    :root {
+      --bg: #0f172a; /* slate-900 */
+      --panel: #111827ee; /* gray-900 with alpha */
+      --ink: #e5e7eb; /* gray-200 */
+      --muted: #9ca3af; /* gray-400 */
+      --brand: #0B1F55; /* LH blue */
+      --accent: #F7B500; /* LH yellow */
+      --link: #93c5fd; /* blue-300 */
+      --ok: #34d399; /* emerald-400 */
+      --warn: #f59e0b; /* amber-500 */
+      --err: #f87171; /* red-400 */
+      --card: #0b1229cc;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0; background: radial-gradient(1200px 800px at 15% -10%, #0b1229 0%, var(--bg) 60%);
+      color: var(--ink); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+    .nav { position: sticky; top: 0; align-self: start; height: 100vh; overflow:auto; padding: 20px; background: linear-gradient(180deg, rgba(11,18,41,.8), rgba(11,18,41,.5)); border-right: 1px solid #1f2937; }
+    .nav h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 16px 0 8px; }
+    .nav a { display: block; padding: 6px 8px; border-radius: 8px; color: #e5e7eb; }
+    .nav a:hover { background: #1f2937; }
+    .main { padding: 28px 28px 48px; }
+    .title { display:flex; align-items:center; gap:12px; }
+    .title .badge { background: var(--accent); color: var(--brand); padding: 4px 8px; border-radius: 999px; font-weight: 700; font-size: 12px; }
+    h1 { margin: 0 0 6px; font-size: 28px; }
+    h2 { margin: 28px 0 10px; font-size: 22px; }
+    h3 { margin: 22px 0 8px; font-size: 18px; color: #d1d5db; }
+    p { color: #cbd5e1; line-height: 1.6; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:16px; }
+    .card { background: var(--card); border: 1px solid #1f2937; border-radius: 12px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+    .meta { color: var(--muted); font-size: 13px; }
+    .kvs { display:grid; grid-template-columns: max-content 1fr; gap: 6px 12px; font-size: 14px; }
+    .kvs b { color: #e5e7eb; }
+    .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; background:#1f2937; color:#cbd5e1; font-size:12px; margin:2px 4px 2px 0; }
+    pre { background:#0b1229; border:1px solid #1f2937; border-radius:10px; padding:12px; overflow:auto; }
+    code { color:#e5e7eb; }
+    .toolbar { display:flex; gap:8px; justify-content:flex-end; margin: -6px 0 8px; }
+    .btn { background:#1f2937; color:#e5e7eb; border:1px solid #374151; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; }
+    .btn:hover { background:#111827; }
+    .diagram { background:#0b1229; border:1px solid #1f2937; border-radius:12px; padding:12px; }
+    .hint { font-size:12px; color:#9ca3af; }
+    .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    .err { color: var(--err); }
+    .chips { margin-top: 6px; }
+    .chips .pill { background:#1e293b; color:#cbd5e1; border:1px solid #293548; }
+    .two-col { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+    @media (max-width: 920px){ .layout{ grid-template-columns: 1fr; } .nav{ position: relative; height:auto; border-right:none; border-bottom:1px solid #1f2937;} }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose', flowchart: { useMaxWidth: true, htmlLabels: true } });
+    function copy(elId){ const el = document.getElementById(elId); if(!el) return; const txt = el.innerText; navigator.clipboard.writeText(txt); const btn = document.querySelector(`[data-copy='${elId}']`); if(btn){ const old=btn.textContent; btn.textContent='Copied'; setTimeout(()=>btn.textContent=old,1200);} }
+  </script>
+  <!-- Emoji icons fallback for browsers without color emoji -->
+</head>
+<body>
+  <div class="layout">
+    <nav class="nav">
+      <div class="title" style="margin-bottom:14px;">
+        <span class="badge">Daisy</span>
+        <div>
+          <div style="font-weight:700;">AWS Bedrock Agent Project Overview</div>
+          <div class="meta">Single‑page guide with interactive diagrams</div>
+        </div>
+      </div>
+      <h2>Navigation</h2>
+      <a href="#overview">Overview</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#components">Components</a>
+      <a href="#flows">Flows</a>
+      <a href="#apis">APIs & Contracts</a>
+      <a href="#operations">Operations</a>
+      <a href="#config">Configuration</a>
+      <a href="#deploy">Deploy & Test</a>
+      <a href="#troubleshoot">Troubleshooting</a>
+      <a href="#appendix">Appendix</a>
+      <div style="height:12px;"></div>
+      <div class="meta">Repo paths are clickable in the CLI editor.</div>
+    </nav>
+
+    <main class="main">
+      <section id="overview">
+        <h1>Project Overview</h1>
+        <p>
+          Daisy is an AWS Bedrock Agent solution that transforms traveler intent into concrete Lufthansa Group flight options. It integrates an Agent (with action groups), a Python Lambda executor, a minimal Node proxy for Bedrock + Amadeus tooling, and lightweight frontends.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>Essentials</h3>
+            <div class="kvs">
+              <b>Region</b><span>us-west-2</span>
+              <b>Agent ID</b><span>JDLTXAKYJY</span>
+              <b>Aliases</b><span>Bianca (v99), Paul (v97), Gina (v98), Test (DRAFT)</span>
+              <b>Lambda</b><span>daisy_in_action-0k2c0 (Python 3.12)</span>
+              <b>Proxy</b><span>proxy.mjs on :8787</span>
+              <b>Debug</b><span>S3 origin-daisy-bucket/debug-tool-io/</span>
+            </div>
+            <div class="chips">
+              <span class="pill">Tool‑first policy</span>
+              <span class="pill">No placeholders</span>
+              <span class="pill">THEN lines</span>
+              <span class="pill">IATA + Time parsing</span>
+            </div>
+          </div>
+          <div class="card">
+            <h3>What You Build</h3>
+            <p>
+              Students will extend an Agent’s tool orchestration (IATA, time, pricing), refine instructions, and verify responses with replay tooling — aiming for reliable, testable flight results without fabrication.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="architecture">
+        <h2>Architecture</h2>
+        <div class="toolbar"><button class="btn" data-copy="diag-arch" onclick="copy('diag-arch')">Copy diagram</button></div>
+        <div class="diagram mermaid" id="diag-arch">
+          flowchart TB
+            subgraph User[User]
+              U[Traveler]
+            end
+
+            subgraph UI[Frontends]
+              F1[paul/index.html]
+              F2[bianca/index.html]
+              F3[gina/index.html]
+              F4[origin/index.html]
+            end
+
+            subgraph Proxy[Node Proxy :8787]
+              P1[/POST /invoke\n(Gateway to Bedrock)/]
+              P2[/POST /tools/amadeus/search/]
+              P3[/GET /tools/iata/lookup/]
+              P4[/POST /tools/datetime/interpret/]
+              P5[/POST /log/transcript/]
+            end
+
+            subgraph Bedrock[Bedrock Agent Runtime]
+              AID[Agent: JDLTXAKYJY\nAliases: Bianca/Paul/Gina]
+              AG[Agent Orchestrator]
+            end
+
+            subgraph Lambda[Action Group Lambda]
+              L1[daisy_in_action-0k2c0\nPython 3.12]
+              L2[Destination Recommender]
+            end
+
+            subgraph Vendors[External]
+              AMA[(Amadeus Flight Offers v2.8/2.9)]
+            end
+
+            subgraph Logs[Observability]
+              CW[(CloudWatch Logs)]
+              S3[(S3 debug-tool-io/)]
+            end
+
+            U -->|Chat| F1 & F2 & F3 & F4
+            F1 & F2 & F3 & F4 -->|JSON| P1
+            P1 -->|InvokeAgent (stream)| AG
+            AG -->|function-details| L1
+            L1 -->|IATA| P3
+            L1 -->|Time| P4
+            L1 -->|Pricing| P2
+            P2 -->|GET offers| AMA
+            AMA --> P2
+            L1 -->|functionResponse TEXT| AG
+            AG -.events.-> P1
+            P1 -->|text (w/ fallback)| F1 & F2 & F3 & F4
+            L1 --> S3
+            L1 --> CW
+            P3 & P4 --> CW
+        </div>
+        <p class="hint">The proxy assembles streamed text from Bedrock and falls back to Lambda’s functionResponse TEXT when Bedrock streams only a heading.</p>
+      </section>
+
+      <section id="components">
+        <h2>Components & Roles</h2>
+        <div class="grid">
+          <div class="card"><h3>Agent (Bedrock)</h3><p>
+            Hosts instructions and routes calls to action groups. Ensures tool‑first behavior and consistent presentation (THEN lines, sections, flight number format).
+          </p></div>
+          <div class="card"><h3>Lambda: daisy_in_action</h3><p>
+            Executes function‑details and OpenAPI actions: resolves IATA, parses time phrases, calls Amadeus via the proxy, and returns simplified offers plus human‑readable <em>message</em> text.
+          </p></div>
+          <div class="card"><h3>Proxy (proxy.mjs)</h3><p>
+            Minimal gateway for Bedrock and tools. Signs Bedrock Invoke, normalizes event streams, exposes Amadeus/IATA/Time adapters, and implements text fallback. CORS‑gated and transcript‑aware.
+          </p></div>
+          <div class="card"><h3>Frontends</h3><p>
+            Four identical UIs (config‑only variants). Render chat, sanitize formatting, support PDF creation from itineraries, and log transcripts. Now rely solely on <code>text</code> from proxy.
+          </p></div>
+          <div class="card"><h3>Amadeus</h3><p>
+            Flight Offers Search v2.8/2.9. Proxy forwards GET query params (origin/destination, dates, passengers, cabin, LH filters, currency, nonstop, max) and adds <code>Accept: application/vnd.amadeus+json</code>.
+          </p></div>
+          <div class="card"><h3>Observability</h3><p>
+            CloudWatch captures Lambda/Proxy telemetry. Optional S3 debug captures full tool I/O payloads. Replay scripts summarize failures, formatting, placeholders, and tool‑call counts.
+          </p></div>
+        </div>
+      </section>
+
+      <section id="flows">
+        <h2>Data & Logical Flows</h2>
+        <div class="toolbar"><button class="btn" data-copy="diag-seq" onclick="copy('diag-seq')">Copy diagram</button></div>
+        <div class="diagram mermaid" id="diag-seq">
+          sequenceDiagram
+            participant U as User
+            participant F as Frontend
+            participant P as Proxy (/invoke)
+            participant B as Bedrock Agent
+            participant L as Lambda (Action Group)
+            participant T as Tools (IATA/Time/Amadeus)
+            participant A as Amadeus API
+
+            U->>F: inputText (natural language)
+            F->>P: POST /invoke {sessionId, inputText, defaultOrigin?}
+            P->>B: InvokeAgent (stream)
+            B-->>P: outputText (may be empty or heading)
+            B->>L: functionDetails (recommend, iata, time, pricing)
+            L->>P: GET /tools/iata/lookup
+            P-->>L: Airport matches
+            L->>P: POST /tools/datetime/interpret
+            P-->>L: ISO YYYY-MM-DD
+            L->>P: POST /tools/amadeus/search {query}
+            P->>A: GET /v2/shopping/flight-offers
+            A-->>P: offers JSON
+            P-->>L: normalized {offers, raw}
+            L-->>B: functionResponse TEXT {message}
+            B-->>P: final-response
+            P-->>F: { text } (fallback if needed)
+            F-->>U: Render options with THEN lines
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <h3>Formatting Guarantees</h3>
+            <ul>
+              <li>THEN lines for connections; flight numbers compact (e.g., LH612).</li>
+              <li>Sections: DIRECT FLIGHTS, CONNECTING FLIGHTS.</li>
+              <li>No placeholders: no “EUR X.XX”, “Airport Name N”, “Notes: …”.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Fallback Logic (Proxy)</h3>
+            <ul>
+              <li>If no streamed text → use functionResponse TEXT.</li>
+              <li>If streamed text is a short/heading line → replace with functionResponse TEXT.</li>
+              <li>Frontends do not parse finalResponse; they rely on proxy’s <code>text</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="apis">
+        <h2>APIs & Contracts</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Proxy Routes</h3>
+            <pre id="proxy-routes">POST /invoke
+POST /tools/amadeus/search
+GET  /tools/iata/lookup
+POST /tools/datetime/interpret
+POST /log/transcript
+GET  /health</pre>
+            <div class="toolbar"><button class="btn" data-copy="proxy-routes" onclick="copy('proxy-routes')">Copy</button></div>
+          </div>
+          <div class="card">
+            <h3>Amadeus Query (Spec v2.8/2.9)</h3>
+            <pre id="amadeus-params">originLocationCode, destinationLocationCode, departureDate, returnDate?,
+adults, children?, infants?, travelClass?, nonStop?, currencyCode?,
+includedAirlineCodes?, excludedAirlineCodes?, max?</pre>
+            <div class="toolbar"><button class="btn" data-copy="amadeus-params" onclick="copy('amadeus-params')">Copy</button></div>
+            <p class="hint">Proxy adds <code>Accept: application/vnd.amadeus+json</code> and forwards LH-group filters when provided.</p>
+          </div>
+          <div class="card">
+            <h3>File References</h3>
+            <ul>
+              <li><code>proxy.mjs</code></li>
+              <li><code>aws/lambda_function.py</code></li>
+              <li><code>frontend/paul/index.html</code> (+ other variants)</li>
+              <li><code>scripts/replay_sessions.mjs</code>, <code>scripts/extract_proxy_logs.py</code></li>
+              <li><code>handoff.md</code>, <code>docs/replay_handoff.md</code></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="operations">
+        <h2>Operations & Observability</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>CloudWatch & Debug</h3>
+            <ul>
+              <li>Tail: <code>aws logs tail "/aws/lambda/daisy_in_action-0k2c0" --since 15m --follow --region us-west-2</code></li>
+              <li>Debug tool I/O: <code>s3://origin-daisy-bucket/debug-tool-io/YYYY/MM/DD/</code></li>
+              <li>Proxy logs mark <code>usedFunctionResponseFallback</code> when fallback applied.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Replay & QA</h3>
+            <ul>
+              <li><code>node scripts/replay_sessions.mjs</code> → per-turn formatting and placeholder flags.</li>
+              <li><code>python scripts/extract_proxy_logs.py --minutes 60</code> → tool-call counts and sessions.</li>
+              <li>PDF generation validated from itinerary options (first option).</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="config">
+        <h2>Configuration</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Proxy Env Vars</h3>
+            <div class="kvs">
+              <b>AWS_REGION</b><span>us-west-2</span>
+              <b>AGENT_ID</b><span>JDLTXAKYJY</span>
+              <b>AGENT_ALIAS_ID</b><span>Bianca/Paul/Gina/Test</span>
+              <b>AWS_ACCESS_KEY_ID</b><span>SigV4 credentials</span>
+              <b>AWS_SECRET_ACCESS_KEY</b><span>SigV4 credentials</span>
+              <b>ORIGIN</b><span>CORS allowlist (comma-separated)</span>
+              <b>AMADEUS_API_KEY</b><span>Required for pricing</span>
+              <b>AMADEUS_API_SECRET</b><span>Required for pricing</span>
+              <b>IATA_DB_PATH</b><span>Default: ./iata.json</span>
+              <b>TRANSCRIPT_BUCKET/PREFIX</b><span>Optional transcript uploads</span>
+              <b>AMADEUS_TIMEOUT_MS</b><span>Default: 12000</span>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Lambda Env (selected)</h3>
+            <div class="kvs">
+              <b>PROXY_BASE_URL</b><span>https://origin-daisy.onrender.com</span>
+              <b>DEFAULT_CURRENCY</b><span>EUR</span>
+              <b>LH_GROUP_ONLY</b><span>true</span>
+              <b>RECOMMENDER_VERBOSE</b><span>true</span>
+              <b>RECOMMENDER_MAX_OPTIONS</b><span>10</span>
+              <b>RECOMMENDER_MAX_TEXT_BYTES</b><span>4000</span>
+              <b>DEBUG_TOOL_IO</b><span>true</span>
+              <b>DEBUG_S3_BUCKET/PREFIX</b><span>origin-daisy-bucket / debug-tool-io</span>
+              <b>ACTION_GROUP_NAME</b><span>daisy_in_action</span>
+              <b>ACTION_GROUP_RECOMMENDER</b><span>DestinationRecommender</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="deploy">
+        <h2>Deploy & Test</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Proxy</h3>
+            <pre id="deploy-proxy">npm ci
+node proxy.mjs
+# health
+curl http://localhost:8787/health
+# CORS origins: set ORIGIN env var</pre>
+            <div class="toolbar"><button class="btn" data-copy="deploy-proxy" onclick="copy('deploy-proxy')">Copy</button></div>
+          </div>
+          <div class="card">
+            <h3>Smoke</h3>
+            <pre id="smoke"># IATA lookup
+curl -s "http://localhost:8787/tools/iata/lookup?term=Zurich&limit=3" | jq .
+
+# Agent call
+curl -s -X POST http://localhost:8787/invoke \
+  -H 'Content-Type: application/json' \
+  -d '{"sessionId":"smoke-1","inputText":"ZAG to ZRH 2025-12-10 return 2025-12-12"}' | jq .text</pre>
+            <div class="toolbar"><button class="btn" data-copy="smoke" onclick="copy('smoke')">Copy</button></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="troubleshoot">
+        <h2>Troubleshooting</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>No Text Response</h3>
+            <ul>
+              <li class="ok">Proxy now falls back to functionResponse TEXT on empty/heading-only streams.</li>
+              <li>Confirm proxy logs show <code>usedFunctionResponseFallback: true</code>.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Amadeus Issues</h3>
+            <ul>
+              <li>Check creds and <code>Accept</code> header.</li>
+              <li>Verify <code>includedAirlineCodes</code> forwarded when needed.</li>
+              <li>Timeouts: tune <code>AMADEUS_TIMEOUT_MS</code>.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Formatting Drift</h3>
+            <ul>
+              <li>Run replay suite and inspect <code>format_ok</code> / placeholders.</li>
+              <li>Review instruction ASCII variants in <code>aws/</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="appendix">
+        <h2>Appendix</h2>
+        <div class="diagram mermaid" id="diag-data">
+          flowchart LR
+            subgraph Capture[Tool I/O Capture]
+              P[Proxy payload]\n(POST /tools/*)
+              R[Proxy response]\n(Offers + Raw)
+            end
+            P & R --> S3D[(S3 debug-tool-io/)]
+            subgraph Replay
+              RS[scripts/replay_sessions.mjs]
+              EX[scripts/extract_proxy_logs.py]
+            end
+            S3D -.source.-> RS
+            CWL[(CloudWatch Logs)] --> EX
+            RS --> SUM[analytics/replay/*.json]
+            EX --> SUM
+        </div>
+        <p class="hint">Use replay outputs to guide instruction and tool tuning. Keep conversations realistic and enforce tool‑first rules.</p>
+      </section>
+
+    </main>
+  </div>
+</body>
+</html>
+
