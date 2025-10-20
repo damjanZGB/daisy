@@ -105,6 +105,21 @@ function sanitizeAskUser(text) {
   out = out.replace(/\n{3,}/g, '\n\n');
   return out.trim();
 }
+
+// Formatting check for flight list responses
+function assessFormatting(text) {
+  const t = String(text || '');
+  if (!t.trim()) return { ok: false, checks: { empty: true } };
+  const normalized = t.replace(/\r\n?/g, '\n');
+  const hasNumbered = /^\s*\d+\)\s+/m.test(normalized);
+  const hasSections = /(\n|^)(Direct Flights|Connecting Flights)(\n|$)/.test(normalized);
+  const hasThen = /\bTHEN\s+[A-Z]{1,3}\s*\d{1,5}\s+[A-Z]{3}\s+\d{2}:\d{2}\s*->\s*[A-Z]{3}\s+\d{2}:\d{2}/.test(normalized);
+  const hasArrow = /->/.test(normalized);
+  const hasPrice = /\*\*[^*]+\*\*/.test(normalized);
+  const checks = { hasNumbered, hasSections, hasThen, hasArrow, hasPrice };
+  const ok = (hasNumbered || hasSections) && (hasThen || hasArrow) && hasPrice;
+  return { ok, checks };
+}
 async function invokeWithTrace(aliasId, sessionId, inputText, carryState) {
   const maxRetries = 2;
   let lastErr;
@@ -165,7 +180,8 @@ async function run() {
         const user = s.steps[i];
         try {
           const { assistantText, sessionState, trace, error } = await invokeWithTrace(aliasId, bedrockSessionId, user, state);
-          out.turns.push({ turn: i + 1, user, assistant: assistantText, trace, error });
+          const fmt = assessFormatting(assistantText);
+          out.turns.push({ turn: i + 1, user, assistant: assistantText, trace, error, format_ok: fmt.ok, format_checks: fmt.checks });
           state = sessionState || state;
         } catch (stepErr) {
           out.turns.push({ turn: i + 1, user, assistant: '', trace: [], error: String(stepErr) });

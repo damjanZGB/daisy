@@ -1,0 +1,92 @@
+{
+  "flight": "LH9999",
+  "session": "0aae5c0f-61e4-407a-83cf-bda1d58cd552",
+  "bedrockSessionId": "7c3db32c-09a5-4639-9dc1-f75c4f3ed537",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul, your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "I'm sorry, but there are no direct flights available to Zurich on the requested date. However, I found an alternative option for you:<br>\n1) Departure: 2025-11-15 from Zapresic, Croatia (ZAG) at 18:40<br>\n- THEN, **Flight LH6**: Arrival in Zurich (ZRH) at 21:45<br>\nDuration: 3h 5m with 1 stop<br>\n**Price: €177.98**<br>\nWould you like to proceed with this alternative?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 3,
+      "user": "I can be connecting flight",
+      "assistant": "Here are the details of the alternative flight I found for you:<br>\n1) Departure: 2025-11-15 from Zapresic, Croatia (ZAG) at 18:40<br>\n- THEN, **Flight LH6**: Arrival in Zurich (ZRH) at 21:45<br>\nDuration: 3h 5m with 1 stop<br>\n**Price: €177.98**<br>\nWould you like to proceed with this alternative flight?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 4,
+      "user": "Show me the alternatives",
+      "assistant": "Here are the alternatives I found for your travel to Zurich:<br>\n1) Departure: 2025-11-15 from Zapresic, Croatia (ZAG) at 18:40<br>\n- THEN, **Flight LH6**: Arrival in Zurich (ZRH) at 21:45<br>\nDuration: 3h 5m with 1 stop<br>\n**Price: €177.98**<br>\nThis is the only alternative I found for your requested travel dates.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 5,
+      "user": "Show me the alternatives. Inspire me",
+      "assistant": "Here's an inspiring alternative for your journey to Zurich:<br>\nEmbark on a 3 hour and 5 minute adventure on **Flight LH6** departing from Zapresic, Croatia (ZAG) at 18:40 and arriving in Zurich (ZRH) at 21:45. This one-stop journey offers a unique opportunity to experience the beauty of Zurich with a brief stopover. The fare for this enchanting trip is just **€177.98**. Let this be the start of your next great adventure!",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 6,
+      "user": "Yes. Show me the alternatives",
+      "assistant": "Here are the alternatives I found for your travel to Zurich:<br>\n1) Departure: 2025-11-15 from Zapresic, Croatia (ZAG) at 18:40<br>\n- THEN, **Flight LH6**: Arrival in Zurich (ZRH) at 21:45<br>\nDuration: 3h 5m with 1 stop<br>\n**Price: €177.98**<br>\nThis is the only alternative I found for your requested travel dates.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "flight": "LH8888",
+  "session": "fb5b9b3f-6c3e-4a9e-9a9a-888888888888",
+  "bedrockSessionId": "fd638aee-297d-4765-a618-998366099d93",
+  "aliasKey": "mira",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Cold place for skiing in January",
+      "assistant": "Here are some cold places for skiing in January that have a high likelihood of snow:\n1. **Innsbruck, Austria (INN)** - with a snow reliability of 0.9\n2. **Salzburg, Austria (SZG)** - with a snow reliability of 0.85\n3. **Geneva, Switzerland (GVA)** - with a snow reliability of 0.8\n4. **Grenoble, France (GNB)** - with a snow reliability of 0.8\n5. **Chambery, France (CMF)** - with a snow reliability of 0.8\nWould you like more information on any of these destinations?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 2,
+      "user": "Prefer shortest travel time",
+      "assistant": "",
+      "trace": [],
+      "error": "The agent alias is not in ready state. Retry the request when the state is ready.",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Hold the best value option",
+      "assistant": "",
+      "trace": [],
+      "error": "The agent alias is not in ready state. Retry the request when the state is ready.",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "flight": "LH9998",
+  "session": "fc6c9c4f-6c3e-4a9e-9a9a-999899989998",
+  "bedrockSessionId": "13de41d0-42ad-4bca-bb4f-3b7a6573397e",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Family city break in April weekend",
+      "assistant": "Could you please confirm the default origin city, Zapresic, Croatia (ZAG)? If not, please specify your preferred departure city. Also, could you tell me which weekend in April you're considering for your city break?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "Any nonstop suggestions?",
+      "assistant": "Here are some nonstop city break destinations for April that might inspire you:\n1. **Malaga, Spain (AGP)**\n2. **Malta, Malta (MLA)**\n3. **Johannesburg, South Africa (JNB)**\n4. **Girona, Spain (GRO)**\n5. **Zurich, Switzerland (ZRH)**\n\nWhich of these destinations piques your interest, or would you like to explore more options?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Show me alternative dates",
+      "assistant": "Which destination are you interested in exploring alternative dates for?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    }
+  ]
+}

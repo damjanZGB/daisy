@@ -1,0 +1,159 @@
+{
+  "flight": "LH6814",
+  "session": "03b364a6-904f-4eba-ac72-9bc8bae96966",
+  "bedrockSessionId": "0bab133b-c3fc-48ef-aedf-7fe857d6b8dc",
+  "aliasKey": "mira",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hello! What kind of memories do you hope to create on your next journey?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "It seems there are no direct flights available on your requested date. However, we have an alternative option for you:<br/>\n<strong>1. **Flight LH6**:</strong><br/>\n- Departure: 2025-11-15 from Zapresic, Croatia (ZAG)<br/>\n- Arrival: 2025-11-15 to Zurich, Switzerland (ZRH)<br/>\n- Departure Time: 18:40<br/>\n- Arrival Time: 21:45<br/>\n- Duration: 3h 5m<br/>\n- 1 stop<br/>\n- Price: €177.98<br/>\n<br/>Would you like to proceed with this option, or do you need further assistance?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Next saturday",
+      "assistant": "It seems there are no direct flights available on your requested date. However, we have an alternative option for you:<br/>\n<strong>1. **Flight LH6**:</strong><br/>\n- Departure: 2025-11-15 from Zapresic, Croatia (ZAG)<br/>\n- Arrival: 2025-11-15 to Zurich, Switzerland (ZRH)<br/>\n- Departure Time: 18:40<br/>\n- Arrival Time: 21:45<br/>\n- Duration: 3h 5m<br/>\n- 1 stop<br/>\n- Price: €177.98<br/>\n<br/>Would you like to proceed with this option, or do you need further assistance?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 4,
+      "user": "Closest ariport to me.",
+      "assistant": "Is Zapresic, Croatia (ZAG) your departure location?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 5,
+      "user": "Nearest airport to my location",
+      "assistant": "Could you please provide your current city or region?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 6,
+      "user": "ZAG",
+      "assistant": "The closest airport to your location, Velika Gorica, Croatia, is the <strong>Zagreb Franjo Tuđman International Airport (ZAG)</strong>. It's located in Velika Gorica and serves the Zagreb area.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 7,
+      "user": "Yes",
+      "assistant": "Great! The closest airport to your location, Velika Gorica, Croatia, is the <strong>Zagreb Franjo Tuđman International Airport (ZAG)</strong>. If you need further assistance with travel plans or have any other questions, feel free to ask!",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 8,
+      "user": "Show me the alternatives",
+      "assistant": "",
+      "trace": [],
+      "error": "The server encountered an error processing the Lambda response. Check the Lambda response and retry the request",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      }
+    },
+    {
+      "turn": 9,
+      "user": "Zagreb, zurich, 01.11.2025, one passenger return 03.11.2025",
+      "assistant": "Could you please confirm the following details for your trip?\n\nOutbound: Zagreb to Zurich on 01.11.2025\nReturn: Zurich to Zagreb on 03.11.2025\nOne passenger\nIs this correct?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 10,
+      "user": "Yes",
+      "assistant": "It seems there are no direct flights available on your requested dates. However, we have an alternative option for you:<br/>\n<strong>1. **Flight LH6**:</strong><br/>\n- Departure: 2025-11-01 from Zagreb, Croatia (ZAG)<br/>\n- Arrival: 2025-11-01 to Zurich, Switzerland (ZRH)<br/>\n- Departure Time: 18:40<br/>\n- Arrival Time: 21:45<br/>\n- Duration: 3h 5m<br/>\n- 1 stop<br/>\n- Price: €177.98<br/>\n<br/>Would you like to proceed with this option, or do you need further assistance?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 11,
+      "user": "Show me the alternatives same departure airport same destination",
+      "assistant": "It seems there are no direct flights available on your requested dates. However, we have an alternative option for you:<br/>\n<strong>1. **Flight LH6**:</strong><br/>\n- Departure: 2025-11-01 from Zagreb, Croatia (ZAG)<br/>\n- Arrival: 2025-11-01 to Zurich, Switzerland (ZRH)<br/>\n- Departure Time: 18:40<br/>\n- Arrival Time: 21:45<br/>\n- Duration: 3h 5m<br/>\n- 1 stop<br/>\n- Price: €177.98<br/>\n<br/>Would you like to proceed with this option, or do you need further assistance?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    }
+  ]
+}
