@@ -252,7 +252,7 @@
         }
       })();
       const locationLabel = locationInfo?.label || 'Detecting location...';
-      const originLabel = locationInfo?.inferredOrigin ? ` Â· Default origin: ${locationInfo.inferredOrigin}` : '';
+      const originLabel = locationInfo?.inferredOrigin ? `Default origin: ${locationInfo.inferredOrigin}` : '';
       const statusClass = proxyOnline ? 'bg-emerald-400' : 'bg-red-500';
       const statusTitle = proxyOnline ? 'Proxy online' : 'Proxy offline';
       return (
@@ -329,7 +329,7 @@
       const lookupUrl = deriveLookupUrl(apiUrl);
       const transcriptUrl = useMemo(() => deriveTranscriptUrl(apiUrl), [apiUrl]);
       const [locationInfo, setLocationInfo] = useState({
-        label: 'Detecting locationâ€¦',
+        label: 'Detecting location...',
         tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
         localTime: new Date(),
         inferredOrigin: localStorage.getItem('inferred_origin') || null,
@@ -781,7 +781,7 @@
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder="Type your messageâ€¦ (Shift+Enter for newline)"
+                placeholder="Type your message...(Shift+Enter for newline)"
                 className="flex-1 bg-transparent outline-none resize-none text-sm leading-6 placeholder:text-white/40 px-3 py-2 h-[52px] max-h-[160px]"
               />
               <button onClick={send} disabled={busy} className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold bg-lhYellow text-lhBlue hover:brightness-95 active:brightness-90 disabled:opacity-60">
