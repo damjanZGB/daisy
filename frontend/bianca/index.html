@@ -87,6 +87,7 @@
         out = out.replace(/[\u201C\u201D]/g, '"');
         out = out.replace(/[\u2013\u2014]/g, '-');
         out = out.replace(/\s*\u00B0\s*C/gi, ' C');
+        out = out.replace(/\s(\d{1,2}[\)\.])\s/g, '\n  $1 ');
         out = out.replace(/\n{3,}/g, '\n\n');
         return out.trim();
       };
@@ -118,6 +119,7 @@
       if (current) options.push(current);
       return options;
     };
+    // Create a simple PDF blob from an option, loading jsPDF if needed
     const ensureJsPdf = () => new Promise((resolve) => {
       if (window.jspdf && window.jspdf.jsPDF) return resolve(window.jspdf.jsPDF);
       const s = document.createElement('script');
@@ -128,7 +130,6 @@
       s.onerror = () => resolve(null);
       document.head.appendChild(s);
     });
-    // Create a simple PDF blob from an option
     const generatePdf = async (opt) => {
       try {
         const JS = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : await ensureJsPdf();

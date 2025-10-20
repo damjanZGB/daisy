@@ -1035,7 +1035,7 @@ def _nearest_date_alternatives(
 
     seen_dates: set[str] = set()
     results: List[Dict[str, Any]] = []
-    offsets = [-1, 1, -2, 2, -3, 3, -7, 7, -14, 14]
+    offsets = [-1, 1, -2, 2, -3, 3, -7, 7, -14, 14, -21, 21, -28, 28]
     for off in offsets:
         if len(results) >= max(1, limit):
             break
@@ -1827,6 +1827,26 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             except Exception:
                 pass
             note = f"Using your nearest airport as departure location ({origin}). Say 'change departure location' to update it."
+        # Build textual alternatives list if applicable
+        def _alt_lines(alts: List[Dict[str, Any]]) -> List[str]:
+            lines: List[str] = []
+            for idx, alt in enumerate(alts[:5], start=1):
+                off = alt.get("offer") or {}
+                date_txt = alt.get("date") or "?"
+                price = off.get("totalPrice")
+                curr = off.get("currency") or currency or ""
+                try:
+                    price_txt = f"{float(price):.0f} {curr}".strip() if price is not None else "?"
+                except Exception:
+                    price_txt = f"{price} {curr}".strip()
+                dur = off.get("duration") or "?"
+                stops = off.get("stops")
+                stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                lines.append(f"{idx}) {date_txt} | {stops_txt} | {dur} | **{price_txt}**")
+            return lines
+        alt_text_block = None
+        if not offers and alternatives:
+            alt_text_block = "\n".join(["No offers on requested dates. Nearby alternatives:"] + _alt_lines(alternatives))
         return _wrap_openapi(
             event,
             200,
@@ -1847,9 +1867,9 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                 **({"note": note, "message": note} if note else {}),
                 "offers": offers,
                 **({
-                    "message": "No offers found on requested dates; showing nearby alternatives.",
+                    "message": alt_text_block,
                     "alternatives": alternatives,
-                } if not offers and alternatives else {}),
+                } if alt_text_block else {}),
                 "provider": "Amadeus Flight Offers Search v2",
             },
         )
@@ -2295,6 +2315,26 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             except Exception:
                 pass
             note = f"Using your nearest airport as departure location ({origin}). Say 'change departure location' to update it."
+        # Build textual alternatives list if applicable
+        def _alt_lines(alts: List[Dict[str, Any]]) -> List[str]:
+            lines: List[str] = []
+            for idx, alt in enumerate(alts[:5], start=1):
+                off = alt.get("offer") or {}
+                date_txt = alt.get("date") or "?"
+                price = off.get("totalPrice")
+                curr = off.get("currency") or currency or ""
+                try:
+                    price_txt = f"{float(price):.0f} {curr}".strip() if price is not None else "?"
+                except Exception:
+                    price_txt = f"{price} {curr}".strip()
+                dur = off.get("duration") or "?"
+                stops = off.get("stops")
+                stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                lines.append(f"{idx}) {date_txt} | {stops_txt} | {dur} | **{price_txt}**")
+            return lines
+        alt_text_block = None
+        if not offers and alternatives:
+            alt_text_block = "\n".join(["No offers on requested dates. Nearby alternatives:"] + _alt_lines(alternatives))
         return _wrap_function(
             event,
             200,
@@ -2315,9 +2355,9 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 **({"note": note, "message": note} if note else {}),
                 "offers": offers,
                 **({
-                    "message": "No offers found on requested dates; showing nearby alternatives.",
+                    "message": alt_text_block,
                     "alternatives": alternatives,
-                } if not offers and alternatives else {}),
+                } if alt_text_block else {}),
                 "provider": "Amadeus Flight Offers Search v2",
             },
         )

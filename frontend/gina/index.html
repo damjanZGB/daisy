@@ -87,6 +87,8 @@
         out = out.replace(/[\u201C\u201D]/g, '"');
         out = out.replace(/[\u2013\u2014]/g, '-');
         out = out.replace(/\s*\u00B0\s*C/gi, ' C');
+        // Ensure numbered options appear on separate lines with indentation
+        out = out.replace(/\s(\d{1,2}[\)\.])\s/g, '\n  $1 ');
         out = out.replace(/\n{3,}/g, '\n\n');
         return out.trim();
       };
