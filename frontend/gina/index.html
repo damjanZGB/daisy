@@ -102,9 +102,10 @@
         out = out.replace(/\n{3,}/g, '\n\n');
         return out.trim();
       };
-    // Parse numbered itinerary options with optional THEN lines
+    // Parse itinerary options. Supports numbered options and a single, unnumbered itinerary.
     const parseItineraryOptions = (text) => {
-      const lines = String(text||'').split(/\r?\n/);
+      const rawText = String(text || '');
+      const lines = rawText.split(/\r?\n/);
       const options = [];
       let current = null;
       const headerRe = /^\s*(\d+)[\)\.]\s+(.+)$/;
@@ -128,6 +129,13 @@
         }
       }
       if (current) options.push(current);
+      if (options.length === 0) {
+        const routeLine = lines.find(l => /\b[A-Z]{3}\b\s*(?:->|to|–|-|—)\s*\b[A-Z]{3}\b/.test(l))
+                         || lines.find(l => l.trim().length > 0)
+                         || rawText;
+        const header = sanitizeAssistantText(routeLine || rawText).trim();
+        if (header) options.push({ header, legs: [] });
+      }
       return options;
     };
     // Create a simple PDF blob from an option, loading jsPDF if needed
