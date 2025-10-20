@@ -1,0 +1,103 @@
+{
+  "flight": "LH9999",
+  "session": "0aae5c0f-61e4-407a-83cf-bda1d58cd552",
+  "bedrockSessionId": "43c5bbe5-a9bf-4ebe-85fb-585ed26c909e",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul , your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "",
+      "trace": [],
+      "error": "The server encountered an error processing the Lambda response. Check the Lambda response and retry the request",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      }
+    },
+    {
+      "turn": 3,
+      "user": "I can be connecting flight",
+      "assistant": "That sounds exciting! To help you find the perfect travel plan with a connecting flight, could you please let me know your preferred origin, destination, and travel dates?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "Show me the alternatives",
+      "assistant": "To show you the alternatives with connecting flights, could you please let me know your preferred origin, destination, and travel dates?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 5,
+      "user": "Show me the alternatives. Inspire me",
+      "assistant": "To inspire you with the best alternatives for your travel plan with connecting flights, could you please let me know your preferred origin, destination, and travel dates?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 6,
+      "user": "Yes. Show me the alternatives",
+      "assistant": "To show you the alternatives with connecting flights, could you please let me know your preferred origin, destination, and travel dates?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 7,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "It seems there are no available options for your preferred dates and preferences. Would you like to explore alternative dates or destinations for your travel plan?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    }
+  ]
+}

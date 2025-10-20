@@ -1,0 +1,32 @@
+[
+  {
+    "flight": "LH6814",
+    "aliasKey": "mira",
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\replay\\LH6814_mira_1760964882483.json"
+  },
+  {
+    "flight": "LH1378",
+    "aliasKey": "aris",
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\replay\\LH1378_aris_1760965343880.json"
+  },
+  {
+    "flight": "LH9999",
+    "aliasKey": "leo",
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\replay\\LH9999_leo_1760965496679.json"
+  },
+  {
+    "flight": "LH7777",
+    "aliasKey": "aris",
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\replay\\LH7777_aris_1760965666995.json"
+  },
+  {
+    "flight": "LH8888",
+    "aliasKey": "mira",
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\replay\\LH8888_mira_1760965843368.json"
+  },
+  {
+    "flight": "LH9998",
+    "aliasKey": "leo",
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\replay\\LH9998_leo_1760966017237.json"
+  }
+]

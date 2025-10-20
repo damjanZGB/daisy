@@ -1090,87 +1090,187 @@ def _summarize_offers(
     amadeus_json: Dict[str, Any], currency_hint: Optional[str], lh_group_only: bool = True
 ) -> List[Dict[str, Any]]:
 
-    # Prefer canonical Amadeus payload under 'raw' if the proxy wraps it; otherwise use provided object
-    src = amadeus_json.get("raw") if isinstance(amadeus_json.get("raw"), dict) else amadeus_json
-    keys = list(src.keys())
-    _log("Summarizing offers (canonical)", keys=keys, currency_hint=currency_hint)
+    _log(
+        "Summarizing offers",
+        keys=list(amadeus_json.keys()),
+        currency_hint=currency_hint,
+    )
+    offers = amadeus_json.get("offers")
+    if isinstance(offers, list) and offers:
+        normalized = []
 
-    data = src.get("data") or []
-    if not isinstance(data, list) or not data:
-        _log("No canonical 'data' list present", has_data=bool(data))
-        return []
+        def _normalize_segment(segment: Dict[str, Any]) -> Dict[str, Any]:
+            seg = dict(segment or {})
 
-    # Canonical dictionaries are optional
-    dictionaries = src.get("dictionaries") or {}
-    carriers_map = dictionaries.get("carriers") or {}
+            def _extract_airport(data: Any, fallback_key: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+                if isinstance(data, dict):
+                    return data.get("iataCode"), data.get("terminal"), data.get("at")
+                airport = seg.get(fallback_key) or seg.get(fallback_key.capitalize())
+                terminal = seg.get(f"{fallback_key}Terminal") or seg.get(f"{fallback_key}terminal")
+                time = seg.get(f"{fallback_key}Time") or seg.get(f"{fallback_key.capitalize()}Time")
+                return airport, terminal, time
 
-    normalized: List[Dict[str, Any]] = []
-    for item in data:
-        try:
-            price_block = item.get("price") or {}
-            total_price = price_block.get("grandTotal") or price_block.get("total")
-            currency = price_block.get("currency") or currency_hint
-            itineraries = item.get("itineraries") or []
+            dep_airport, dep_terminal, dep_time = _extract_airport(seg.get("departure"), "departure")
+            arr_airport, arr_terminal, arr_time = _extract_airport(seg.get("arrival"), "arrival")
 
+            carrier = (
+                seg.get("carrier")
+                or seg.get("carrierCode")
+                or seg.get("marketingCarrier")
+                or seg.get("operatingCarrier")
+            )
+            aircraft = seg.get("aircraft")
+            aircraft_code = aircraft.get("code") if isinstance(aircraft, dict) else aircraft
+            services = seg.get("services")
+            if isinstance(services, str):
+                services = [services]
+            elif not isinstance(services, list):
+                services = []
+
+            segment_duration = seg.get("duration")
+            if not segment_duration and dep_time and arr_time:
+                try:
+                    dep_dt = datetime.fromisoformat(dep_time.replace("Z", "+00:00"))
+                    arr_dt = datetime.fromisoformat(arr_time.replace("Z", "+00:00"))
+                    delta = arr_dt - dep_dt
+                    if delta.total_seconds() < 0:
+                        delta += timedelta(days=1)
+                    total_minutes = int(delta.total_seconds() // 60)
+                    hours, minutes = divmod(total_minutes, 60)
+                    segment_duration = f"PT{hours}H{minutes}M"
+                except Exception:
+                    segment_duration = seg.get("duration")
+
+            return {
+                "carrier": carrier,
+                "marketingCarrier": seg.get("marketingCarrier"),
+                "operatingCarrier": seg.get("operatingCarrier"),
+                "flightNumber": seg.get("number") or seg.get("flightNumber"),
+                "aircraft": aircraft_code,
+                "cabin": seg.get("cabin"),
+                "fareClass": seg.get("fareClass") or seg.get("class"),
+                "from": dep_airport,
+                "fromTerminal": dep_terminal,
+                "departureTime": dep_time,
+                "to": arr_airport,
+                "toTerminal": arr_terminal,
+                "arrivalTime": arr_time,
+                "duration": segment_duration,
+                "mileage": seg.get("mileage"),
+                "stops": seg.get("numberOfStops"),
+                "layoverDuration": seg.get("layoverDuration"),
+                "services": services,
+            }
+
+        for item in offers:
+            total_price = item.get("price") or item.get("totalPrice")
+            currency = item.get("currency") or currency_hint
+            carriers_set: set[str] = set()
+            itineraries_source = item.get("itineraries") or []
+            normalized_itineraries: List[Dict[str, Any]] = []
             aggregated_segments: List[Dict[str, Any]] = []
-            marketing_carriers: set[str] = set()
-            normalized_itins: List[Dict[str, Any]] = []
 
-            for itin in itineraries:
-                segs_out: List[Dict[str, Any]] = []
-                for s in (itin.get("segments") or []):
-                    dep = s.get("departure") or {}
-                    arr = s.get("arrival") or {}
-                    op = s.get("operating") or {}
-                    mkt = s.get("carrierCode")  # canonical marketing carrier
-                    if isinstance(mkt, str) and mkt.strip():
-                        marketing_carriers.add(mkt.strip().upper())
-                    seg_out = {
-                        "carrier": mkt,
-                        "operatingCarrier": op.get("carrierCode"),
-                        "flightNumber": s.get("number"),
-                        "from": dep.get("iataCode"),
-                        "departureTime": dep.get("at"),
-                        "to": arr.get("iataCode"),
-                        "arrivalTime": arr.get("at"),
-                        "duration": s.get("duration"),
-                        "stops": s.get("numberOfStops"),
+            for itin in itineraries_source:
+                normalized_segments: List[Dict[str, Any]] = []
+                for seg in itin.get("segments") or []:
+                    seg_normalized = _normalize_segment(seg)
+                    if seg_normalized["carrier"]:
+                        carriers_set.add(seg_normalized["carrier"])
+                    normalized_segments.append(seg_normalized)
+                    aggregated_segments.append(seg_normalized)
+                normalized_itineraries.append(
+                    {
+                        "duration": itin.get("duration"),
+                        "segments": normalized_segments,
                     }
-                    segs_out.append(seg_out)
-                    aggregated_segments.append(seg_out)
-                normalized_itins.append({
-                    "duration": itin.get("duration"),
-                    "segments": segs_out,
-                })
+                )
 
+            if not aggregated_segments:
+                for seg in item.get("segments") or []:
+                    seg_normalized = _normalize_segment(seg)
+                    if seg_normalized["carrier"]:
+                        carriers_set.add(seg_normalized["carrier"])
+                    aggregated_segments.append(seg_normalized)
+
+            carriers = sorted(carriers_set)
             first_segment = aggregated_segments[0] if aggregated_segments else {}
             last_segment = aggregated_segments[-1] if aggregated_segments else {}
-            total_duration = item.get("duration") or (normalized_itins[0].get("duration") if normalized_itins else None)
+            total_duration = (
+                item.get("duration")
+                or (normalized_itineraries[0].get("duration") if normalized_itineraries else None)
+            )
             stop_count = max(len(aggregated_segments) - 1, 0) if aggregated_segments else None
 
-            normalized.append({
+            normalized.append(
+                {
+                    "id": item.get("id"),
+                    "oneWay": item.get("oneWay"),
+                    "totalPrice": total_price,
+                    "currency": currency,
+                    "carriers": carriers,
+                    "segments": aggregated_segments,
+                    "itineraries": normalized_itineraries or None,
+                    "primaryCarrier": carriers[0] if carriers else None,
+                    "departureAirport": first_segment.get("from"),
+                    "departureTime": first_segment.get("departureTime"),
+                    "arrivalAirport": last_segment.get("to"),
+                    "arrivalTime": last_segment.get("arrivalTime"),
+                    "duration": total_duration,
+                    "stops": stop_count,
+                }
+            )
+        # Do not post-filter; rely on Amadeus includedAirlineCodes for LH group restriction
+        filtered = normalized
+        filtered.sort(key=lambda o: float(o.get("totalPrice") or 0))
+        _log("Summarized offers (modern payload)", count=len(filtered))
+        return filtered
+    # Fallback for legacy Amadeus payloads
+    data = amadeus_json.get("data") or []
+    dictionaries = amadeus_json.get("dictionaries") or {}
+    carriers_map = dictionaries.get("carriers") or {}
+    legacy = []
+    for item in data:
+        price_block = item.get("price") or {}
+        total_price = price_block.get("grandTotal") or price_block.get("total")
+        currency = price_block.get("currency") or currency_hint
+        itineraries = item.get("itineraries") or []
+        segments_summary: List[Dict[str, Any]] = []
+        marketing_carriers = set()
+        for itin in itineraries:
+            for s in itin.get("segments") or []:
+                carrier_code = s.get("carrierCode") or s.get(
+                    "marketingCarrier")
+                if carrier_code:
+                    marketing_carriers.add(carrier_code)
+                segments_summary.append(
+                    {
+                        "carrier": carrier_code,
+                        "carrierName": carriers_map.get(carrier_code, carrier_code),
+                        "flightNumber": s.get("number"),
+                        "from": s.get("departure", {}).get("iataCode"),
+                        "to": s.get("arrival", {}).get("iataCode"),
+                        "depTime": s.get("departure", {}).get("at"),
+                        "arrTime": s.get("arrival", {}).get("at"),
+                        "duration": s.get("duration"),
+                        "numberOfStops": s.get("numberOfStops"),
+                    }
+                )
+        legacy.append(
+            {
                 "id": item.get("id"),
                 "oneWay": len(itineraries) == 1,
                 "totalPrice": total_price,
                 "currency": currency,
-                "carriers": sorted({c.strip().upper() for c in marketing_carriers if isinstance(c, str)}),
-                "segments": aggregated_segments,
-                "itineraries": normalized_itins or None,
-                "primaryCarrier": (sorted(marketing_carriers)[0] if marketing_carriers else None),
-                "departureAirport": first_segment.get("from"),
-                "departureTime": first_segment.get("departureTime"),
-                "arrivalAirport": last_segment.get("to"),
-                "arrivalTime": last_segment.get("arrivalTime"),
-                "duration": total_duration,
-                "stops": stop_count,
-            })
-        except Exception as exc:
-            _log("Offer normalization failed", error=str(exc))
-            continue
+                "carriers": sorted(list(marketing_carriers)),
+                "segments": segments_summary,
+            }
+        )
+    # Do not post-filter; rely on Amadeus includedAirlineCodes for LH group restriction
+    filtered = legacy
+    filtered.sort(key=lambda o: float(o.get("totalPrice") or 0))
+    _log("Summarized offers (legacy payload)", count=len(filtered))
+    return filtered
 
-    normalized.sort(key=lambda o: float(o.get("totalPrice") or 0))
-    _log("Summarized offers (canonical)", count=len(normalized))
-    return normalized
 
 def _filter_lh_group_offers(offers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     allowed = set(LH_GROUP_CODES)
@@ -2905,3 +3005,4 @@ def lambda_handler(event, context):
         raise
     finally:
         _CURRENT_LOGGER.reset(token)
+

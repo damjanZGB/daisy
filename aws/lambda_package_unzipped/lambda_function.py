@@ -1,4 +1,4 @@
-﻿# lambda_function.py
+# lambda_function.py
 # AWS Lambda for Agents for Amazon Bedrock (Action Group).
 # Searches real flight offers via Amadeus Self-Service API and returns simplified offers.
 # Default filters to Lufthansa Group carriers unless overridden.
@@ -270,7 +270,7 @@ def _score_destination(dest: dict, theme_tags: set[str], target_month: int, orig
         if tag in theme_tags and tag in (dest.get("tags") or []):
             score += 0.2
             reasons.append(tag)
-    # Carrier bias (prefer LHâ€‘Group presence)
+    # Carrier bias (prefer LH   Group presence)
     brands = set(str(x) for x in dest.get("lhGroupCarriers", []))
     if brands:
         score += 0.1
@@ -347,9 +347,9 @@ def _normalise_phrase_tokens(raw: str) -> List[str]:
     if not raw:
         return []
     text = _strip_trailing_punctuation(raw)
-    # Replace unicode dashes with spaces before stripping separators so �next�Saturday� works.
-    text = text.replace("�", " ").replace("�", " ")
-    text = text.replace("�", "'")
+    # Replace unicode dashes with spaces before stripping separators so ?next?Saturday? works.
+    text = text.replace("?", " ").replace("?", " ")
+    text = text.replace("?", "'")
     text = re.sub(r"[,\-/]", " ", text)
     text = re.sub(r"[()]", " ", text)
     text = _NON_WORD_RE.sub(" ", text)
@@ -1047,7 +1047,7 @@ def _nearest_date_alternatives(
                 max_results,
                 timeout,
             )
-            offers = _summarize_offers(raw, currency)
+            offers = _summarize_offers(raw, currency, lh_group_only)
             if offers:
                 best = offers[0]
                 # brief form to keep payload small
@@ -1087,206 +1087,147 @@ def iata_lookup_via_proxy(term: Optional[str]) -> Dict[str, Any]:
 
 
 def _summarize_offers(
-    amadeus_json: Dict[str, Any], currency_hint: Optional[str]
+    amadeus_json: Dict[str, Any], currency_hint: Optional[str], lh_group_only: bool = True
 ) -> List[Dict[str, Any]]:
 
-    _log(
-        "Summarizing offers",
-        keys=list(amadeus_json.keys()),
-        currency_hint=currency_hint,
-    )
-    offers = amadeus_json.get("offers")
-    if isinstance(offers, list) and offers:
-        normalized = []
+    # Prefer canonical Amadeus payload under 'raw' if the proxy wraps it; otherwise use provided object
+    src = amadeus_json.get("raw") if isinstance(amadeus_json.get("raw"), dict) else amadeus_json
+    keys = list(src.keys())
+    _log("Summarizing offers (canonical)", keys=keys, currency_hint=currency_hint)
 
-        def _normalize_segment(segment: Dict[str, Any]) -> Dict[str, Any]:
-            seg = dict(segment or {})
+    data = src.get("data") or []
+    if not isinstance(data, list) or not data:
+        _log("No canonical 'data' list present", has_data=bool(data))
+        return []
 
-            def _extract_airport(data: Any, fallback_key: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-                if isinstance(data, dict):
-                    return data.get("iataCode"), data.get("terminal"), data.get("at")
-                airport = seg.get(fallback_key) or seg.get(fallback_key.capitalize())
-                terminal = seg.get(f"{fallback_key}Terminal") or seg.get(f"{fallback_key}terminal")
-                time = seg.get(f"{fallback_key}Time") or seg.get(f"{fallback_key.capitalize()}Time")
-                return airport, terminal, time
+    # Canonical dictionaries are optional
+    dictionaries = src.get("dictionaries") or {}
+    carriers_map = dictionaries.get("carriers") or {}
 
-            dep_airport, dep_terminal, dep_time = _extract_airport(seg.get("departure"), "departure")
-            arr_airport, arr_terminal, arr_time = _extract_airport(seg.get("arrival"), "arrival")
+    normalized: List[Dict[str, Any]] = []
+    for item in data:
+        try:
+            price_block = item.get("price") or {}
+            total_price = price_block.get("grandTotal") or price_block.get("total")
+            currency = price_block.get("currency") or currency_hint
+            itineraries = item.get("itineraries") or []
 
-            carrier = (
-                seg.get("carrier")
-                or seg.get("carrierCode")
-                or seg.get("marketingCarrier")
-                or seg.get("operatingCarrier")
-            )
-            aircraft = seg.get("aircraft")
-            aircraft_code = aircraft.get("code") if isinstance(aircraft, dict) else aircraft
-            services = seg.get("services")
-            if isinstance(services, str):
-                services = [services]
-            elif not isinstance(services, list):
-                services = []
-
-            segment_duration = seg.get("duration")
-            if not segment_duration and dep_time and arr_time:
-                try:
-                    dep_dt = datetime.fromisoformat(dep_time.replace("Z", "+00:00"))
-                    arr_dt = datetime.fromisoformat(arr_time.replace("Z", "+00:00"))
-                    delta = arr_dt - dep_dt
-                    if delta.total_seconds() < 0:
-                        delta += timedelta(days=1)
-                    total_minutes = int(delta.total_seconds() // 60)
-                    hours, minutes = divmod(total_minutes, 60)
-                    segment_duration = f"PT{hours}H{minutes}M"
-                except Exception:
-                    segment_duration = seg.get("duration")
-
-            return {
-                "carrier": carrier,
-                "marketingCarrier": seg.get("marketingCarrier"),
-                "operatingCarrier": seg.get("operatingCarrier"),
-                "flightNumber": seg.get("number") or seg.get("flightNumber"),
-                "aircraft": aircraft_code,
-                "cabin": seg.get("cabin"),
-                "fareClass": seg.get("fareClass") or seg.get("class"),
-                "from": dep_airport,
-                "fromTerminal": dep_terminal,
-                "departureTime": dep_time,
-                "to": arr_airport,
-                "toTerminal": arr_terminal,
-                "arrivalTime": arr_time,
-                "duration": segment_duration,
-                "mileage": seg.get("mileage"),
-                "stops": seg.get("numberOfStops"),
-                "layoverDuration": seg.get("layoverDuration"),
-                "services": services,
-            }
-
-        for item in offers:
-            total_price = item.get("price") or item.get("totalPrice")
-            currency = item.get("currency") or currency_hint
-            carriers_set: set[str] = set()
-            itineraries_source = item.get("itineraries") or []
-            normalized_itineraries: List[Dict[str, Any]] = []
             aggregated_segments: List[Dict[str, Any]] = []
+            marketing_carriers: set[str] = set()
+            normalized_itins: List[Dict[str, Any]] = []
 
-            for itin in itineraries_source:
-                normalized_segments: List[Dict[str, Any]] = []
-                for seg in itin.get("segments") or []:
-                    seg_normalized = _normalize_segment(seg)
-                    if seg_normalized["carrier"]:
-                        carriers_set.add(seg_normalized["carrier"])
-                    normalized_segments.append(seg_normalized)
-                    aggregated_segments.append(seg_normalized)
-                normalized_itineraries.append(
-                    {
-                        "duration": itin.get("duration"),
-                        "segments": normalized_segments,
+            for itin in itineraries:
+                segs_out: List[Dict[str, Any]] = []
+                for s in (itin.get("segments") or []):
+                    dep = s.get("departure") or {}
+                    arr = s.get("arrival") or {}
+                    op = s.get("operating") or {}
+                    mkt = s.get("carrierCode")  # canonical marketing carrier
+                    if isinstance(mkt, str) and mkt.strip():
+                        marketing_carriers.add(mkt.strip().upper())
+                    seg_out = {
+                        "carrier": mkt,
+                        "operatingCarrier": op.get("carrierCode"),
+                        "flightNumber": s.get("number"),
+                        "from": dep.get("iataCode"),
+                        "departureTime": dep.get("at"),
+                        "to": arr.get("iataCode"),
+                        "arrivalTime": arr.get("at"),
+                        "duration": s.get("duration"),
+                        "stops": s.get("numberOfStops"),
                     }
-                )
+                    segs_out.append(seg_out)
+                    aggregated_segments.append(seg_out)
+                normalized_itins.append({
+                    "duration": itin.get("duration"),
+                    "segments": segs_out,
+                })
 
-            if not aggregated_segments:
-                for seg in item.get("segments") or []:
-                    seg_normalized = _normalize_segment(seg)
-                    if seg_normalized["carrier"]:
-                        carriers_set.add(seg_normalized["carrier"])
-                    aggregated_segments.append(seg_normalized)
-
-            carriers = sorted(carriers_set)
             first_segment = aggregated_segments[0] if aggregated_segments else {}
             last_segment = aggregated_segments[-1] if aggregated_segments else {}
-            total_duration = (
-                item.get("duration")
-                or (normalized_itineraries[0].get("duration") if normalized_itineraries else None)
-            )
+            total_duration = item.get("duration") or (normalized_itins[0].get("duration") if normalized_itins else None)
             stop_count = max(len(aggregated_segments) - 1, 0) if aggregated_segments else None
 
-            normalized.append(
-                {
-                    "id": item.get("id"),
-                    "oneWay": item.get("oneWay"),
-                    "totalPrice": total_price,
-                    "currency": currency,
-                    "carriers": carriers,
-                    "segments": aggregated_segments,
-                    "itineraries": normalized_itineraries or None,
-                    "primaryCarrier": carriers[0] if carriers else None,
-                    "departureAirport": first_segment.get("from"),
-                    "departureTime": first_segment.get("departureTime"),
-                    "arrivalAirport": last_segment.get("to"),
-                    "arrivalTime": last_segment.get("arrivalTime"),
-                    "duration": total_duration,
-                    "stops": stop_count,
-                }
-            )
-        filtered = _filter_lh_group_offers(normalized)
-        removed = len(normalized) - len(filtered)
-        if removed:
-            _log("Filtered non-LH offers", removed=removed)
-        filtered.sort(key=lambda o: float(o.get("totalPrice") or 0))
-        _log("Summarized offers (modern payload)", count=len(filtered))
-        return filtered
-    # Fallback for legacy Amadeus payloads
-    data = amadeus_json.get("data") or []
-    dictionaries = amadeus_json.get("dictionaries") or {}
-    carriers_map = dictionaries.get("carriers") or {}
-    legacy = []
-    for item in data:
-        price_block = item.get("price") or {}
-        total_price = price_block.get("grandTotal") or price_block.get("total")
-        currency = price_block.get("currency") or currency_hint
-        itineraries = item.get("itineraries") or []
-        segments_summary: List[Dict[str, Any]] = []
-        marketing_carriers = set()
-        for itin in itineraries:
-            for s in itin.get("segments") or []:
-                carrier_code = s.get("carrierCode") or s.get(
-                    "marketingCarrier")
-                if carrier_code:
-                    marketing_carriers.add(carrier_code)
-                segments_summary.append(
-                    {
-                        "carrier": carrier_code,
-                        "carrierName": carriers_map.get(carrier_code, carrier_code),
-                        "flightNumber": s.get("number"),
-                        "from": s.get("departure", {}).get("iataCode"),
-                        "to": s.get("arrival", {}).get("iataCode"),
-                        "depTime": s.get("departure", {}).get("at"),
-                        "arrTime": s.get("arrival", {}).get("at"),
-                        "duration": s.get("duration"),
-                        "numberOfStops": s.get("numberOfStops"),
-                    }
-                )
-        legacy.append(
-            {
+            normalized.append({
                 "id": item.get("id"),
                 "oneWay": len(itineraries) == 1,
                 "totalPrice": total_price,
                 "currency": currency,
-                "carriers": sorted(list(marketing_carriers)),
-                "segments": segments_summary,
-            }
-        )
-    filtered = _filter_lh_group_offers(legacy)
-    removed = len(legacy) - len(filtered)
-    if removed:
-        _log("Filtered non-LH offers (legacy payload)", removed=removed)
-    filtered.sort(key=lambda o: float(o.get("totalPrice") or 0))
-    _log("Summarized offers (legacy payload)", count=len(filtered))
-    return filtered
+                "carriers": sorted({c.strip().upper() for c in marketing_carriers if isinstance(c, str)}),
+                "segments": aggregated_segments,
+                "itineraries": normalized_itins or None,
+                "primaryCarrier": (sorted(marketing_carriers)[0] if marketing_carriers else None),
+                "departureAirport": first_segment.get("from"),
+                "departureTime": first_segment.get("departureTime"),
+                "arrivalAirport": last_segment.get("to"),
+                "arrivalTime": last_segment.get("arrivalTime"),
+                "duration": total_duration,
+                "stops": stop_count,
+            })
+        except Exception as exc:
+            _log("Offer normalization failed", error=str(exc))
+            continue
 
+    normalized.sort(key=lambda o: float(o.get("totalPrice") or 0))
+    _log("Summarized offers (canonical)", count=len(normalized))
+    return normalized
 
 def _filter_lh_group_offers(offers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     allowed = set(LH_GROUP_CODES)
+    name_to_code = {
+        "LUFTHANSA": "LH",
+        "SWISS": "LX",
+        "SWISS INTERNATIONAL AIR LINES": "LX",
+        "AUSTRIAN": "OS",
+        "AUSTRIAN AIRLINES": "OS",
+        "BRUSSELS AIRLINES": "SN",
+        "EUROWINGS": "EW",
+        "EUROWINGS DISCOVER": "4Y",
+        "DISCOVER AIRLINES": "4Y",
+        "AIR DOLOMITI": "EN",
+    }
+
+    def _norm_code(v: Any) -> Optional[str]:
+        if v is None:
+            return None
+        s = str(v).strip()
+        if not s:
+            return None
+        su = s.upper()
+        # two-char IATA code
+        if re.fullmatch(r"[A-Z0-9]{2}", su):
+            return su
+        # sometimes values are names
+        if su in name_to_code:
+            return name_to_code[su]
+        # occasionally concatenated like 'LX 123' or 'LX123'
+        m = re.match(r"^([A-Z0-9]{2})\s?\d{1,4}$", su)
+        if m:
+            return m.group(1)
+        return None
+
     filtered: List[Dict[str, Any]] = []
     for offer in offers:
-        carriers = set(offer.get("carriers") or [])
+        codes: set[str] = set()
+        for c in (offer.get("carriers") or []):
+            code = _norm_code(c)
+            if code:
+                codes.add(code)
         for seg in offer.get("segments") or []:
-            for key in ("carrier", "marketingCarrier", "operatingCarrier"):
-                value = seg.get(key)
-                if value:
-                    carriers.add(value)
-        if carriers and not carriers.issubset(allowed):
+            for key in (
+                "carrier",
+                "carrierCode",
+                "marketingCarrier",
+                "marketingCarrierCode",
+                "operatingCarrier",
+                "operatingCarrierCode",
+            ):
+                val = seg.get(key)
+                code = _norm_code(val)
+                if code:
+                    codes.add(code)
+        # If we couldn't determine any codes, keep the offer (avoid false negatives)
+        if codes and not codes.issubset(allowed):
             continue
         filtered.append(offer)
     return filtered
@@ -1330,7 +1271,7 @@ def search_best_itineraries(
     mid = 15
     dates: List[str] = []
     ml = _month_len(start_y, start_m)
-    # Weekend-biased ±14d elasticity around mid-month
+    # Weekend-biased  14d elasticity around mid-month
     cands_days = [
         max(1, mid - 14),
         max(1, mid - 7),
@@ -1387,7 +1328,7 @@ def search_best_itineraries(
                         timeout=timeout,
                     )
                     api_calls += 1
-                    offers = _summarize_offers(raw, currency)
+                    offers = _summarize_offers(raw, currency, lh_group_only)
                     if offers:
                         top = offers[: max(1, max_per_destination)]
                         results.append({"destination": code, "date": dep_date, "offers": top})
@@ -1731,9 +1672,8 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
     nonstop = _to_bool(normalized.get("nonstop", False), False)
     currency = (normalized.get("currency") or os.getenv(
         "DEFAULT_CURRENCY") or "EUR").upper()
-    lh_group_only = _to_bool(
-        normalized.get("lhGroupOnly", os.getenv("LH_GROUP_ONLY", "true")), True
-    )
+    # Always enforce LH group via Amadeus (includedAirlineCodes) and do not post-filter
+    lh_group_only = True
     max_results = _to_int(normalized.get("max", 10), 10)
     _log(
         "OpenAPI flight request prepared",
@@ -1797,7 +1737,8 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             lh_group_only,
             max_results,
         )
-        offers = _summarize_offers(raw, currency)
+        offers = _summarize_offers(raw, currency, lh_group_only)
+        # Keep LH group restriction; do not relax to other carriers
         # Fallback: if nonstop requested and none found, retry with connections allowed.
         if nonstop and not offers:
             _log("OpenAPI: No nonstop offers; retrying with connections allowed")
@@ -1813,7 +1754,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                 lh_group_only,
                 max_results,
             )
-            offers = _summarize_offers(raw, currency)
+            offers = _summarize_offers(raw, currency, lh_group_only)
         # If still none, probe nearest alternative dates and include up to 5.
         alternatives: List[Dict[str, Any]] = []
         if not offers:
@@ -2306,7 +2247,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     carriers = offer.get("carriers") or []
                     carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
                     # Header line with bold price
-                    header = f"{idx}) {label} - {dep} → {arr} • {opt.get('date')} • {stops_txt} • {dur} • **{price}**"
+                    header = f"{idx}) {label} - {dep} ? {arr}   {opt.get('date')}   {stops_txt}   {dur}   **{price}**"
                     # Rebuild header to include first carrier/flight and departure HH:MM when available
                     try:
                         segs = offer.get("segments")
@@ -2345,7 +2286,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                             s_arr = s.get("to") or "?"
                             s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
                             s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
-                            lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} → {s_arr} {s_at}")
+                            lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} ? {s_arr} {s_at}")
                     if pitch:
                         lines.append(f"    - {pitch}")
                 if lines:
@@ -2497,13 +2438,13 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 _log("Itinerary aggregator failed", error=str(exc))
         # If we still don't have a message (no options), provide a short, clean candidate list
         if not payload.get("message"):
-            header = "Inspiration — top matches (ASCII)"
+            header = "Inspiration   top matches (ASCII)"
             msg_lines = [header]
             for idx, c in enumerate(candidates[:5], start=1):
                 city = c.get("city") or "?"
                 country = c.get("country") or "?"
                 code = c.get("code") or "?"
-                reason = (c.get("reason") or "").replace("°", " ").replace("\u00B0", " ")
+                reason = (c.get("reason") or "").replace(" ", " ").replace("\u00B0", " ")
                 msg_lines.append(f"{idx}) {city}, {country} ({code}) - {reason}")
             payload["message"] = "\n".join(msg_lines)
         # Log payload size to help diagnose occasional agent runtime size limits
@@ -2563,10 +2504,8 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
         normalized.get("currency") or os.getenv(
             "DEFAULT_CURRENCY") or "EUR"
     ).upper()
-    lh_group_only = _to_bool(
-        normalized.get("lhGroupOnly", os.getenv(
-            "LH_GROUP_ONLY", "true")), True
-    )
+    # Always enforce LH group via Amadeus (includedAirlineCodes) and do not post-filter
+    lh_group_only = True
     max_results = _to_int(normalized.get("max", 10), 10)
     _log(
         "Function flight request prepared",
@@ -2630,7 +2569,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             lh_group_only,
             max_results,
         )
-        offers = _summarize_offers(raw, currency)
+        offers = _summarize_offers(raw, currency, lh_group_only)
         # Fallback: if user asked for nonstop and none found, retry with connections allowed.
         if nonstop and not offers:
             _log("No nonstop offers; retrying with connections allowed")
@@ -2646,7 +2585,6 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 lh_group_only,
                 max_results,
             )
-            offers = _summarize_offers(raw, currency)
         # If still none, probe nearest alternative dates and include up to 5.
         alternatives: List[Dict[str, Any]] = []
         if not offers:
@@ -2967,8 +2905,3 @@ def lambda_handler(event, context):
         raise
     finally:
         _CURRENT_LOGGER.reset(token)
-
-
-
-
-

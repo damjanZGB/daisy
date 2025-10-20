@@ -1,0 +1,1 @@
+{"messageVersion": "1.0", "response": {"actionGroup": "daisy_in_action", "apiPath": "/tools/amadeus/search", "httpMethod": "POST", "httpStatusCode": 400, "responseBody": {"application/json": {"body": "{\"error\": \"Provide 'departureDate' in YYYY-MM-DD.\"}"}}}, "sessionAttributes": {}, "promptSessionAttributes": {}}

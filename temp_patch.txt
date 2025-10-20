@@ -1,21 +1,181 @@
-# Build textual alternatives list if applicable
-        def _alt_lines(alts: List[Dict[str, Any]]) -> List[str]:
-            lines: List[str] = []
-            for idx, alt in enumerate(alts[:5], start=1):
-                off = alt.get("offer") or {}
-                date_txt = alt.get("date") or "?"
-                price = off.get("totalPrice")
-                curr = off.get("currency") or currency or ""
-                try:
-                    price_txt = f"{float(price):.0f} {curr}".strip() if price is not None else "?"
-                except Exception:
-                    price_txt = f"{price} {curr}".strip()
-                dur = off.get("duration") or "?"
-                stops = off.get("stops")
-                stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
-                lines.append(f"{idx}) {date_txt} | {stops_txt} | {dur} | **{price_txt}**")
-            return lines
-        alt_text_block = None
-        if not offers and alternatives:
-            alt_text_block = "\n".join(["No offers on requested dates. Nearby alternatives:"] + _alt_lines(alternatives))
-        
+  1700:             return _wrap_openapi(
+  1701:                 event,
+  1702:                 400,
+  1703:                 {"error": "Provide 'term' to perform an IATA lookup."},
+  1704:             )
+  1705:         try:
+  1706:             matches = proxy_lookup_iata(term)
+  1707:         except Exception as exc:
+  1708:             _log("OpenAPI proxy IATA lookup failed", term=term, error=str(exc))
+  1709:             return _wrap_openapi(event, 502, {"error": f"IATA lookup failed: {exc}"})
+  1710:         _log("OpenAPI proxy IATA lookup success", term=term, matches=len(matches))
+  1711:         return _wrap_openapi(event, 200, {"matches": matches})
+  1712: 
+  1713:     if api_path == "/tools/datetime/interpret":
+  1714:         _log(
+  1715:             "Datetime interpret endpoint deprecated",
+  1716:             note="Use bedrock-time-tools action group instead.",
+  1717:         )
+  1718:         return _wrap_openapi(
+  1719:             event,
+  1720:             410,
+  1721:             {"error": "Datetime parsing is handled by the TimePhraseParser action group Lambda."},
+  1722:         )
+  1723:     raw_origin = normalized.get("origin")
+  1724:     raw_destination = normalized.get("destination")
+  1725:     origin, origin_suggestions = _resolve_iata_code(raw_origin)
+  1726:     filled_from_context = (not had_origin_before_context) and bool(origin)
+  1727:     destination, destination_suggestions = _resolve_iata_code(raw_destination)
+  1728:     departure_input = normalized.get("departureDate")
+  1729:     departure_date = _iso_date(str(departure_input) if departure_input is not None else "")
+  1730:     return_input = normalized.get("returnDate")
+  1731:     return_date = _iso_date(str(return_input)) if return_input else None
+  1732:     adults = _to_int(normalized.get("adults", 1), 1)
+  1733:     cabin = (normalized.get("cabin") or "ECONOMY").upper()
+  1734:     nonstop = _to_bool(normalized.get("nonstop", False), False)
+  1735:     currency = (normalized.get("currency") or os.getenv(
+  1736:         "DEFAULT_CURRENCY") or "EUR").upper()
+  1737:     lh_group_only = _to_bool(
+  1738:         normalized.get("lhGroupOnly", os.getenv("LH_GROUP_ONLY", "true")), True
+  1739:     )
+  1740:     max_results = _to_int(normalized.get("max", 10), 10)
+  1741:     _log(
+  1742:         "OpenAPI flight request prepared",
+  1743:         origin=origin,
+  1744:         destination=destination,
+  1745:         departureDate=departure_date,
+  1746:         returnDate=return_date,
+  1747:         adults=adults,
+  1748:         nonstop=nonstop,
+  1749:         cabin=cabin,
+  1750:         currency=currency,
+  1751:         lhGroupOnly=lh_group_only,
+  1752:         max=max_results,
+  1753:     )
+  1754:     if not origin:
+  1755:         msg = "Please choose a departure airport IATA code (for example, MUC)."
+  1756:         suggestions = origin_suggestions or []
+  1757:         _log("OpenAPI validation message", reason="missing_origin", suggestions=suggestions)
+  1758:         return _wrap_openapi(
+  1759:             event,
+  1760:             200,
+  1761:             {"message": msg, "suggestions": suggestions},
+  1762:         )
+  1763:     if not destination:
+  1764:         msg = "Please choose an arrival airport IATA code (for example, ZRH)."
+  1765:         suggestions = destination_suggestions or []
+  1766:         _log(
+  1767:             "OpenAPI validation message",
+  1768:             reason="missing_destination",
+  1769:             suggestions=suggestions,
+  1770:         )
+  1771:         return _wrap_openapi(
+  1772:             event,
+  1773:             200,
+  1774:             {"message": msg, "suggestions": suggestions},
+  1775:         )
+  1776:     if not departure_date:
+  1777:         _log("OpenAPI validation error", reason="missing_departure_date")
+  1778:         return _wrap_openapi(
+  1779:             event, 400, {"error": "Provide 'departureDate' in YYYY-MM-DD."}
+  1780:         )
+  1781:     departure_date = _roll_forward_recent_past_date(departure_date) or departure_date
+  1782:     departure_date = _advance_far_past_date(departure_date) or departure_date
+  1783:     if return_date:
+  1784:         return_date = _roll_forward_recent_past_date(return_date) or return_date
+  1785:         return_date = _advance_far_past_date(return_date) or return_date
+  1786:     window_error = _validate_booking_window(departure_date, return_date)
+  1787:     if window_error:
+  1788:         _log("OpenAPI validation error", reason="window_error", detail=window_error)
+  1789:         return _wrap_openapi(event, 400, {"error": window_error})
+  1790:     relaxed_note = None
+  1791:     relaxed_note = None
+  1792:     try:
+  1793:         raw = amadeus_search_flight_offers(
+  1794:             origin,
+  1795:             destination,
+  1796:             departure_date,
+  1797:             return_date,
+  1798:             adults,
+  1799:             cabin,
+  1800:             nonstop,
+  1801:             currency,
+  1802:             lh_group_only,
+  1803:             max_results,
+  1804:         )
+  1805:         offers = _summarize_offers(raw, currency, lh_group_only)
+  1806:         if lh_group_only and not offers:
+  1807:             offers_any = _summarize_offers(raw, currency, False)
+  1808:             if offers_any:
+  1809:                 offers = offers_any
+  1810:                 relaxed_note = "No Lufthansa Group options available on these dates; showing all carriers."
+  1811:         relaxed_note = None
+  1812:         if lh_group_only and not offers:
+  1813:             offers_any = _summarize_offers(raw, currency, False)
+  1814:             if offers_any:
+  1815:                 offers = offers_any
+  1816:                 relaxed_note = "No Lufthansa Group options available on these dates; showing all carriers."
+  1817:         # If LH-group filter yields no offers, relax to all carriers and disclose
+  1818:         relaxed_note = None
+  1819:         if lh_group_only and not offers:
+  1820:             offers_any = _summarize_offers(raw, currency, False)
+  1821:             if offers_any:
+  1822:                 offers = offers_any
+  1823:                 relaxed_note = "No Lufthansa Group options available on these dates; showing all carriers."
+  1824:         # Fallback: if nonstop requested and none found, retry with connections allowed.
+  1825:         if nonstop and not offers:
+  1826:             _log("OpenAPI: No nonstop offers; retrying with connections allowed")
+  1827:             raw = amadeus_search_flight_offers(
+  1828:                 origin,
+  1829:                 destination,
+  1830:                 departure_date,
+  1831:                 return_date,
+  1832:                 adults,
+  1833:                 cabin,
+  1834:                 False,
+  1835:                 currency,
+  1836:                 lh_group_only,
+  1837:                 max_results,
+  1838:             )
+  1839:             offers = _summarize_offers(raw, currency, lh_group_only)
+  1840:             if lh_group_only and not offers:
+  1841:                 offers_any2 = _summarize_offers(raw, currency, False)
+  1842:                 if offers_any2:
+  1843:                     offers = offers_any2
+  1844:                     relaxed_note = "No Lufthansa Group options available (nonstop fallback); showing all carriers."
+  1845:         # If still none, probe nearest alternative dates and include up to 5.
+  1846:         alternatives: List[Dict[str, Any]] = []
+  1847:         if not offers:
+  1848:             alternatives = _nearest_date_alternatives(
+  1849:                 origin,
+  1850:                 destination,
+  1851:                 departure_date,
+  1852:                 return_date,
+  1853:                 adults,
+  1854:                 cabin,
+  1855:                 currency,
+  1856:                 lh_group_only,
+  1857:                 max_results,
+  1858:                 nonstop=nonstop,
+  1859:                 limit=5,
+  1860:             )
+  1861:         _log("OpenAPI flight search success", origin=origin, destination=destination, offers=len(offers), alternatives=len(alternatives))
+  1862:         # If we auto-filled origin from context, cache it into session and surface a brief note.
+  1863:         note = None
+  1864:         if filled_from_context and origin:
+  1865:             try:
+  1866:                 event.setdefault("sessionAttributes", {})["default_origin"] = origin
+  1867:             except Exception:
+  1868:                 pass
+  1869:             note = f"Using your nearest airport as departure location ({origin}). Say 'change departure location' to update it."
+  1870:         # Build textual summary for offers so the agent surfaces concrete details
+  1871:         offer_text_block = None
+  1872:         if offers:
+  1873:             try:
+  1874:                 def _hhmm(ts: Optional[str]) -> str:
+  1875:                     try:
+  1876:                         if not ts:
+  1877:                             return "?"
+  1878:                         t = str(ts).replace("T", " ").replace("Z", "").split(" ")[1]
+  1879:                         return t[:5]
+  1880:                     except Exception:

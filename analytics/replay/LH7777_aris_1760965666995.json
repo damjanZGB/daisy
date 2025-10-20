@@ -1,0 +1,64 @@
+{
+  "flight": "LH7777",
+  "session": "fa4a9a2f-6c3e-4a9e-9a9a-777777777777",
+  "bedrockSessionId": "c16f066e-2fcd-41de-8f9c-aad70148a7e7",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Some warm place with beach in March next year",
+      "assistant": "Sorry, it seems the destination catalog is not available at the moment. However, popular beach destinations that are warm in March typically include places like the Caribbean, the Maldives, or the Canary Islands. These destinations offer pleasant weather and beautiful beaches during that time of the year. If you need more specific recommendations or assistance, feel free to let me know!",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "Yes, show me a few options",
+      "assistant": "Here are a few popular beach destinations that are warm in March:\n\n1. Caribbean Islands - Known for their beautiful beaches and pleasant weather in March.\n<sources>\n\n2. Maldives - Offers stunning beaches and warm temperatures throughout the year, including March.\n<sources>\n\n3. Canary Islands - Located off the coast of Africa, these islands have warm weather and beautiful beaches in March.\n<sources>",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Option 1 looks good",
+      "assistant": "The Caribbean Islands are a fantastic choice for a warm beach trip in March! Here are some highlights about the Caribbean:\n\n- Popular Destinations: Some popular destinations in the Caribbean include the Bahamas, Jamaica, the Dominican Republic, and the Caribbean coast of Mexico.\n- Activities: The Caribbean offers a wide range of activities, including snorkeling, diving, beach lounging, water sports, and exploring vibrant local cultures.\n- Travel Tips: It's advisable to book accommodations and flights in advance, especially during peak tourist seasons. Also, consider checking the local weather forecast and any travel advisories before your trip.\n\nIf you need further assistance or have any specific questions about the Caribbean Islands, feel free to ask!",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "I'm sorry, but it seems there are no flight options available for your specified dates from ZAG to ZRH. However, I can suggest alternative dates or nearby Lufthansa Group destinations if you'd like. Please let me know how you'd like to proceed.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    }
+  ]
+}

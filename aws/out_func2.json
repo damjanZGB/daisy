@@ -1,0 +1,1 @@
+{"messageVersion": "1.0", "response": {"actionGroup": null, "function": "search_flights", "functionResponse": {"responseBody": {"TEXT": {"body": "No offers on requested dates. Nearby alternatives:\nConnecting Alternatives\n1) ZAG 18:40 -> ZAG | 2025-12-11 | 3 stops | PT3H5M | **233 EUR**\n    - Carriers: LH"}}}}, "sessionAttributes": {}, "promptSessionAttributes": {}}

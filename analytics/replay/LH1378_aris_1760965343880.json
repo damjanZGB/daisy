@@ -1,0 +1,97 @@
+{
+  "flight": "LH1378",
+  "session": "2a422dff-3f11-44e9-aee7-bdca3aa8ec0b",
+  "bedrockSessionId": "1893a20f-4d8a-4ab6-863e-50b80e35c690",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul , your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Could you please confirm the departure airport? If you prefer, I can use the default origin, Zapresic, Croatia (ZAG).",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Correct. Use default",
+      "assistant": "",
+      "trace": [],
+      "error": "The server encountered an error processing the Lambda response. Check the Lambda response and retry the request",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      }
+    },
+    {
+      "turn": 4,
+      "user": "Zagreb to Zurich, departure, 25.10.2025",
+      "assistant": "",
+      "trace": [],
+      "error": "The server encountered an error processing the Lambda response. Check the Lambda response and retry the request",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      }
+    },
+    {
+      "turn": 5,
+      "user": "01.11.2025",
+      "assistant": "",
+      "trace": [],
+      "error": "The server encountered an error processing the Lambda response. Check the Lambda response and retry the request",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      }
+    },
+    {
+      "turn": 6,
+      "user": "Show me the alternatives",
+      "assistant": "Could you please confirm the departure airport? If you prefer, I can use the default origin, Zapresic, Croatia (ZAG).",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 7,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "Here are your flight options from Zapresic, Croatia (ZAG) to Zurich, Switzerland (ZRH) for your travel dates:",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    }
+  ]
+}

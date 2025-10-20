@@ -32,6 +32,12 @@ $summary = @()
 foreach ($payload in $payloads) {
     $name = [System.IO.Path]::GetFileNameWithoutExtension($payload.Name)
     $outputFile = Join-Path $resultsDir ("out_{0}.json" -f $name)
+    # Skip non-Lambda event descriptors (e.g., helper test configs)
+    $rawPayload = Get-Content $payload.FullName -Raw
+    if (($rawPayload -notmatch '"apiPath"') -and ($rawPayload -notmatch '"function"') -and ($rawPayload -notmatch '"messageVersion"')) {
+        Write-Host ("Skipping {0} (not a Lambda event payload)" -f $payload.Name)
+        continue
+    }
     $invokeArgs = @(
         "lambda", "invoke",
         "--function-name", $FunctionName,
@@ -47,7 +53,10 @@ foreach ($payload in $payloads) {
     $response = $content.response
     $statusCode = $response.httpStatusCode
     $body = $response.responseBody.'application/json'.body | ConvertFrom-Json
-    $offersCount = ($body.offers | Measure-Object).Count
+    $offersCount = 0
+    if ($null -ne $body -and ($body.PSObject.Properties.Name -contains 'offers') -and $body.offers) {
+        $offersCount = ($body.offers | Measure-Object).Count
+    }
     $hasError = $statusCode -ne 200 -or $offersCount -eq 0
 
     $summary += [pscustomobject]@{
@@ -55,7 +64,7 @@ foreach ($payload in $payloads) {
         StatusCode  = $statusCode
         Offers      = $offersCount
         OutputFile  = $outputFile
-        Error       = if ($hasError) { $body.error } else { $null }
+        Error       = if ($hasError -and ($body.PSObject.Properties.Name -contains 'error')) { $body.error } else { $null }
     }
 
     if ($hasError -and $FailFast) {
