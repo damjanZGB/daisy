@@ -45,7 +45,8 @@ Notes:
   - Recommender aggregator: partition and limit combined to 10.
 
 2) Partition direct vs connecting sections
-- Function search: Build two sections from the `offers` list (`stops == 0` vs others).
+- Function search: Build two sections from the `offers` list (`stops == 0` vs others). Cap combined to 10.
+- OpenAPI search: Use the exact same partitioned output and 10-option cap.
 - Recommender aggregator: Partition `options` the same way before rendering.
 
 3) Always include return legs when requested
@@ -59,6 +60,7 @@ Notes:
 5) Standard message template for PDF compatibility
 - Ensure the header/section formats match the template above.
 - Preserve the exact THEN line regex pattern.
+- Use ASCII separators only: `->` and `|` (no `→`, bullets, or control chars). If any non-ASCII ever slip in, sanitize to ASCII before returning.
 
 6) Include full details
 - Populate `{DATE}` from the outbound date; duration from `offer.duration`; price from `totalPrice` + currency.
@@ -76,8 +78,17 @@ Notes:
   - Persist a short ‘format_ok’ flag in the saved JSON.
 
 10) Wire PDF generator to real data
-- Frontend PDF parser already consumes `THEN` lines; ensure we always print them for every segment.
+- Frontend PDF parser consumes `THEN` lines; ensure we always print them for every segment.
 - For multi-segment bookings, the PDF builder produces a page per segment (already supported).
+- Round trips: list both outbound and inbound segments so tickets are generated for all legs.
+
+## Alternatives Formatting
+
+- When no offers on requested dates, provide nearby alternatives partitioned into two sections:
+  - `Direct Alternatives`
+  - `Connecting Alternatives`
+- Keep alternatives compact (no THEN lines), but include in each header: date, HH:MM (departure), duration, price, and first segment carrier+flight when available. Include a `Carriers:` line when present.
+- Cap combined alternatives to 10.
 
 ## Implementation Notes
 
@@ -90,4 +101,3 @@ Notes:
 - Manual: Ask for round trip ZAG -> ZRH with return, confirm both sections appear and THEN lines cover outbound + return.
 - Replay: Add scripted turns that explicitly request round trip and verify formatting flags.
 - PDF: Trigger PDF after selecting an option; ensure a page is created per segment with the correct leg data.
-

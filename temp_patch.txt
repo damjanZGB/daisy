@@ -1,75 +1,24 @@
-#!/usr/bin/env node
-import { readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
-
-const IMG_EMPTY = join(process.cwd(), 'frontend', 'img', 'lufthansa_template_empty.png');
-const OUT = join(process.cwd(), 'analytics', 'itinerary_demo.pdf');
-
-// Sample itinerary derived from LH2155 chat log (ZAG->VIE->INN)
-const itinerary = {
-  passenger: '-',
-  route: 'ZAG -> INN',
-  date: '2025-12-20',
-  price: '258.09 EUR',
-  legs: [
-    {
-      carrier: 'LH', flightNo: '7052',
-      from: { code: 'ZAG', city: 'Zagreb' },
-      to: { code: 'VIE', city: 'Vienna' },
-      dep: '08:15', arr: '09:10'
-    },
-    {
-      carrier: 'LH', flightNo: '105',
-      from: { code: 'VIE', city: 'Vienna' },
-      to: { code: 'INN', city: 'Innsbruck' },
-      dep: '13:00', arr: '13:55'
-    }
-  ]
-};
-
-function mm(val) { return (val / 25.4) * 72; }
-
-async function main() {
-  const pdf = await PDFDocument.create();
-  const emptyPng = await pdf.embedPng(readFileSync(IMG_EMPTY));
-  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-
-  for (const leg of itinerary.legs) {
-    const W = emptyPng.width; const H = emptyPng.height;\n    const page = pdf.addPage([W, H]);
-    // Background template
-    page.drawImage(emptyPng, { x: 0, y: 0, width: W, height: H });
-    const gray = rgb(0.07, 0.07, 0.10);\n    const blue = rgb(11/255, 31/255, 85/255);\n\n    const put = (text, xr, yr, size = 14, bold = false, color = gray) => {\n      const f = bold ? fontBold : font;\n      page.drawText(String(text || ''), { x: xr * W, y: yr * H, size, font: f, color });\n    };
-
-    // Header line
-    page.drawText('Lufthansa Group - Boarding Pass', {
-      x: pad, y: H - pad - 16, size: 12, font: fontBold, color: lhBlue,
-    });
-
-    // Route big
-    const route = `${leg.from.code} -> ${leg.to.code}`;
-    page.drawText(route, { x: pad, y: H - pad - 36, size: 22, font: fontBold, color: gray });
-
-    // Meta
-    let y = H - pad - 60;
-    page.drawText(`Date: ${itinerary.date}`, { x: pad, y, size: 10, font, color: gray }); y -= 14;
-    page.drawText(`Flight: ${leg.carrier} ${leg.flightNo}`, { x: pad, y, size: 10, font, color: gray }); y -= 14;
-    page.drawText(`From: ${leg.from.city} (${leg.from.code})  at ${leg.dep}`, { x: pad, y, size: 10, font, color: gray }); y -= 14;
-    page.drawText(`To:   ${leg.to.city} (${leg.to.code})    at ${leg.arr}`, { x: pad, y, size: 10, font, color: gray }); y -= 16;
-
-    // Price on the right
-    page.drawText(`Price: ${itinerary.price}`, { x: W - pad - 120, y: H - pad - 60, size: 10, font: fontBold, color: gray });
-
-    // Copyright per leg\n    put('(c) dAisy', 0.04, 0.02, 10, false, gray);
-  }
-
-  const bytes = await pdf.save();
-  writeFileSync(OUT, bytes);
-  console.log('PDF written:', OUT);
-}
-
-main().catch(e => { console.error('Failed to make PDF:', e); process.exit(1); });
-
-
-
+                        stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                        carriers = offer.get("carriers") or []
+                        carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
+                        # Header line with bold price
+                        header = f"{idx}) {label} - {dep} -> {arr} | {opt.get('date')} | {stops_txt} | {dur} | **{price}**"
+                        # Rebuild header to include first segment carrier/flight and departure HH:MM when available
+                        try:
+                            segs = offer.get("segments")
+                            seg0 = segs[0] if isinstance(segs, list) and segs else None
+                            c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                            fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                            dt0 = _hhmm((seg0.get("departureTime") if isinstance(seg0, dict) else None) or offer.get("departureTime") or "")
+                    stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                    carriers = offer.get("carriers") or []
+                    carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
+                    # Header line with bold price
+                    header = f"{idx}) {label} - {dep} ? {arr} • {opt.get('date')} • {stops_txt} • {dur} • **{price}**"
+                    # Rebuild header to include first carrier/flight and departure HH:MM when available
+                    try:
+                        segs = offer.get("segments")
+                        seg0 = segs[0] if isinstance(segs, list) and segs else None
+                        c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                        fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                        # dep_time may be full ISO; convert to HH:MM
