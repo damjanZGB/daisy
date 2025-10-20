@@ -74,6 +74,52 @@
       return {};
     })();
     const { useState, useEffect, useRef, useMemo, useCallback } = React;
+    // Sanitizer: strip askuser/sources markers and normalize spacing
+    const sanitizeAssistantText = (t) => {
+      if (!t) return '';
+      let out = String(t);
+      out = out.replace(/<user__askuser[^>]*question=\"([^\"]+)\"[^>]*>/gi, '$1');
+      out = out.replace(/<\/user__askuser>/gi, '');
+      out = out.replace(/<sources>[\s\S]*?<\/sources>/gi, '');
+      out = out.replace(/\n{3,}/g, '\n\n');
+      return out.trim();
+    };
+    // Parse numbered itinerary options with optional THEN lines
+    const parseItineraryOptions = (text) => {
+      const lines = String(text||'').split(/\r?\n/);
+      const options = [];
+      let current = null;
+      const headerRe = /^\s*(\d+)\)\s+(.+)$/;
+      for (const raw of lines) {
+        const m = raw.match(headerRe);
+        if (m) {
+          if (current) options.push(current);
+          current = { header: m[2], legs: [] };
+          continue;
+        }
+        const leg = String(raw).trim();
+        if (/^\-\s+THEN\s+/i.test(leg)) {
+          current && current.legs.push(leg.replace(/^\-\s+/, ''));
+        }
+      }
+      if (current) options.push(current);
+      return options;
+    };
+    // Create a simple PDF blob from an option
+    const generatePdf = async (opt) => {
+      try {
+        const { jsPDF } = window.jspdf || {};
+        if (!jsPDF) return null;
+        const doc = new jsPDF({ unit: 'pt' });
+        let y = 40; const x = 40;
+        doc.setFont('helvetica','bold'); doc.setFontSize(14);
+        doc.text('Itinerary (Example)', x, y); y+=24;
+        doc.setFont('helvetica','normal'); doc.setFontSize(12);
+        doc.text(opt.header || 'Selected Option', x, y); y+=18;
+        for (const leg of (opt.legs || [])) { if (y>760){ doc.addPage(); y=40;} doc.text(leg, x, y); y+=16; }
+        return doc.output('blob');
+      } catch (_) { return null; }
+    };
     const sanitizeUrl = (value) => {
       if (typeof value !== 'string') return null;
       const trimmed = value.trim();
@@ -610,7 +656,7 @@
           setMessages(m => [...m, botMsg]);
           // If user asked to confirm/hold/book OR explicitly asked for a PDF/download,
           // generate a PDF from the latest known itinerary options.
-          const wantsPdf = /\b(pdf|download( log)?|itinerary)\b/i.test(input) && /(\b(pdf|itinerary)\b|\bdownload\b)/i.test(input);
+          const wantsPdf = /(confirm|confirmed|book|hold|pdf|download|itinerary)/i.test(input);
           // Use parsedOptions if it is a non-empty array; otherwise, fall back to lastItinerary.
           const source = Array.isArray(parsedOptions) && parsedOptions.length > 0
             ? parsedOptions
@@ -685,49 +731,6 @@
     ReactDOM.createRoot(document.getElementById('root')).render(<ChatApp />);
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-9q8vXJ8zxV/9dR3+WQZ2w6JYf1zbhD0FQ8h1C9J+z7V0U8rQ6k9d8lQHhJH6w1FvXRv1+Sip3C5b5pGmQh2C8g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-</body>
+ </body>
 
-</html>
-      const sanitizeAssistantText = (t) => {
-        if (!t) return '';
-        let out = String(t);
-        out = out.replace(/<user__askuser[^>]*question=\"([^\"]+)\"[^>]*>/gi, '$1');
-        out = out.replace(/<\/user__askuser>/gi, '');
-        out = out.replace(/<sources>[\s\S]*?<\/sources>/gi, '');
-        out = out.replace(/\n{3,}/g, '\n\n');
-        return out.trim();
-      };
-      const parseItineraryOptions = (text) => {
-        const lines = String(text||'').split(/\r?\n/);
-        const options = [];
-        let current = null;
-        const headerRe = /^\s*(\d+)\)\s+(.+)$/;
-        for (const raw of lines) {
-          const m = raw.match(headerRe);
-          if (m) {
-            if (current) options.push(current);
-            current = { header: m[2], legs: [] };
-            continue;
-          }
-          const leg = raw.trim();
-          if (/^\-\s+THEN\s+/i.test(leg)) {
-            current && current.legs.push(leg.replace(/^\-\s+/, ''));
-          }
-        }
-        if (current) options.push(current);
-        return options;
-      };
-      const generatePdf = async (opt) => {
-        try {
-          const { jsPDF } = window.jspdf || {};
-          if (!jsPDF) return null;
-          const doc = new jsPDF({ unit: 'pt' });
-          let y = 40; const x = 40;
-          doc.setFont('helvetica','bold'); doc.setFontSize(14);
-          doc.text('Itinerary (Example)', x, y); y+=24;
-          doc.setFont('helvetica','normal'); doc.setFontSize(12);
-          doc.text(opt.header, x, y); y+=18;
-          for (const leg of (opt.legs || [])) { if (y>760){ doc.addPage(); y=40;} doc.text(leg, x, y); y+=16; }
-          return doc.output('blob');
-        } catch (_) { return null; }
-      };
+ </html>

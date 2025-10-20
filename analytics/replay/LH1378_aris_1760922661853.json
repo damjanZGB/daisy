@@ -1,0 +1,44 @@
+{
+  "flight": "LH1378",
+  "session": "2a422dff-3f11-44e9-aee7-bdca3aa8ec0b",
+  "bedrockSessionId": "720b605c-fc94-4e4c-beb7-0d6cf9fd42bf",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hello and welcome aboard the Lufthansa Group experience. I am Aris, your digital travel orchestrator. Tell me—what kind of journey are you envisioning today?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "I'm sorry, but there are no direct flights available for your requested date. However, here are two alternative options:   1. **Flight 10**: Departing from Zagreb (ZAG) at 17:50 on 2025-10-26, arriving in Zurich (ZRH) at 08:25 on 2025-10-27. **Price: €246.20. 1 stop.** toolResult   2. **Flight 9**: Departing from Zagreb (ZAG) at 18:40 on 2025-10-28, arriving in Zurich (ZRH) at 21:45 on the same day. **Price: €237.98. 1 stop.** toolResult",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Correct. Use default",
+      "assistant": "I'm sorry, but there are no direct flights available for your requested date. However, here are two alternative options:   1. **Flight 10**: Departing from Zagreb (ZAG) at 17:50 on 2025-10-26, arriving in Zurich (ZRH) at 08:25 on 2025-10-27. **Price: €246.20. 1 stop.** toolResult   2. **Flight 9**: Departing from Zagreb (ZAG) at 18:40 on 2025-10-28, arriving in Zurich (ZRH) at 21:45 on the same day. **Price: €237.98. 1 stop.** toolResult",
+      "trace": []
+    },
+    {
+      "turn": 4,
+      "user": "Zagreb to Zurich, departure, 25.10.2025",
+      "assistant": "I'm sorry, but there are no direct flights available for your requested date. Here is an alternative option:   1. **Flight 10**: Departing from Zagreb (ZAG) at 17:50 on 2025-10-26, arriving in Zurich (ZRH) at 08:25 on 2025-10-27. **Price: €246.20. 1 stop.** toolResult",
+      "trace": []
+    },
+    {
+      "turn": 5,
+      "user": "01.11.2025",
+      "assistant": "Could you please confirm the departure date as 2025-11-01?",
+      "trace": []
+    },
+    {
+      "turn": 6,
+      "user": "Show me the alternatives",
+      "assistant": "I'm sorry, but there are no direct flights available for your requested date. Here are three alternative options:   1. **Flight 10**: Departing from Zagreb (ZAG) at 11:55 on 2025-10-31, arriving in Zurich (ZRH) at 11:10 on 2025-11-01. **Price: €219.04. 1 stop.** toolResult   2. **Flight 10**: Departing from Zagreb (ZAG) at 13:20 on 2025-11-02, arriving in Zurich (ZRH) at 21:45 on the same day. **Price: €237.04. 1 stop.** toolResult   3. **Flight 10**: Departing from Zagreb (ZAG) at 18:40 on 2025-11-03, arriving in Zurich (ZRH) at 21:45 on the same day. **Price: €177.98. 1 stop.** toolResult",
+      "trace": []
+    }
+  ]
+}
