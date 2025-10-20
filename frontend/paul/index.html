@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/x-icon" href="../img/lhg_favicon.ico" />
-  <title>Lufthansa Group – Agent Chat</title>
+  <title>Lufthansa Group - Agent Chat</title>
   <!-- Tailwind CDN (config with LH brand colors) -->
   <script>
     window.tailwind = {
@@ -55,6 +55,7 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
 </head>
 
 <body class="bg-[#0f172a] text-slate-100 min-h-screen">
@@ -89,7 +90,7 @@
         // Decode a few common HTML entities
         out = out.replace(/&nbsp;/gi, ' ')
                  .replace(/&amp;/gi, '&')
-                 .replace(/&euro;/gi, '€')
+                 .replace(/&euro;/gi, 'â‚¬')
                  .replace(/&(ndash|mdash);/gi, '-');
         // Normalize smart punctuation to ASCII
         out = out.replace(/[\u2018\u2019]/g, "'");
@@ -142,63 +143,46 @@
     });
     const generatePdf = async (opt) => {
       try {
-        const JS = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : await ensureJsPdf();
-        if (!JS) return null;
-        const doc = new JS({ unit: 'pt', format: 'a4' });
-        const W = doc.internal.pageSize.getWidth();
-        const H = doc.internal.pageSize.getHeight();
-        const lhBlue = '#0B1F55';
-        const lhYellow = '#F7B500';
-        const pad = 36;
-        // Header bar
-        doc.setFillColor(lhBlue); doc.rect(0, 0, W, 64, 'F');
-        doc.setTextColor('#ffffff'); doc.setFont('helvetica','bold'); doc.setFontSize(18);
-        doc.text('Lufthansa Group — Boarding Pass', pad, 40);
-        // Ticket body
-        const bx = pad, by = 88, bw = W - pad*2, bh = H - by - pad;
-        doc.setDrawColor('#e5e7eb'); doc.setLineWidth(1); doc.roundedRect(bx, by, bw, bh, 8, 8, 'S');
-        // Perforation line
-        doc.setDrawColor('#d1d5db'); doc.setLineWidth(0.5);
-        doc.setLineDash([3,3], 0); doc.line(bx + bw*0.66, by, bx + bw*0.66, by + bh);
-        doc.setLineDash([],0);
-        // Parse header data
-        const header = String(opt?.header || 'Selected Option');
-        const matchRoute = header.match(/\b([A-Z]{3})\b[^\n\r]*?->[^\n\r]*?\b([A-Z]{3})\b/);
-        const fromCode = matchRoute ? matchRoute[1] : '';
-        const toCode = matchRoute ? matchRoute[2] : '';
-        const matchDate = header.match(/\b(\d{4}-\d{2}-\d{2})\b/);
-        const dateTxt = matchDate ? matchDate[1] : '';
-        const matchPrice = header.match(/\*\*([^*]+)\*\*/);
-        const priceTxt = matchPrice ? matchPrice[1].trim() : '';
-        // Left panel: route + legs
-        let x = bx + 20, y = by + 28;
-        doc.setTextColor('#111827');
-        doc.setFont('helvetica','bold'); doc.setFontSize(22);
-        doc.text(`${fromCode || 'FROM'}  →  ${toCode || 'TO'}`, x, y); y += 22;
-        doc.setFont('helvetica','normal'); doc.setFontSize(12);
-        if (dateTxt) { doc.text(`Date: ${dateTxt}`, x, y); y += 18; }
-        if (priceTxt) { doc.text(`Price: ${priceTxt}`, x, y); y += 18; }
-        y += 6;
-        doc.setFont('helvetica','bold'); doc.text('Segments', x, y); y += 16; doc.setFont('helvetica','normal');
-        for (const legRaw of (opt.legs || [])) {
-          const leg = String(legRaw).replace(/^THEN\s*/i, '').trim();
-          if (y > by + bh - 80) { doc.addPage(); y = pad; }
-          doc.circle(x+3, y-4, 1.5, 'F');
-          doc.text(leg, x + 12, y, { maxWidth: bw*0.63 - 32 });
-          y += 16;
+        const { PDFDocument } = window.PDFLib || {};
+        if (!PDFDocument) return null;
+        const formBytes = await fetch('/lufthansa_template_empty_form.pdf').then(r => r.arrayBuffer());
+        const parseLeg = (line) => {
+          const m = String(line).match(/THEN\s+([A-Z]{1,3})\s*(\d{2,5})\s+([A-Z]{3})\s+(\d{2}:\d{2})\s*->\s*([A-Z]{3})\s+(\d{2}:\d{2})/i);
+          return m ? { carrier:m[1].toUpperCase(), flightNo:m[2], from:m[3].toUpperCase(), dep:m[4], to:m[5].toUpperCase(), arr:m[6] } : null;
+        };
+        const legs=[]; for(const l of (opt?.legs||[])){ const p=parseLeg(l); if(p) legs.push(p); }
+        const hdr = String(opt?.header||'');
+        const mRoute = hdr.match(/([A-Z]{3})\s*->\s*([A-Z]{3})/); const mDate = hdr.match(/(\d{4}-\d{2}-\d{2})/);
+        const date = mDate ? mDate[1] : new Date().toISOString().slice(0,10);
+        if(!legs.length && mRoute){ legs.push({ carrier:'LH', flightNo:'0000', from:mRoute[1], to:mRoute[2], dep:'08:00', arr:'10:00' }); }
+        const finalDoc = await PDFDocument.create();
+        const randInt=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+        const randGate=()=> 'ABCDEFG'[randInt(0,6)] + String(randInt(1,39)).padStart(2,'0');
+        const randZone=()=> String(randInt(1,7)) + (Math.random()<0.35 ? String.fromCharCode(65+randInt(0,2)) : '');
+        const randSeat=()=> String(randInt(1,45)) + 'ABCDEFG'[randInt(0,6)];
+        const randSeqPair=()=> String(randInt(1,23)).padStart(2,'0') + '-' + String(randInt(1,23)).padStart(2,'0');
+        for(const leg of legs){
+          const src = await PDFDocument.load(formBytes);
+          const form = src.getForm();
+          form.getFields().forEach(f=>{ try{ f.setText(''); }catch(e){} });
+          const set=(n,v)=>{ try{ form.getTextField(n).setText(String(v??'')); }catch(e){} };
+          const gate=randGate(), zone=randZone(), seat=randSeat(), seq=randSeqPair();
+          set('from_to', `${leg.from} -> ${leg.to}`);
+          set('passenger_left', 'Happy User');
+          set('flight_left', `${leg.carrier} ${leg.flightNo}`);
+          set('date_left', date); set('departure_left', leg.dep);
+          set('seq_no_left', seq); set('gate_left', gate); set('zone_left', zone);
+          set('from_left', leg.from); set('to_left', leg.to);
+          set('passenger_right', 'Happy User');
+          set('date_right', date); set('departure_right', leg.dep);
+          set('gate_right', gate); set('zone_right', zone); set('seat_right', seat); set('seq_no_right', seq);
+          set('flight_right', `${leg.carrier} ${leg.flightNo}`);
+          try{ form.getTextField('Text17').setText(''); }catch(e){}
+          form.flatten();
+          const [pg]=await finalDoc.copyPages(src,[0]); finalDoc.addPage(pg);
         }
-        // Right stub: meta
-        const sx = bx + bw*0.69, sy = by + 32;
-        doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor('#111827');
-        doc.text('Passenger', sx, sy); doc.setFont('helvetica','normal'); doc.text('—', sx, sy+16);
-        doc.setFont('helvetica','bold'); doc.text('Flight', sx, sy+40); doc.setFont('helvetica','normal'); doc.text((fromCode && toCode) ? `${fromCode} → ${toCode}` : '-', sx, sy+56);
-        doc.setFont('helvetica','bold'); doc.text('Date', sx, sy+80); doc.setFont('helvetica','normal'); doc.text(dateTxt || '-', sx, sy+96);
-        doc.setFont('helvetica','bold'); doc.text('Price', sx, sy+120); doc.setFont('helvetica','normal'); doc.text(priceTxt || '-', sx, sy+136);
-        // Fake barcode
-        const bcY = by + bh - 60; doc.setFillColor('#111827');
-        let bxp = sx, bwbar = 2;
-        for (let i=0;i<80;i++){ const h = 30 + ((i%5)===0?12:0); doc.rect(bxp, bcY, bwbar, h, 'F'); bxp += 3.5; }
-        return doc.output('blob');
+        const bytes=await finalDoc.save();
+        return new Blob([bytes],{type:'application/pdf'});
       } catch (e) { console.warn('PDF error', e); return null; }
     };
     const sanitizeUrl = (value) => {
@@ -250,7 +234,7 @@
     const TRANSCRIPT_UPLOAD_ENABLED = CONFIG.transcriptUpload !== false;
     const TRANSCRIPT_SCHEMA_VERSION = CONFIG.transcriptSchemaVersion || '2025-10-18';
     const MAX_COL = Number.isFinite(CONFIG.maxColumnWidth) ? CONFIG.maxColumnWidth : 250; // hard wrap width for logs
-    const HEADER_SUBTITLE = CONFIG.headerSubtitle || 'Agent Chat · UI Test';
+    const HEADER_SUBTITLE = CONFIG.headerSubtitle || 'Agent Chat Â· UI Test';
     const INITIAL_ASSISTANT_TEXT = CONFIG.initialAssistantText || 'Lufthansa Group Inspirational AI flight assistant. Nice to meet you!';
     function Header({ apiUrl, locationInfo, proxyOnline }) {
       const formattedTime = (() => {
@@ -268,7 +252,7 @@
         }
       })();
       const locationLabel = locationInfo?.label || 'Detecting location...';
-      const originLabel = locationInfo?.inferredOrigin ? ` · Default origin: ${locationInfo.inferredOrigin}` : '';
+      const originLabel = locationInfo?.inferredOrigin ? `Default origin: ${locationInfo.inferredOrigin}` : '';
       const statusClass = proxyOnline ? 'bg-emerald-400' : 'bg-red-500';
       const statusTitle = proxyOnline ? 'Proxy online' : 'Proxy offline';
       return (
@@ -345,7 +329,7 @@
       const lookupUrl = deriveLookupUrl(apiUrl);
       const transcriptUrl = useMemo(() => deriveTranscriptUrl(apiUrl), [apiUrl]);
       const [locationInfo, setLocationInfo] = useState({
-        label: 'Detecting location…',
+        label: 'Detecting location...',
         tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
         localTime: new Date(),
         inferredOrigin: localStorage.getItem('inferred_origin') || null,
@@ -773,7 +757,7 @@
               {busy && (
                 <div className="flex items-center gap-2 text-white/70 text-sm">
                   <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lhYellow opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-lhYellow"></span></span>
-                  <span>Contacting agent…</span>
+                  <span>Contacting agentâ€¦</span>
                 </div>
               )}
             </div>
@@ -797,7 +781,7 @@
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder="Type your message… (Shift+Enter for newline)"
+                placeholder="Type your message...(Shift+Enter for newline)"
                 className="flex-1 bg-transparent outline-none resize-none text-sm leading-6 placeholder:text-white/40 px-3 py-2 h-[52px] max-h-[160px]"
               />
               <button onClick={send} disabled={busy} className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold bg-lhYellow text-lhBlue hover:brightness-95 active:brightness-90 disabled:opacity-60">
