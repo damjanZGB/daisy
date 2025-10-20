@@ -1,4 +1,4 @@
-# lambda_function.py
+﻿# lambda_function.py
 # AWS Lambda for Agents for Amazon Bedrock (Action Group).
 # Searches real flight offers via Amadeus Self-Service API and returns simplified offers.
 # Default filters to Lufthansa Group carriers unless overridden.
@@ -17,8 +17,278 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib import error as _urlerr
 from urllib import parse as _urlparse
 from urllib import request as _urlreq
+import os
+import uuid
 from zoneinfo import ZoneInfo
 
+# Optional S3 debug capture for tool I/O
+try:
+    import boto3  # type: ignore
+except Exception:  # pragma: no cover
+    boto3 = None
+
+DEBUG_S3_BUCKET = (os.getenv("DEBUG_S3_BUCKET") or "").strip()
+DEBUG_S3_PREFIX = (os.getenv("DEBUG_S3_PREFIX") or "debug-tool-io").strip().strip("/")
+DEBUG_TOOL_IO = (os.getenv("DEBUG_TOOL_IO") or "").strip().lower() in {"1", "true", "yes", "on"}
+_S3_CLIENT = None
+if DEBUG_S3_BUCKET and boto3 is not None:  # pragma: no cover
+    try:
+        _S3_CLIENT = boto3.client("s3", region_name=os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "us-west-2")
+    except Exception:
+        _S3_CLIENT = None
+
+# ------- Recommender verbosity and size controls -------
+# If false, omit THEN lines in recommender message to keep payloads small (useful in replay/stress).
+RECOMMENDER_VERBOSE = (os.getenv("RECOMMENDER_VERBOSE") or "true").strip().lower() in {"1", "true", "yes", "on"}
+# Max number of options to include in the recommender response.
+RECOMMENDER_MAX_OPTIONS = int((os.getenv("RECOMMENDER_MAX_OPTIONS") or "10").strip() or 10)
+# If the formatted message text exceeds this many bytes, switch to a compact format (limit options, drop THEN lines).
+RECOMMENDER_MAX_TEXT_BYTES = int((os.getenv("RECOMMENDER_MAX_TEXT_BYTES") or "4000").strip() or 4000)
+
+# --------------- Destination Catalog (recommender) ----------------
+_DEST_CATALOG_PATHS = [
+    os.path.join(os.getcwd(), "data", "lh_destinations_catalog.json"),
+    os.path.join(os.path.dirname(__file__), "..", "data", "lh_destinations_catalog.json"),
+]
+_DEST_CATALOG: Optional[list] = None
+_IATA_COORDS_CACHE: Optional[dict] = None
+
+def _load_catalog() -> list:
+    global _DEST_CATALOG
+    if _DEST_CATALOG is not None:
+        return _DEST_CATALOG
+    for p in _DEST_CATALOG_PATHS:
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                _DEST_CATALOG = json.load(f)
+                _log("Destination catalog loaded", entries=len(_DEST_CATALOG), path=p)
+                return _DEST_CATALOG
+        except Exception:
+            continue
+    _DEST_CATALOG = []
+    _log("Destination catalog missing", tried=_DEST_CATALOG_PATHS)
+    return _DEST_CATALOG
+
+
+def _load_iata_coords() -> dict:
+    global _IATA_COORDS_CACHE
+    if _IATA_COORDS_CACHE is not None:
+        return _IATA_COORDS_CACHE
+    candidates = [
+        os.path.join(os.getcwd(), "iata.json"),
+        os.path.join(os.getcwd(), "backend", "iata.json"),
+    ]
+    for p in candidates:
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                coords = {}
+                for rec in data:
+                    code = rec.get("code") or rec.get("iata_code") or rec.get("iata")
+                    lat = rec.get("latitude")
+                    lon = rec.get("longitude")
+                    if code and lat is not None and lon is not None:
+                        coords[str(code).upper()] = (float(lat), float(lon))
+                _IATA_COORDS_CACHE = coords
+                _log("IATA coords loaded", count=len(coords), path=p)
+                return _IATA_COORDS_CACHE
+        except Exception:
+            continue
+    _IATA_COORDS_CACHE = {}
+    _log("IATA coords not found", tried=candidates)
+    return _IATA_COORDS_CACHE
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    from math import radians, sin, cos, sqrt, atan2
+    R = 6371.0
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    return R * c
+
+
+def _month_from_phrase(phrase: Optional[str], reference: Optional[date] = None) -> tuple[int, int]:
+    """Return (year, month) from phrases like 'March 2026', '2026-03', 'next March'. Defaults to current/next.
+    """
+    if reference is None:
+        reference = datetime.utcnow().date()
+    if not phrase:
+        return reference.year, reference.month
+    txt = str(phrase).strip()
+    # ISO YYYY-MM
+    m = re.fullmatch(r"(\d{4})-(\d{2})", txt)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+    # Month name and optional year
+    months = [
+        "january","february","march","april","may","june","july","august","september","october","november","december"
+    ]
+    lower = txt.lower()
+    if "next year" in lower and any(mon in lower for mon in months):
+        for idx, mon in enumerate(months, start=1):
+            if mon in lower:
+                return reference.year + 1, idx
+    for idx, mon in enumerate(months, start=1):
+        # 'march 2026' or 'march'
+        m2 = re.search(mon, lower)
+        if m2:
+            ym = re.search(r"(\d{4})", lower)
+            y = int(ym.group(1)) if ym else reference.year
+            # if month already passed this year, roll to next year
+            if ym is None and idx < reference.month:
+                y += 1
+            return y, idx
+    # fallback: try YYYY-MM-DD
+    m3 = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", txt)
+    if m3:
+        return int(m3.group(1)), int(m3.group(2))
+    return reference.year, reference.month
+
+
+def _canonicalize_theme_tags(raw: List[str], phrase: Optional[str] = None) -> List[str]:
+    """Normalize theme tags to catalog tags.
+
+    Maps common synonyms like 'ski', 'skiing', 'snowboard' to 'winter_sports', etc.
+    """
+    aliases = {
+        "ski": ["winter_sports", "cold", "mountain"],
+        "skiing": ["winter_sports", "cold", "mountain"],
+        "snow": ["winter_sports", "cold", "mountain"],
+        "snowboard": ["winter_sports", "cold", "mountain"],
+        "alps": ["winter_sports", "cold", "mountain"],
+        "winter": ["winter_sports", "cold"],
+        "city": ["city_break"],
+        "city-break": ["city_break"],
+        "city_break": ["city_break"],
+        "weekend": ["city_break"],
+        "urban": ["city_break"],
+        "beach": ["beach", "warm"],
+        "sun": ["beach", "warm"],
+        "sunny": ["beach", "warm"],
+        "seaside": ["beach", "warm"],
+        "coast": ["beach", "warm"],
+        "island": ["beach", "warm"],
+        "resort": ["beach", "warm"],
+        "diving": ["diving", "beach", "warm"],
+        "scuba": ["diving", "beach", "warm"],
+        "snorkeling": ["diving", "beach", "warm"],
+        "fishing": ["fishing"],
+        "tuna": ["tuna_fishing", "fishing"],
+        "tuna_fishing": ["tuna_fishing", "fishing"],
+        "big_game_fishing": ["tuna_fishing", "fishing"],
+        "safari": ["safari", "wildlife"],
+        "wildlife": ["wildlife", "safari"],
+        "photo": ["wildlife_photography", "wildlife", "safari"],
+        "photography": ["wildlife_photography", "wildlife", "safari"],
+        "wildlife photography": ["wildlife_photography", "wildlife", "safari"],
+        "bike": ["cycling"],
+        "bicycle": ["cycling"],
+        "cycling": ["cycling"],
+        "mtb": ["cycling"],
+        "hunting": ["hunting"],
+    }
+    out: List[str] = []
+    seen = set()
+    def add(tag: str):
+        t = tag.strip().lower()
+        if t and t not in seen:
+            out.append(t)
+            seen.add(t)
+    for t in raw or []:
+        key = str(t).strip().lower()
+        if key in aliases:
+            for mapped in aliases[key]:
+                add(mapped)
+        else:
+            add(key)
+    # Phrase hint (if includes 'ski')
+    if phrase:
+        low = phrase.lower()
+        if any(k in low for k in ("ski", "skiing", "snowboard")):
+            for m in ("winter_sports", "cold", "mountain"):
+                add(m)
+    return out
+
+
+def _parse_month_range(value: Optional[str], reference: Optional[date] = None) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+    """Parse a month or month range and return ((start_year, start_month), (end_year, end_month)).
+
+    Supports:
+    - "YYYY-MM..YYYY-MM" explicit ranges
+    - Fallback to a single month via _month_from_phrase
+    """
+    if reference is None:
+        reference = datetime.utcnow().date()
+    if not value:
+        y, m = _month_from_phrase(None, reference)
+        return (y, m), (y, m)
+    text = str(value).strip()
+    m = re.fullmatch(r"(\d{4})-(\d{2})\.\.(\d{4})-(\d{2})", text)
+    if m:
+        y1, m1, y2, m2 = int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4))
+        return (y1, m1), (y2, m2)
+    # Minimal natural-language: just resolve first month and mirror
+    y, mon = _month_from_phrase(text, reference)
+    return (y, mon), (y, mon)
+
+
+def _score_destination(dest: dict, theme_tags: set[str], target_month: int, origin_code: Optional[str]) -> tuple[float, str]:
+    score = 0.0
+    reasons = []
+    tags = set(str(t).lower() for t in dest.get("tags", []))
+    if theme_tags & tags:
+        score += 0.2
+    # Warm/beach
+    if "beach" in theme_tags or "warm" in theme_tags:
+        avg = (dest.get("avgHighCByMonth") or {}).get(str(target_month))
+        if isinstance(avg, (int, float)):
+            temp_score = max(0.0, min(1.0, (float(avg) - 20.0) / 10.0))
+            score += temp_score
+            reasons.append(f"avgHighC={avg}C")
+        water = (dest.get("waterTempCByMonth") or {}).get(str(target_month))
+        if isinstance(water, (int, float)):
+            water_score = max(0.0, min(1.0, (float(water) - 18.0) / 8.0))
+            score += water_score
+            reasons.append(f"water={water}C")
+    # Winter sports
+    if "winter_sports" in theme_tags or "cold" in theme_tags:
+        snow = (dest.get("snowReliability") or {}).get(str(target_month))
+        if isinstance(snow, (int, float)):
+            snow_score = max(0.0, min(1.0, float(snow)))
+            score += snow_score
+            reasons.append(f"snowRel={snow}")
+        elif isinstance(dest.get("elevationM"), (int, float)):
+            elev = float(dest["elevationM"])
+            elev_score = max(0.0, min(1.0, (elev - 500.0) / 1500.0))
+            score += elev_score * 0.5
+            reasons.append(f"elev={elev}m")
+    # Activity-specific boosts
+    activity_tags = {"diving", "tuna_fishing", "fishing", "safari", "wildlife", "cycling", "hunting"}
+    for tag in activity_tags:
+        if tag in theme_tags and tag in (dest.get("tags") or []):
+            score += 0.2
+            reasons.append(tag)
+    # Carrier bias (prefer LHâ€‘Group presence)
+    brands = set(str(x) for x in dest.get("lhGroupCarriers", []))
+    if brands:
+        score += 0.1
+        if any(b in brands for b in ("EW","4Y")):
+            score += 0.1
+    # Distance penalty (heavier for short city breaks)
+    if origin_code:
+        coords = _load_iata_coords()
+        o = coords.get(origin_code.upper())
+        d = coords.get(str(dest.get("code", "")).upper())
+        if o and d:
+            km = _haversine_km(o[0], o[1], d[0], d[1])
+            penalty_cap = 0.6 if ("city_break" in theme_tags) else 0.4
+            penalty = min(penalty_cap, max(0.0, km / 5000.0 * penalty_cap))
+            score -= penalty
+            reasons.append(f"dist~{int(km)}km")
+    reason = ", ".join(reasons) if reasons else "tag match"
+    return score, reason
 
 LH_GROUP_CODES = ["LH", "LX", "OS", "SN", "EW", "4Y", "EN"]
 
@@ -366,18 +636,7 @@ def _parse_iso_date(val: str) -> Optional[date]:
         return datetime.strptime(val, "%Y-%m-%d").date()
     except Exception:
         return None
-
-
-
-
-
-
-
-
-
-
-
-
+    
 
 def _roll_forward_recent_past_date(date_str: Optional[str], *, threshold: int = 6) -> Optional[str]:
     """If the provided date is within the last `threshold` days, roll it forward by one week.
@@ -532,7 +791,26 @@ def _proxy_post(
                 status=status,
                 bytes=len(raw_bytes),
             )
-            return json.loads(text)
+            try:
+                parsed = json.loads(text)
+            except Exception:
+                parsed = {"raw": text}
+            # Optional S3 debug capture
+            if DEBUG_TOOL_IO and _S3_CLIENT and DEBUG_S3_BUCKET:
+                try:
+                    key = f"{DEBUG_S3_PREFIX}/{datetime.utcnow().strftime('%Y/%m/%d')}/{uuid.uuid4().hex}_post.json"
+                    body = json.dumps({
+                        "path": path,
+                        "url": url,
+                        "request_payload": payload,
+                        "status": status,
+                        "response": parsed,
+                    }, default=str).encode("utf-8")
+                    _S3_CLIENT.put_object(Bucket=DEBUG_S3_BUCKET, Key=key, Body=body, ContentType="application/json")
+                    _log("Tool I/O debug stored", key=key, bytes=len(body))
+                except Exception as exc:  # pragma: no cover
+                    _log("Tool I/O debug store failed", error=str(exc))
+            return parsed if isinstance(parsed, dict) else {"raw": text}
     except _urlerr.HTTPError as e:
         body = (e.read() or b"").decode("utf-8", errors="replace")
         _log(
@@ -569,7 +847,25 @@ def _proxy_get(
                 status=status,
                 bytes=len(raw_bytes),
             )
-            return json.loads(text)
+            try:
+                parsed = json.loads(text)
+            except Exception:
+                parsed = {"raw": text}
+            if DEBUG_TOOL_IO and _S3_CLIENT and DEBUG_S3_BUCKET:
+                try:
+                    key = f"{DEBUG_S3_PREFIX}/{datetime.utcnow().strftime('%Y/%m/%d')}/{uuid.uuid4().hex}_get.json"
+                    body = json.dumps({
+                        "path": path,
+                        "url": url,
+                        "request_params": params,
+                        "status": status,
+                        "response": parsed,
+                    }, default=str).encode("utf-8")
+                    _S3_CLIENT.put_object(Bucket=DEBUG_S3_BUCKET, Key=key, Body=body, ContentType="application/json")
+                    _log("Tool I/O debug stored", key=key, bytes=len(body))
+                except Exception as exc:  # pragma: no cover
+                    _log("Tool I/O debug store failed", error=str(exc))
+            return parsed if isinstance(parsed, dict) else {"raw": text}
     except _urlerr.HTTPError as e:
         body = (e.read() or b"").decode("utf-8", errors="replace")
         _log(
@@ -691,6 +987,92 @@ def amadeus_search_flight_offers(
         offer_count = None
     _log("Amadeus search completed", offers=offer_count)
     return response
+
+
+def _nearest_date_alternatives(
+    origin: str,
+    destination: str,
+    departure_date: str,
+    return_date: Optional[str],
+    adults: int,
+    cabin: str,
+    currency: Optional[str],
+    lh_group_only: bool,
+    max_results: int,
+    *,
+    nonstop: bool,
+    limit: int = 5,
+    timeout: float = 7.0,
+) -> List[Dict[str, Any]]:
+    """When no offers are found for the requested dates, probe nearby dates and
+    return up to `limit` alternative offers for the same route.
+
+    Offsets searched (in days): -1,+1,-2,+2,-3,+3,-7,+7,-14,+14
+    
+    We allow connections in this fallback to maximize chance of results.
+    """
+    try:
+        dep_dt = datetime.fromisoformat(str(departure_date))
+    except Exception:
+        return []
+    ret_dt: Optional[datetime] = None
+    if return_date:
+        try:
+            ret_dt = datetime.fromisoformat(str(return_date))
+        except Exception:
+            ret_dt = None
+
+    seen_dates: set[str] = set()
+    results: List[Dict[str, Any]] = []
+    offsets = [-1, 1, -2, 2, -3, 3, -7, 7, -14, 14, -21, 21, -28, 28]
+    for off in offsets:
+        if len(results) >= max(1, limit):
+            break
+        d2 = (dep_dt + timedelta(days=off)).date().isoformat()
+        if d2 in seen_dates:
+            continue
+        seen_dates.add(d2)
+        r2 = (ret_dt + timedelta(days=off)).date().isoformat() if ret_dt else None
+        try:
+            raw = amadeus_search_flight_offers(
+                origin,
+                destination,
+                d2,
+                r2,
+                adults,
+                cabin,
+                False,  # allow connections in fallback
+                currency,
+                lh_group_only,
+                max_results,
+                timeout,
+            )
+            offers = _summarize_offers(raw, currency)
+            if offers:
+                best = offers[0]
+                # brief form to keep payload small
+                brief = {
+                    "id": best.get("id"),
+                    "departureAirport": best.get("departureAirport"),
+                    "arrivalAirport": best.get("arrivalAirport"),
+                    "departureTime": best.get("departureTime"),
+                    "arrivalTime": best.get("arrivalTime"),
+                    "duration": best.get("duration"),
+                    "stops": best.get("stops"),
+                    "carriers": best.get("carriers"),
+                    "totalPrice": best.get("totalPrice"),
+                    "currency": best.get("currency") or currency,
+                }
+                results.append({
+                    "date": d2,
+                    **({"returnDate": r2} if r2 else {}),
+                    "offer": brief,
+                })
+        except Exception as exc:
+            _log("Nearest-date alternative probe failed", offset=off, error=str(exc))
+            continue
+    _log("Nearest-date alternatives prepared", count=len(results))
+    return results
 
 def iata_lookup_via_proxy(term: Optional[str]) -> Dict[str, Any]:
     if not term:
@@ -910,6 +1292,246 @@ def _filter_lh_group_offers(offers: List[Dict[str, Any]]) -> List[Dict[str, Any]
     return filtered
 
 
+def search_best_itineraries(
+    origin: str,
+    candidates: List[Dict[str, Any]],
+    month_range_text: Optional[str],
+    *,
+    currency: Optional[str] = None,
+    lh_group_only: bool = True,
+    max_per_destination: int = 2,
+    timeout: float = 6.0,
+) -> List[Dict[str, Any]]:
+    """Search several dates per destination and return Good-Better-Best.
+
+    - Samples up to 3 dates around mid-month (15th, nearest Saturday, +3 days).
+    - Ranks offers by price, duration, and stops to produce a varied top set.
+    - Adds lightweight microcopy labels.
+    """
+    (start_y, start_m), _end = _parse_month_range(month_range_text)
+
+    def _iso(y: int, m: int, d: int) -> str:
+        return f"{y:04d}-{m:02d}-{d:02d}"
+
+    def _month_len(y: int, m: int) -> int:
+        return calendar.monthrange(y, m)[1]
+
+    def _nearest_saturday(y: int, m: int, d: int) -> int:
+        from datetime import date as _d
+        target = _d(y, m, min(d, _month_len(y, m)))
+        # weekday: Monday=0..Sunday=6; Saturday=5
+        wd = target.weekday()
+        delta = (5 - wd) % 7
+        candidate = target.day + delta
+        if candidate > _month_len(y, m):
+            candidate = max(1, target.day - ((wd - 5) % 7))
+        return candidate
+
+    mid = 15
+    dates: List[str] = []
+    ml = _month_len(start_y, start_m)
+    # Weekend-biased ±14d elasticity around mid-month
+    cands_days = [
+        max(1, mid - 14),
+        max(1, mid - 7),
+        _nearest_saturday(start_y, start_m, max(1, mid - 7)),
+        max(1, mid - 3),
+        min(ml, mid),
+        _nearest_saturday(start_y, start_m, mid),
+        min(ml, mid + 3),
+        min(ml, mid + 7),
+        min(ml, _nearest_saturday(start_y, start_m, min(ml, mid + 7))),
+        min(ml, mid + 14),
+    ]
+    for day in cands_days:
+        d = _iso(start_y, start_m, min(ml, max(1, int(day))))
+        if d not in dates:
+            dates.append(d)
+
+    results: List[Dict[str, Any]] = []
+    from datetime import datetime
+    started = datetime.utcnow()
+    time_budget_s = float(os.getenv("AGGR_TIME_BUDGET_S", "75") or 75)
+    api_calls = 0
+    max_calls = int(os.getenv("AGGR_MAX_CALLS", "30") or 30)
+
+    def time_left() -> bool:
+        return (datetime.utcnow() - started).total_seconds() < time_budget_s
+
+    # Two-phase sampling: first pass on the main weekend date for each destination
+    date_indices = list(range(len(dates)))
+    for phase in (0, 1):
+        idxs = [0] if phase == 0 else date_indices[1:]
+        for di in idxs:
+            if not time_left():
+                break
+            for dest in candidates:
+                if not time_left() or api_calls >= max_calls:
+                    break
+                code = dest.get("code")
+                if not code:
+                    continue
+                dep_date = dates[di]
+                try:
+                    raw = amadeus_search_flight_offers(
+                        origin,
+                        code,
+                        dep_date,
+                        None,
+                        adults=1,
+                        cabin="ECONOMY",
+                        nonstop=False,
+                        currency=currency,
+                        lh_group_only=lh_group_only,
+                        max_results=10,
+                        timeout=timeout,
+                    )
+                    api_calls += 1
+                    offers = _summarize_offers(raw, currency)
+                    if offers:
+                        top = offers[: max(1, max_per_destination)]
+                        results.append({"destination": code, "date": dep_date, "offers": top})
+                except Exception as exc:
+                    _log(
+                        "Aggregator search failed for destination",
+                        destination=code,
+                        date=dep_date,
+                        error=str(exc),
+                    )
+                    continue
+            # Early exit if we already have enough pools
+            if sum(len(b.get("offers") or []) for b in results) >= 5:
+                break
+
+    # Build pool and destination availability counts
+    pool: List[Dict[str, Any]] = []
+    dest_hits: Dict[str, int] = {}
+    for block in results:
+        dest_code = block.get("destination")
+        date_used = block.get("date")
+        if dest_code:
+            dest_hits[dest_code] = dest_hits.get(dest_code, 0) + len(block.get("offers") or [])
+        for offer in block.get("offers") or []:
+            o = dict(offer)
+            o["destination"] = dest_code
+            o["date"] = date_used
+            pool.append(o)
+
+    def _price(o: Dict[str, Any]) -> float:
+        try:
+            return float(o.get("totalPrice") or 0)
+        except Exception:
+            return 0.0
+
+    def _duration_minutes(dur: Optional[str]) -> Optional[int]:
+        if not isinstance(dur, str) or not dur.startswith("PT"):
+            return None
+        # Parse very simple PT#H#M or PT#H
+        h = 0
+        m = 0
+        text = dur[2:]
+        try:
+            if "H" in text and "M" in text:
+                h_part, m_part = text.split("H", 1)
+                h = int(h_part or 0)
+                m = int(m_part.replace("M", "") or 0)
+            elif "H" in text:
+                h = int(text.replace("H", "") or 0)
+            elif "M" in text:
+                m = int(text.replace("M", "") or 0)
+            else:
+                return None
+            return h * 60 + m
+        except Exception:
+            return None
+
+    def _stops(o: Dict[str, Any]) -> int:
+        v = o.get("stops")
+        try:
+            return int(v)
+        except Exception:
+            return 0
+
+    # Rankers (availability-first bias and gentle nonstop boost)
+    by_price = sorted(
+        pool,
+        key=lambda o: (
+            _price(o),
+            _stops(o),
+            -(dest_hits.get(str(o.get("destination") or ""), 0)),
+        ),
+    )
+    with_dur = [o for o in pool if _duration_minutes(o.get("duration")) is not None]
+    by_dur = sorted(with_dur, key=lambda o: _duration_minutes(o.get("duration")) or 10**9)
+    by_flex = sorted(pool, key=lambda o: (_stops(o), _price(o), -(dest_hits.get(str(o.get("destination") or ""), 0))))
+
+    # Composite "best" rank: price + stops*50 + duration*0.1 - dest_hits*10
+    def _rank(o: Dict[str, Any]) -> float:
+        pr = _price(o)
+        st = _stops(o)
+        dm = _duration_minutes(o.get("duration")) or 0
+        avail = dest_hits.get(str(o.get("destination") or ""), 0)
+        return pr + st * 50 + dm * 0.1 - avail * 10
+
+    by_best = sorted(pool, key=_rank)
+
+    # Select Good-Better-Best ensuring uniqueness
+    picked: List[Dict[str, Any]] = []
+    seen = set()
+
+    def _key(o: Dict[str, Any]) -> str:
+        return f"{o.get('destination')}|{o.get('id') or o.get('departureTime')}|{o.get('date')}"
+
+    def _pick_from(lst: List[Dict[str, Any]]):
+        for o in lst:
+            k = _key(o)
+            if k not in seen:
+                seen.add(k)
+                picked.append(o)
+                return
+
+    _pick_from(by_best)
+    _pick_from(by_dur)
+    _pick_from(by_flex)
+    # Fill up to 5
+    for o in by_best:
+        if len(picked) >= 5:
+            break
+        if _key(o) not in seen:
+            seen.add(_key(o))
+            picked.append(o)
+
+    # Add labels and microcopy
+    label_map = ["Best Value", "Shortest Travel Time", "Flex"]
+    options: List[Dict[str, Any]] = []
+    # Quick lookup for tags by destination
+    tag_lookup = {str(d.get("code")): set(str(t).lower() for t in (d.get("tags") or [])) for d in candidates}
+
+    def _pitch(tags: set[str]) -> str:
+        if "beach" in tags or "warm" in tags:
+            return "Great value for a sunny beach break."
+        if "winter_sports" in tags:
+            return "Maximize slope time with sensible travel."
+        if "city_break" in tags:
+            return "Perfect for a quick city escape."
+        return "Solid choice based on your preferences."
+
+    for idx, o in enumerate(picked):
+        code = str(o.get("destination") or "")
+        tags = tag_lookup.get(code, set())
+        label = label_map[idx] if idx < len(label_map) else "Also Noteworthy"
+        options.append({
+            "label": label,
+            "pitch": _pitch(tags),
+            "destination": code,
+            "date": o.get("date"),
+            "offer": o,
+            "stops": _stops(o),
+        })
+
+    return options
+
+
 # ------------------------ Response wrappers ------------------------
 
 
@@ -922,7 +1544,13 @@ def _wrap_openapi(
 
     if logger is None:
         logger = _get_logger()
-    payload = _attach_logs(body_obj, logger)
+    # Avoid bloating action-group responses unless explicitly debugging
+    payload = body_obj
+    if DEBUG_TOOL_IO:
+        try:
+            payload = _attach_logs(body_obj, logger)
+        except Exception:
+            payload = body_obj
     response_body = {"application/json": {"body": json.dumps(payload)}}
     action_response = {
         "actionGroup": event.get("actionGroup"),
@@ -953,7 +1581,26 @@ def _wrap_function(
         "status": status,
         "data": body_obj,
     }
-    response_payload = _attach_logs(response_payload, logger)
+    # Avoid large responses causing agent runtime failures: omit verbose logs for heavy functions
+    func_name = str(event.get("function") or "").strip().lower()
+    if func_name not in {"recommend_destinations"}:
+        response_payload = _attach_logs(response_payload, logger)
+    # Surface a plain text body so the agent renders lists immediately
+    text_body: str = ""
+    try:
+        # Prefer a direct 'message' field provided by the handler body
+        if isinstance(body_obj, dict):
+            msg = body_obj.get("message")
+            if isinstance(msg, str) and msg.strip():
+                text_body = msg.strip()
+        if not text_body:
+            # Fallback to a compact JSON string
+            text_body = json.dumps(response_payload)
+    except Exception:
+        try:
+            text_body = json.dumps(response_payload)
+        except Exception:
+            text_body = str(response_payload)
     _log("Function response wrapped", status=status, function=event.get("function"))
     return {
         "messageVersion": "1.0",
@@ -962,7 +1609,8 @@ def _wrap_function(
             "function": event.get("function", "search_flights"),
             "functionResponse": {
                 "responseBody": {
-                    "TEXT": {"body": json.dumps(response_payload)}
+                    # For function calls, Agents expect TEXT only
+                    "TEXT": {"body": text_body},
                 }
             },
         },
@@ -1150,7 +1798,39 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             max_results,
         )
         offers = _summarize_offers(raw, currency)
-        _log("OpenAPI flight search success", origin=origin, destination=destination, offers=len(offers))
+        # Fallback: if nonstop requested and none found, retry with connections allowed.
+        if nonstop and not offers:
+            _log("OpenAPI: No nonstop offers; retrying with connections allowed")
+            raw = amadeus_search_flight_offers(
+                origin,
+                destination,
+                departure_date,
+                return_date,
+                adults,
+                cabin,
+                False,
+                currency,
+                lh_group_only,
+                max_results,
+            )
+            offers = _summarize_offers(raw, currency)
+        # If still none, probe nearest alternative dates and include up to 5.
+        alternatives: List[Dict[str, Any]] = []
+        if not offers:
+            alternatives = _nearest_date_alternatives(
+                origin,
+                destination,
+                departure_date,
+                return_date,
+                adults,
+                cabin,
+                currency,
+                lh_group_only,
+                max_results,
+                nonstop=nonstop,
+                limit=5,
+            )
+        _log("OpenAPI flight search success", origin=origin, destination=destination, offers=len(offers), alternatives=len(alternatives))
         # If we auto-filled origin from context, cache it into session and surface a brief note.
         note = None
         if filled_from_context and origin:
@@ -1159,6 +1839,190 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             except Exception:
                 pass
             note = f"Using your nearest airport as departure location ({origin}). Say 'change departure location' to update it."
+        # Build textual summary for offers so the agent surfaces concrete details
+        offer_text_block = None
+        if offers:
+            try:
+                def _hhmm(ts: Optional[str]) -> str:
+                    try:
+                        if not ts:
+                            return "?"
+                        t = str(ts).replace("T", " ").replace("Z", "").split(" ")[1]
+                        return t[:5]
+                    except Exception:
+                        return "?"
+                # Partition into direct and connecting; enforce max 10 total
+                direct = [o for o in offers if (o.get("stops") == 0)]
+                conn = [o for o in offers if (o.get("stops") and o.get("stops") > 0) or o.get("stops") is None]
+                max_total = min(10, RECOMMENDER_MAX_OPTIONS)
+                take_direct = min(len(direct), max_total)
+                take_conn = min(len(conn), max_total - take_direct)
+                lines2: List[str] = []
+                def _fmt_price(val: Any, curr: Optional[str]) -> str:
+                    try:
+                        return f"{float(val):.0f} {curr or ''}".strip() if val is not None else "?"
+                    except Exception:
+                        return f"{val} {curr or ''}".strip()
+                if take_direct:
+                    lines2.append("Direct Flights")
+                    for idx, off in enumerate(direct[:take_direct], start=1):
+                        dep2 = off.get("departureAirport") or "?"
+                        arr2 = off.get("arrivalAirport") or "?"
+                        dt2 = _hhmm(off.get("departureTime"))
+                        dur2 = off.get("duration") or "?"
+                        price2 = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
+                        segs2 = off.get("segments")
+                        seg02 = segs2[0] if isinstance(segs2, list) and segs2 else None
+                        c02 = (seg02.get("carrier") or seg02.get("marketingCarrier") or seg02.get("operatingCarrier")) if isinstance(seg02, dict) else None
+                        fn02 = (seg02.get("flightNumber") if isinstance(seg02, dict) else None) or ""
+                        c02fn = f"{c02}{fn02}".strip() if (c02 or fn02) else None
+                        parts2 = [f"{idx}) {dep2} {dt2}", "->", f"{arr2}", "|", departure_date, "|", "nonstop", "|", dur2]
+                        if c02fn:
+                            parts2.extend(["|", c02fn])
+                        parts2.extend(["|", f"**{price2}**"])
+                        lines2.append(" ".join(str(p) for p in parts2 if str(p)))
+                        if isinstance(segs2, list) and segs2:
+                            seg_limit = len(segs2) if return_date else 1
+                            for s in segs2[:seg_limit]:
+                                try:
+                                    sc = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
+                                    sfn = s.get("flightNumber") or ""
+                                    sfrom = s.get("from") or "?"
+                                    sdt = _hhmm(s.get("departureTime") or s.get("depTime"))
+                                    sto = s.get("to") or "?"
+                                    sat = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
+                                    lines2.append(f"    - THEN {sc}{sfn} {sfrom} {sdt} -> {sto} {sat}")
+                                except Exception:
+                                    continue
+                if take_conn:
+                    if take_direct:
+                        lines2.append("")
+                    lines2.append("Connecting Flights")
+                    for idx, off in enumerate(conn[:take_conn], start=1):
+                        dep2 = off.get("departureAirport") or "?"
+                        arr2 = off.get("arrivalAirport") or "?"
+                        dt2 = _hhmm(off.get("departureTime"))
+                        dur2 = off.get("duration") or "?"
+                        price2 = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
+                        stops2 = off.get("stops")
+                        stops_txt2 = "nonstop" if stops2 == 0 else (f"{stops2} stop" if stops2 == 1 else f"{stops2} stops")
+                        segs2 = off.get("segments")
+                        seg02 = segs2[0] if isinstance(segs2, list) and segs2 else None
+                        c02 = (seg02.get("carrier") or seg02.get("marketingCarrier") or seg02.get("operatingCarrier")) if isinstance(seg02, dict) else None
+                        fn02 = (seg02.get("flightNumber") if isinstance(seg02, dict) else None) or ""
+                        c02fn = f"{c02}{fn02}".strip() if (c02 or fn02) else None
+                        parts2 = [f"{idx}) {dep2} {dt2}", "->", f"{arr2}", "|", departure_date, "|", stops_txt2, "|", dur2]
+                        if c02fn:
+                            parts2.extend(["|", c02fn])
+                        parts2.extend(["|", f"**{price2}**"])
+                        lines2.append(" ".join(str(p) for p in parts2 if str(p)))
+                        if isinstance(segs2, list) and segs2:
+                            seg_limit = len(segs2) if return_date else 3
+                            for s in segs2[:seg_limit]:
+                                try:
+                                    sc = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
+                                    sfn = s.get("flightNumber") or ""
+                                    sfrom = s.get("from") or "?"
+                                    sdt = _hhmm(s.get("departureTime") or s.get("depTime"))
+                                    sto = s.get("to") or "?"
+                                    sat = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
+                                    lines2.append(f"    - THEN {sc}{sfn} {sfrom} {sdt} -> {sto} {sat}")
+                                except Exception:
+                                    continue
+                offer_text_block = "\n".join(lines2)
+            except Exception:
+                offer_text_block = None
+        # Build textual alternatives list if applicable (partitioned, compact, PDF-compatible)
+        def _alt_sections(alts: List[Dict[str, Any]]) -> List[str]:
+            lines: List[str] = ["No offers on requested dates. Nearby alternatives:"]
+            direct = [a for a in alts if ((a.get("offer") or {}).get("stops") == 0)]
+            conn = [a for a in alts if ((a.get("offer") or {}).get("stops") or 0) > 0]
+            max_total = min(10, RECOMMENDER_MAX_OPTIONS)
+            take_direct = min(len(direct), max_total)
+            take_conn = min(len(conn), max_total - take_direct)
+            def _fmt_price(val: Any, curr: Optional[str]) -> str:
+                try:
+                    return f"{float(val):.0f} {curr or ''}".strip() if val is not None else "?"
+                except Exception:
+                    return f"{val} {curr or ''}".strip()
+            def _hhmm2(ts: Optional[str]) -> str:
+                try:
+                    if not ts:
+                        return "?"
+                    t = str(ts).replace("T", " ").replace("Z", "").split(" ")[1]
+                    return t[:5]
+                except Exception:
+                    return "?"
+            if take_direct:
+                lines.append("Direct Alternatives")
+                for idx, alt in enumerate(direct[:take_direct], start=1):
+                    off = alt.get("offer") or {}
+                    dep_ap = off.get("departureAirport") or "?"
+                    arr_ap = off.get("arrivalAirport") or "?"
+                    dep_tm = _hhmm2(off.get("departureTime"))
+                    dur = off.get("duration") or "?"
+                    price_txt = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
+                    segs = off.get("segments")
+                    seg0 = segs[0] if isinstance(segs, list) and segs else None
+                    c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                    fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                    c0fn = f"{c0}{fn0}".strip() if (c0 or fn0) else None
+                    parts = [f"{idx}) {dep_ap} {dep_tm}", "->", f"{arr_ap}", "|", alt.get("date") or "?", "|", "nonstop", "|", dur]
+                    if c0fn:
+                        parts.extend(["|", c0fn])
+                    parts.extend(["|", f"**{price_txt}**"])
+                    lines.append(" ".join(str(p) for p in parts if str(p)))
+                    carriers2 = off.get("carriers") or []
+                    carriers_txt2 = ",".join(carriers2) if isinstance(carriers2, list) else str(carriers2 or "")
+                    if carriers_txt2:
+                        lines.append(f"    - Carriers: {carriers_txt2}")
+            if take_conn:
+                if take_direct:
+                    lines.append("")
+                lines.append("Connecting Alternatives")
+                for idx, alt in enumerate(conn[:take_conn], start=1):
+                    off = alt.get("offer") or {}
+                    dep_ap = off.get("departureAirport") or "?"
+                    arr_ap = off.get("arrivalAirport") or "?"
+                    dep_tm = _hhmm2(off.get("departureTime"))
+                    dur = off.get("duration") or "?"
+                    price_txt = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
+                    stops = off.get("stops")
+                    stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                    segs = off.get("segments")
+                    seg0 = segs[0] if isinstance(segs, list) and segs else None
+                    c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                    fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                    c0fn = f"{c0}{fn0}".strip() if (c0 or fn0) else None
+                    parts = [f"{idx}) {dep_ap} {dep_tm}", "->", f"{arr_ap}", "|", alt.get("date") or "?", "|", stops_txt, "|", dur]
+                    if c0fn:
+                        parts.extend(["|", c0fn])
+                    parts.extend(["|", f"**{price_txt}**"])
+                    lines.append(" ".join(str(p) for p in parts if str(p)))
+                    carriers2 = off.get("carriers") or []
+                    carriers_txt2 = ",".join(carriers2) if isinstance(carriers2, list) else str(carriers2 or "")
+                    if carriers_txt2:
+                        lines.append(f"    - Carriers: {carriers_txt2}")
+            return lines
+        alt_text_block = None
+        if not offers and alternatives:
+            # Persist alternatives in session for later confirmation
+            try:
+                sess = event.setdefault("sessionAttributes", {})
+                sess["last_alternatives"] = [
+                    {
+                        "date": a.get("date"),
+                        "price": (a.get("offer") or {}).get("totalPrice"),
+                        "currency": (a.get("offer") or {}).get("currency") or currency,
+                        "stops": (a.get("offer") or {}).get("stops"),
+                        "duration": (a.get("offer") or {}).get("duration"),
+                    }
+                    for a in alternatives[: max(1, min(10, RECOMMENDER_MAX_OPTIONS))]
+                ]
+            except Exception:
+                pass
+            # Compact, sectioned alternatives for display
+            alt_text_block = "\n".join(_alt_sections(alternatives))
         return _wrap_openapi(
             event,
             200,
@@ -1178,6 +2042,10 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                 },
                 **({"note": note, "message": note} if note else {}),
                 "offers": offers,
+                **({
+                    "message": alt_text_block,
+                    "alternatives": alternatives,
+                } if alt_text_block else {}),
                 "provider": "Amadeus Flight Offers Search v2",
             },
         )
@@ -1219,6 +2087,445 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
         except Exception as e:
             _log("Function IATA lookup error", term=term, error=str(e))
             return _wrap_function(event, 502, {"error": str(e)[:1200]})
+
+    if func_name == "recommend_destinations":
+        _log("Handling function event", function=func_name)
+        params = event.get("parameters", [])
+        origin_code = _get_param(params, "originCode")
+        month_text = _get_param(params, "month")
+        month_range_text = _get_param(params, "monthRange") or month_text
+        theme_raw = _get_param(params, "themeTags")
+        min_avg_high = _get_param(params, "minAvgHighC")
+        max_candidates = _to_int(_get_param(params, "maxCandidates", 8), 8)
+        # Default to True so suggestions always include flight options.
+        with_itins = _to_bool(_get_param(params, "withItineraries", True), True)
+        currency = _get_param(params, "currency") or (os.getenv("DEFAULT_CURRENCY") or "EUR")
+
+        # Accept JSON array or comma-separated string for themeTags
+        theme_tags: List[str] = []
+        if isinstance(theme_raw, list):
+            theme_tags = [str(x).strip().lower() for x in theme_raw if str(x).strip()]
+        elif isinstance(theme_raw, str):
+            txt = theme_raw.strip()
+            loaded = None
+            try:
+                loaded = json.loads(txt)
+            except Exception:
+                loaded = None
+            if isinstance(loaded, list):
+                theme_tags = [str(x).strip().lower() for x in loaded if str(x).strip()]
+            else:
+                theme_tags = [s.strip().lower() for s in txt.split(",") if s.strip()]
+        # Canonicalize/expand synonyms so 'skiing' etc. map to 'winter_sports'
+        theme_tags = _canonicalize_theme_tags(theme_tags, month_text)
+
+        # Fallback to session default origin if not provided
+        if not origin_code:
+            origin_code = (event.get("sessionAttributes") or {}).get("default_origin")
+
+        # Resolve target month for scoring
+        (year, target_month), _ = _parse_month_range(month_range_text)
+        theme_set = set(theme_tags)
+        catalog = _load_catalog()
+        if not catalog:
+            _log("Destination catalog is empty")
+            return _wrap_function(
+                event,
+                200,
+                {"message": "Destination catalog not available yet. Please try again later."},
+            )
+        # Filter by theme if provided
+        filtered = []
+        for dest in catalog:
+            tags = set(str(t).lower() for t in dest.get("tags", []))
+            if theme_set and not (theme_set & tags):
+                continue
+            if min_avg_high is not None:
+                try:
+                    min_val = float(min_avg_high)
+                except Exception:
+                    min_val = None
+                if min_val is not None:
+                    avg = (dest.get("avgHighCByMonth") or {}).get(str(target_month))
+                    if isinstance(avg, (int, float)) and float(avg) < min_val:
+                        continue
+            filtered.append(dest)
+        # If user intent was skiing but filter ended empty, relax to all winter_sports
+        if not filtered and ("winter_sports" in theme_set or any(t in theme_set for t in ("ski", "skiing"))):
+            filtered = [d for d in catalog if "winter_sports" in set(str(t).lower() for t in d.get("tags", []))]
+        scored: List[Tuple[float, Dict[str, Any], str]] = []
+        for d in filtered:
+            s, reason = _score_destination(d, theme_set, target_month, origin_code)
+            scored.append((s, d, reason))
+        scored.sort(key=lambda t: t[0], reverse=True)
+        top = scored[: max(1, max_candidates)]
+        candidates = [
+            {
+                "code": d.get("code"),
+                "city": d.get("city"),
+                "country": d.get("country"),
+                "score": round(float(s), 3),
+                "reason": r,
+                "tags": d.get("tags") or [],
+            }
+            for (s, d, r) in top
+        ]
+        payload: Dict[str, Any] = {
+            "generatedAt": _now_iso(),
+            "query": {
+                "originCode": origin_code,
+                "month": month_text,
+                "monthRange": month_range_text,
+                "themeTags": theme_tags,
+                "minAvgHighC": min_avg_high,
+                "maxCandidates": max_candidates,
+            },
+            "candidates": candidates,
+        }
+        # Optional: try aggregator if requested and origin is present
+        if with_itins and origin_code and candidates:
+            try:
+                options = search_best_itineraries(
+                    origin_code,
+                    [d for (_, d, _) in top],
+                    month_range_text,
+                    currency=currency,
+                    lh_group_only=True,
+                )
+                # Partition options into direct and connecting; enforce max 10 total
+                direct_opts = [o for o in options if (o.get("stops") == 0)]
+                conn_opts = [o for o in options if (o.get("stops") and o.get("stops") > 0) or o.get("stops") is None]
+                max_total = min(10, RECOMMENDER_MAX_OPTIONS)
+                take_direct = min(len(direct_opts), max_total)
+                take_conn = min(len(conn_opts), max_total - take_direct)
+                payload["options"] = (direct_opts[:take_direct] + conn_opts[:take_conn])
+                # Build a concise, sectioned message so the agent surfaces concrete options.
+                def _fmt_price(val: Any, curr: Optional[str]) -> str:
+                    try:
+                        return f"{float(val):.0f} {curr or ''}".strip()
+                    except Exception:
+                        return str(val)
+                lines: List[str] = []
+                def _hhmm(ts: Optional[str]) -> str:
+                    try:
+                        if not ts:
+                            return "?"
+                        # Accept 'YYYY-MM-DDTHH:MM' or 'YYYY-MM-DD HH:MM'
+                        t = ts.replace("T", " ").replace("Z", "").split(" ")[1]
+                        return t[:5]
+                    except Exception:
+                        return "?"
+                if take_direct:
+                    lines.append("Direct Flights")
+                    for idx, opt in enumerate(direct_opts[:take_direct], start=1):
+                        offer = opt.get("offer") or {}
+                        price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
+                        dep = offer.get("departureAirport") or "?"
+                        arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
+                        dur = offer.get("duration") or "?"
+                        label = opt.get("label") or "Option"
+                        carriers = offer.get("carriers") or []
+                        carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
+                        header = f"{idx}) {label} - {dep} -> {arr} | {opt.get('date')} | nonstop | {dur} | **{price}**"
+                        lines.append(header)
+                        if carriers_txt:
+                            lines.append(f"    - Carriers: {carriers_txt}")
+                        if RECOMMENDER_VERBOSE and isinstance(offer.get("segments"), list) and offer["segments"]:
+                            for s in offer["segments"][: (len(offer["segments"]) if True else 1)]:
+                                c = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
+                                fn = s.get("flightNumber") or ""
+                                s_dep = s.get("from") or "?"
+                                s_arr = s.get("to") or "?"
+                                s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
+                                s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
+                                lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} -> {s_arr} {s_at}")
+                if take_conn:
+                    lines.append("")
+                    lines.append("Connecting Flights")
+                    for idx, opt in enumerate(conn_opts[:take_conn], start=1):
+                        offer = opt.get("offer") or {}
+                        price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
+                        dep = offer.get("departureAirport") or "?"
+                        arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
+                        dur = offer.get("duration") or "?"
+                        label = opt.get("label") or "Option"
+                        stops = opt.get("stops")
+                        stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                        carriers = offer.get("carriers") or []
+                        carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
+                        # Header line with bold price
+                        header = f"{idx}) {label} - {dep} -> {arr} | {opt.get('date')} | {stops_txt} | {dur} | **{price}**"
+                        # Rebuild header to include first segment carrier/flight and departure HH:MM when available
+                        try:
+                            segs = offer.get("segments")
+                            seg0 = segs[0] if isinstance(segs, list) and segs else None
+                            c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                            fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                            dt0 = _hhmm((seg0.get("departureTime") if isinstance(seg0, dict) else None) or offer.get("departureTime") or "")
+                            c0fn = f"{c0}{fn0}".strip() if c0 or fn0 else (carriers[0] if isinstance(carriers, list) and carriers else "")
+                            header_parts = [
+                                f"{idx}) {label} - {dep} {dt0}".strip(),
+                                "->",
+                                f"{arr}",
+                                "|",
+                                f"{opt.get('date')}",
+                                "|",
+                                f"{stops_txt}",
+                                "|",
+                                f"{dur}",
+                            ]
+                            if c0fn:
+                                header_parts.extend(["|", c0fn])
+                            header_parts.extend(["|", f"**{price}**"])
+                            header = " ".join(str(p) for p in header_parts if str(p))
+                        except Exception:
+                            pass
+                        lines.append(header)
+                        if carriers_txt:
+                            lines.append(f"    - Carriers: {carriers_txt}")
+                        if RECOMMENDER_VERBOSE and isinstance(offer.get("segments"), list) and offer["segments"]:
+                            # Show up to 3 segments as THEN lines
+                            for s in offer["segments"][:3]:
+                                c = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
+                                fn = s.get("flightNumber") or ""
+                                s_dep = s.get("from") or "?"
+                                s_arr = s.get("to") or "?"
+                                s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
+                                s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
+                                lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} -> {s_arr} {s_at}")
+                    offer = opt.get("offer") or {}
+                    price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
+                    dep = offer.get("departureAirport") or "?"
+                    arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
+                    dep_time = offer.get("departureTime") or "?"
+                    dur = offer.get("duration") or "?"
+                    label = opt.get("label") or "Option"
+                    pitch = opt.get("pitch") or ""
+                    stops = opt.get("stops")
+                    stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                    carriers = offer.get("carriers") or []
+                    carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
+                    # Header line with bold price
+                    header = f"{idx}) {label} - {dep} → {arr} • {opt.get('date')} • {stops_txt} • {dur} • **{price}**"
+                    # Rebuild header to include first carrier/flight and departure HH:MM when available
+                    try:
+                        segs = offer.get("segments")
+                        seg0 = segs[0] if isinstance(segs, list) and segs else None
+                        c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                        fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                        # dep_time may be full ISO; convert to HH:MM
+                        dt0 = _hhmm((seg0.get("departureTime") if isinstance(seg0, dict) else None) or dep_time)
+                        c0fn = f"{c0}{fn0}".strip() if c0 or fn0 else (carriers[0] if isinstance(carriers, list) and carriers else "")
+                        header_parts = [
+                            f"{idx}) {label} - {dep} {dt0}".strip(),
+                            "->",
+                            f"{arr}",
+                            "|",
+                            f"{opt.get('date')}",
+                            "|",
+                            f"{stops_txt}",
+                            "|",
+                            f"{dur}",
+                        ]
+                        if c0fn:
+                            header_parts.extend(["|", c0fn])
+                        header_parts.extend(["|", f"**{price}**"])
+                        header = " ".join(str(p) for p in header_parts if str(p))
+                    except Exception:
+                        pass
+                    lines.append(header)
+                    if carriers_txt:
+                        lines.append(f"    - Carriers: {carriers_txt}")
+                    if RECOMMENDER_VERBOSE and isinstance(offer.get("segments"), list) and offer["segments"]:
+                        # Show up to 3 segments as THEN lines
+                        for s in offer["segments"][:3]:
+                            c = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
+                            fn = s.get("flightNumber") or ""
+                            s_dep = s.get("from") or "?"
+                            s_arr = s.get("to") or "?"
+                            s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
+                            s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
+                            lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} → {s_arr} {s_at}")
+                    if pitch:
+                        lines.append(f"    - {pitch}")
+                if lines:
+                    closing = "Shall I hold Option 1 for 15 minutes or adjust dates?"
+                    m = "\n".join(lines + ["", closing])
+                    # Sanitize any non-ASCII separators that may slip in due to encoding
+                    m = m.replace("\u001a", "->").replace("\u0007", " | ")
+                    # Convert any HTML breaks to newlines and strip stray tags so the agent displays clean text
+                    try:
+                        m = re.sub(r"<br\s*/?>", "\n", m, flags=re.IGNORECASE)
+                        m = re.sub(r"<[^>]+>", "", m)
+                    except Exception:
+                        pass
+                    payload["message"] = m
+                    # Compact the message if it exceeds the configured byte threshold
+                    try:
+                        _msg_bytes = len(payload["message"].encode("utf-8")) if isinstance(payload.get("message"), str) else 0
+                    except Exception:
+                        _msg_bytes = len(str(payload.get("message", "")))
+                    if _msg_bytes > RECOMMENDER_MAX_TEXT_BYTES:
+                        compact_lines: List[str] = []
+                        _max_opts = min(RECOMMENDER_MAX_OPTIONS, 2)
+                        for _idx2, _opt2 in enumerate(options[:_max_opts], start=1):
+                            _offer2 = _opt2.get("offer") or {}
+                            _price2 = _fmt_price(_offer2.get("totalPrice"), _offer2.get("currency") or currency)
+                            _dep2 = _offer2.get("departureAirport") or "?"
+                            _arr2 = _offer2.get("arrivalAirport") or (_opt2.get("destination") or "?")
+                            _dur2 = _offer2.get("duration") or "?"
+                            _stops2 = _opt2.get("stops")
+                            _stops_txt2 = "nonstop" if _stops2 == 0 else (f"{_stops2} stop" if _stops2 == 1 else f"{_stops2} stops")
+                            # Add first segment carrier/flight and departure HH:MM when available in compact header
+                            _segs2 = _offer2.get("segments")
+                            _seg0 = _segs2[0] if isinstance(_segs2, list) and _segs2 else None
+                            _c0 = (_seg0.get("carrier") or _seg0.get("marketingCarrier") or _seg0.get("operatingCarrier")) if isinstance(_seg0, dict) else None
+                            _fn0 = (_seg0.get("flightNumber") if isinstance(_seg0, dict) else None) or ""
+                            _dt0 = _hhmm((_seg0.get("departureTime") if isinstance(_seg0, dict) else None) or _offer2.get("departureTime") or "")
+                            _c0fn = f"{_c0}{_fn0}".strip() if (_c0 or _fn0) else ""
+                            _pieces = [
+                                f"{_idx2}) {_opt2.get('label') or 'Option'} - {_dep2} {_dt0}".strip(),
+                                "->",
+                                f"{_arr2}",
+                                "|",
+                                f"{_opt2.get('date')}",
+                                "|",
+                                f"{_stops_txt2}",
+                                "|",
+                                f"{_dur2}",
+                            ]
+                            if _c0fn:
+                                _pieces.extend(["|", _c0fn])
+                            _pieces.extend(["|", f"**{_price2}**"])
+                            _header2 = " ".join(str(x) for x in _pieces if str(x))
+                            compact_lines.append(_header2)
+                            _carriers2 = _offer2.get("carriers") or []
+                            _carriers_txt2 = ",".join(_carriers2) if isinstance(_carriers2, list) else str(_carriers2 or "")
+                            if _carriers_txt2:
+                                compact_lines.append(f"    - Carriers: {_carriers_txt2}")
+                        _compact_msg = "\n".join(compact_lines + ["", closing])
+                        payload["message"] = _compact_msg
+                        _log(
+                            "Recommender message compacted",
+                            originalBytes=_msg_bytes,
+                            threshold=RECOMMENDER_MAX_TEXT_BYTES,
+                            maxOptions=RECOMMENDER_MAX_OPTIONS,
+                            verbose=RECOMMENDER_VERBOSE,
+                        )
+                    # Cache a minimal selection map in session for smoother follow-ups.
+                    try:
+                        sess = event.setdefault("sessionAttributes", {})
+                        sess["last_recommendation"] = {
+                            "origin": origin_code,
+                            "month": month_text or month_range_text,
+                            "options": [
+                                {
+                                    "label": o.get("label"),
+                                    "destination": o.get("destination"),
+                                    "date": o.get("date"),
+                                    "id": (o.get("offer") or {}).get("id"),
+                                    "price": (o.get("offer") or {}).get("totalPrice"),
+                                    "currency": (o.get("offer") or {}).get("currency") or currency,
+                                }
+                                for o in options[:3]
+                            ],
+                        }
+                    except Exception:
+                        pass
+                # Return minimal options only (avoid large payloads)
+                def _brief(o: Dict[str, Any]) -> Dict[str, Any]:
+                    off = o.get("offer") or {}
+                    first_seg = (off.get("segments") or [None])[0]
+                    dep_time0 = None
+                    carrier0 = None
+                    flight_no0 = None
+                    if isinstance(first_seg, dict):
+                        dep_time0 = first_seg.get("departureTime")
+                        carrier0 = first_seg.get("carrier") or first_seg.get("marketingCarrier") or first_seg.get("operatingCarrier")
+                        flight_no0 = first_seg.get("flightNumber")
+                    def _hhmm2(ts: Optional[str]) -> str:
+                        try:
+                            if not ts:
+                                return "?"
+                            t = str(ts).replace("T", " ").replace("Z", "").split(" ")[1]
+                            return t[:5]
+                        except Exception:
+                            return "?"
+                    c0fn2 = f"{carrier0 or ''}{flight_no0 or ''}".strip()
+                    dep_ap = off.get("departureAirport")
+                    arr_ap = off.get("arrivalAirport")
+                    dur0 = off.get("duration")
+                    price0 = off.get("totalPrice")
+                    curr0 = off.get("currency") or currency
+                    try:
+                        price_txt0 = f"{float(price0):.0f} {curr0}".strip() if price0 is not None else "?"
+                    except Exception:
+                        price_txt0 = f"{price0} {curr0}".strip()
+                    preview = " ".join(
+                        [
+                            f"{dep_ap or '?'} {_hhmm2(dep_time0 or off.get('departureTime'))}",
+                            "->",
+                            f"{arr_ap or '?'}",
+                            "|",
+                            f"{off.get('duration') or '?'}",
+                            "|",
+                            c0fn2 or "",
+                            "|",
+                            f"**{price_txt0}**",
+                        ]
+                    ).strip()
+                    return {
+                        "label": o.get("label"),
+                        "pitch": o.get("pitch"),
+                        "destination": o.get("destination"),
+                        "date": o.get("date"),
+                        "price": off.get("totalPrice"),
+                        "currency": off.get("currency") or currency,
+                        "duration": off.get("duration"),
+                        "stops": o.get("stops"),
+                        "carriers": off.get("carriers"),
+                        "departureAirport": off.get("departureAirport"),
+                        "arrivalAirport": off.get("arrivalAirport"),
+                        "departureTime": dep_time0 or off.get("departureTime"),
+                        "firstCarrier": carrier0,
+                        "firstFlightNumber": flight_no0,
+                        "previewText": preview,
+                        "id": off.get("id"),
+                    }
+                payload["options"] = [ _brief(o) for o in options[: max(1, RECOMMENDER_MAX_OPTIONS) ] ]
+            except Exception as exc:
+                _log("Itinerary aggregator failed", error=str(exc))
+        # If we still don't have a message (no options), provide a short, clean candidate list
+        if not payload.get("message"):
+            header = "Inspiration — top matches (ASCII)"
+            msg_lines = [header]
+            for idx, c in enumerate(candidates[:5], start=1):
+                city = c.get("city") or "?"
+                country = c.get("country") or "?"
+                code = c.get("code") or "?"
+                reason = (c.get("reason") or "").replace("°", " ").replace("\u00B0", " ")
+                msg_lines.append(f"{idx}) {city}, {country} ({code}) - {reason}")
+            payload["message"] = "\n".join(msg_lines)
+        # Log payload size to help diagnose occasional agent runtime size limits
+        try:
+            _resp_bytes = len(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+        except Exception:
+            _resp_bytes = None
+        try:
+            _msg_bytes2 = len((payload.get("message") or "").encode("utf-8")) if isinstance(payload.get("message"), str) else None
+        except Exception:
+            _msg_bytes2 = None
+        _log(
+            "Destination recommendations prepared",
+            origin=origin_code,
+            month=month_text,
+            monthRange=month_range_text,
+            themeTags=theme_tags,
+            candidates=len(candidates),
+            messageBytes=_msg_bytes2,
+            responseBytes=_resp_bytes,
+        )
+        return _wrap_function(event, 200, payload)
 
     if func_name == "datetime_interpret":
         _log(
@@ -1324,7 +2631,163 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             max_results,
         )
         offers = _summarize_offers(raw, currency)
-        _log("Function flight search success", origin=origin, destination=destination, offers=len(offers))
+        # Fallback: if user asked for nonstop and none found, retry with connections allowed.
+        if nonstop and not offers:
+            _log("No nonstop offers; retrying with connections allowed")
+            raw = amadeus_search_flight_offers(
+                origin,
+                destination,
+                departure_date,
+                return_date,
+                adults,
+                cabin,
+                False,  # allow connections
+                currency,
+                lh_group_only,
+                max_results,
+            )
+            offers = _summarize_offers(raw, currency)
+        # If still none, probe nearest alternative dates and include up to 5.
+        alternatives: List[Dict[str, Any]] = []
+        if not offers:
+            alternatives = _nearest_date_alternatives(
+                origin,
+                destination,
+                departure_date,
+                return_date,
+                adults,
+                cabin,
+                currency,
+                lh_group_only,
+                max_results,
+                nonstop=nonstop,
+                limit=5,
+            )
+        # Add previewText to each offer for easy UI display
+        try:
+            def _hhmm_txt(ts: Optional[str]) -> str:
+                try:
+                    if not ts:
+                        return "?"
+                    t = str(ts).replace("T", " ").replace("Z", "").split(" ")[1]
+                    return t[:5]
+                except Exception:
+                    return "?"
+            def _price_txt(val: Any, curr: Optional[str]) -> str:
+                try:
+                    return f"{float(val):.0f} {curr or ''}".strip() if val is not None else "?"
+                except Exception:
+                    return f"{val} {curr or ''}".strip()
+            for _o in offers or []:
+                _dep_ap = _o.get("departureAirport") or "?"
+                _dep_tm = _hhmm_txt(_o.get("departureTime"))
+                _arr_ap = _o.get("arrivalAirport") or "?"
+                _dur = _o.get("duration") or "?"
+                _segs = _o.get("segments")
+                _seg0 = _segs[0] if isinstance(_segs, list) and _segs else None
+                _c0 = (_seg0.get("carrier") or _seg0.get("marketingCarrier") or _seg0.get("operatingCarrier")) if isinstance(_seg0, dict) else None
+                _fn0 = (_seg0.get("flightNumber") if isinstance(_seg0, dict) else None) or ""
+                _c0fn = f"{_c0 or ''}{_fn0}".strip()
+                _pr = _price_txt(_o.get("totalPrice"), _o.get("currency") or currency)
+                _parts = [f"{_dep_ap} {_dep_tm}", "->", f"{_arr_ap}", "|", _dur]
+                if _c0fn:
+                    _parts.extend(["|", _c0fn])
+                _parts.extend(["|", f"**{_pr}**"])
+                _o["previewText"] = " ".join(str(x) for x in _parts if str(x))
+        except Exception:
+            pass
+        # Build a human-readable offer text block so the agent renders concrete options
+        offer_text_block = None
+        try:
+            def _hhmm(ts: Optional[str]) -> str:
+                try:
+                    if not ts:
+                        return "?"
+                    t = str(ts).replace("T", " ").replace("Z", "").split(" ")[1]
+                    return t[:5]
+                except Exception:
+                    return "?"
+            def _fmt_price(val: Any, curr: Optional[str]) -> str:
+                try:
+                    return f"{float(val):.0f} {curr or ''}".strip()
+                except Exception:
+                    return str(val)
+            if offers:
+                # Partition into direct and connecting, enforce max 10 total
+                direct = [o for o in offers if (o.get("stops") == 0)]
+                conn = [o for o in offers if (o.get("stops") and o.get("stops") > 0) or o.get("stops") is None]
+                max_total = min(10, RECOMMENDER_MAX_OPTIONS)
+                take_direct = min(len(direct), max_total)
+                take_conn = min(len(conn), max_total - take_direct)
+                lines2: List[str] = []
+                if take_direct:
+                    lines2.append("Direct Flights")
+                    for idx, off in enumerate(direct[:take_direct], start=1):
+                        dep2 = off.get("departureAirport") or "?"
+                        arr2 = off.get("arrivalAirport") or "?"
+                        dt2 = _hhmm(off.get("departureTime"))
+                        dur2 = off.get("duration") or "?"
+                        price2 = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
+                        segs2 = off.get("segments")
+                        seg02 = segs2[0] if isinstance(segs2, list) and segs2 else None
+                        c02 = (seg02.get("carrier") or seg02.get("marketingCarrier") or seg02.get("operatingCarrier")) if isinstance(seg02, dict) else None
+                        fn02 = (seg02.get("flightNumber") if isinstance(seg02, dict) else None) or ""
+                        c02fn = f"{c02}{fn02}".strip() if (c02 or fn02) else None
+                        parts2 = [f"{idx}) {dep2} {dt2}", "->", f"{arr2}", "|", departure_date, "|", "nonstop", "|", dur2]
+                        if c02fn:
+                            parts2.extend(["|", c02fn])
+                        parts2.extend(["|", f"**{price2}**"])
+                        lines2.append(" ".join(str(p) for p in parts2 if str(p)))
+                        if isinstance(segs2, list) and segs2:
+                            for s in segs2[: (len(segs2) if return_date else 1)]:
+                                try:
+                                    sc = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
+                                    sfn = s.get("flightNumber") or ""
+                                    sfrom = s.get("from") or "?"
+                                    sdt = _hhmm(s.get("departureTime") or s.get("depTime"))
+                                    sto = s.get("to") or "?"
+                                    sat = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
+                                    lines2.append(f"    - THEN {sc}{sfn} {sfrom} {sdt} -> {sto} {sat}")
+                                except Exception:
+                                    continue
+                if take_conn:
+                    lines2.append("")
+                    lines2.append("Connecting Flights")
+                    for idx, off in enumerate(conn[:take_conn], start=1):
+                        dep2 = off.get("departureAirport") or "?"
+                        arr2 = off.get("arrivalAirport") or "?"
+                        dt2 = _hhmm(off.get("departureTime"))
+                        dur2 = off.get("duration") or "?"
+                        price2 = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
+                        stops2 = off.get("stops")
+                        stops_txt2 = "nonstop" if stops2 == 0 else (f"{stops2} stop" if stops2 == 1 else f"{stops2} stops")
+                        segs2 = off.get("segments")
+                        seg02 = segs2[0] if isinstance(segs2, list) and segs2 else None
+                        c02 = (seg02.get("carrier") or seg02.get("marketingCarrier") or seg02.get("operatingCarrier")) if isinstance(seg02, dict) else None
+                        fn02 = (seg02.get("flightNumber") if isinstance(seg02, dict) else None) or ""
+                        c02fn = f"{c02}{fn02}".strip() if (c02 or fn02) else None
+                        parts2 = [f"{idx}) {dep2} {dt2}", "->", f"{arr2}", "|", departure_date, "|", stops_txt2, "|", dur2]
+                        if c02fn:
+                            parts2.extend(["|", c02fn])
+                        parts2.extend(["|", f"**{price2}**"])
+                        lines2.append(" ".join(str(p) for p in parts2 if str(p)))
+                        if isinstance(segs2, list) and segs2:
+                            seg_limit = len(segs2) if return_date else 3
+                            for s in segs2[:seg_limit]:
+                                try:
+                                    sc = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
+                                    sfn = s.get("flightNumber") or ""
+                                    sfrom = s.get("from") or "?"
+                                    sdt = _hhmm(s.get("departureTime") or s.get("depTime"))
+                                    sto = s.get("to") or "?"
+                                    sat = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
+                                    lines2.append(f"    - THEN {sc}{sfn} {sfrom} {sdt} -> {sto} {sat}")
+                                except Exception:
+                                    continue
+                offer_text_block = "\n".join(lines2)
+        except Exception:
+            offer_text_block = None
+        _log("Function flight search success", origin=origin, destination=destination, offers=len(offers), alternatives=len(alternatives))
         note = None
         if filled_from_context and origin:
             try:
@@ -1332,6 +2795,81 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             except Exception:
                 pass
             note = f"Using your nearest airport as departure location ({origin}). Say 'change departure location' to update it."
+        # Build textual alternatives list if applicable (partitioned, compact, PDF-compatible)
+        def _alt_sections(alts: List[Dict[str, Any]]) -> List[str]:
+            lines: List[str] = ["No offers on requested dates. Nearby alternatives:"]
+            direct = [a for a in alts if ((a.get("offer") or {}).get("stops") == 0)]
+            conn = [a for a in alts if ((a.get("offer") or {}).get("stops") or 0) > 0]
+            max_total = min(10, RECOMMENDER_MAX_OPTIONS)
+            take_direct = min(len(direct), max_total)
+            take_conn = min(len(conn), max_total - take_direct)
+            def _fmt_price(val: Any, curr: Optional[str]) -> str:
+                try:
+                    return f"{float(val):.0f} {curr or ''}".strip() if val is not None else "?"
+                except Exception:
+                    return f"{val} {curr or ''}".strip()
+            def _hhmm2(ts: Optional[str]) -> str:
+                try:
+                    if not ts:
+                        return "?"
+                    t = str(ts).replace("T", " ").replace("Z", "").split(" ")[1]
+                    return t[:5]
+                except Exception:
+                    return "?"
+            if take_direct:
+                lines.append("Direct Alternatives")
+                for idx, alt in enumerate(direct[:take_direct], start=1):
+                    off = alt.get("offer") or {}
+                    dep_ap = off.get("departureAirport") or "?"
+                    arr_ap = off.get("arrivalAirport") or "?"
+                    dep_tm = _hhmm2(off.get("departureTime"))
+                    dur = off.get("duration") or "?"
+                    price_txt = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
+                    segs = off.get("segments")
+                    seg0 = segs[0] if isinstance(segs, list) and segs else None
+                    c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                    fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                    c0fn = f"{c0}{fn0}".strip() if (c0 or fn0) else None
+                    parts = [f"{idx}) {dep_ap} {dep_tm}", "->", f"{arr_ap}", "|", alt.get("date") or "?", "|", "nonstop", "|", dur]
+                    if c0fn:
+                        parts.extend(["|", c0fn])
+                    parts.extend(["|", f"**{price_txt}**"])
+                    lines.append(" ".join(str(p) for p in parts if str(p)))
+                    carriers2 = off.get("carriers") or []
+                    carriers_txt2 = ",".join(carriers2) if isinstance(carriers2, list) else str(carriers2 or "")
+                    if carriers_txt2:
+                        lines.append(f"    - Carriers: {carriers_txt2}")
+            if take_conn:
+                if take_direct:
+                    lines.append("")
+                lines.append("Connecting Alternatives")
+                for idx, alt in enumerate(conn[:take_conn], start=1):
+                    off = alt.get("offer") or {}
+                    dep_ap = off.get("departureAirport") or "?"
+                    arr_ap = off.get("arrivalAirport") or "?"
+                    dep_tm = _hhmm2(off.get("departureTime"))
+                    dur = off.get("duration") or "?"
+                    price_txt = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
+                    stops = off.get("stops")
+                    stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                    segs = off.get("segments")
+                    seg0 = segs[0] if isinstance(segs, list) and segs else None
+                    c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                    fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                    c0fn = f"{c0}{fn0}".strip() if (c0 or fn0) else None
+                    parts = [f"{idx}) {dep_ap} {dep_tm}", "->", f"{arr_ap}", "|", alt.get("date") or "?", "|", stops_txt, "|", dur]
+                    if c0fn:
+                        parts.extend(["|", c0fn])
+                    parts.extend(["|", f"**{price_txt}**"])
+                    lines.append(" ".join(str(p) for p in parts if str(p)))
+                    carriers2 = off.get("carriers") or []
+                    carriers_txt2 = ",".join(carriers2) if isinstance(carriers2, list) else str(carriers2 or "")
+                    if carriers_txt2:
+                        lines.append(f"    - Carriers: {carriers_txt2}")
+            return lines
+        alt_text_block = None
+        if not offers and alternatives:
+            alt_text_block = "\n".join(_alt_sections(alternatives))
         return _wrap_function(
             event,
             200,
@@ -1351,6 +2889,11 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 },
                 **({"note": note, "message": note} if note else {}),
                 "offers": offers,
+                **({"message": offer_text_block} if offer_text_block else {}),
+                **({
+                    "message": alt_text_block,
+                    "alternatives": alternatives,
+                } if alt_text_block else {}),
                 "provider": "Amadeus Flight Offers Search v2",
             },
         )
@@ -1424,6 +2967,7 @@ def lambda_handler(event, context):
         raise
     finally:
         _CURRENT_LOGGER.reset(token)
+
 
 
 

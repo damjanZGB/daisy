@@ -1,24 +1,21 @@
-                        stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
-                        carriers = offer.get("carriers") or []
-                        carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
-                        # Header line with bold price
-                        header = f"{idx}) {label} - {dep} -> {arr} | {opt.get('date')} | {stops_txt} | {dur} | **{price}**"
-                        # Rebuild header to include first segment carrier/flight and departure HH:MM when available
-                        try:
-                            segs = offer.get("segments")
-                            seg0 = segs[0] if isinstance(segs, list) and segs else None
-                            c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
-                            fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
-                            dt0 = _hhmm((seg0.get("departureTime") if isinstance(seg0, dict) else None) or offer.get("departureTime") or "")
-                    stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
-                    carriers = offer.get("carriers") or []
-                    carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
-                    # Header line with bold price
-                    header = f"{idx}) {label} - {dep} ? {arr} • {opt.get('date')} • {stops_txt} • {dur} • **{price}**"
-                    # Rebuild header to include first carrier/flight and departure HH:MM when available
-                    try:
-                        segs = offer.get("segments")
-                        seg0 = segs[0] if isinstance(segs, list) and segs else None
-                        c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
-                        fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
-                        # dep_time may be full ISO; convert to HH:MM
+# Build textual alternatives list if applicable
+        def _alt_lines(alts: List[Dict[str, Any]]) -> List[str]:
+            lines: List[str] = []
+            for idx, alt in enumerate(alts[:5], start=1):
+                off = alt.get("offer") or {}
+                date_txt = alt.get("date") or "?"
+                price = off.get("totalPrice")
+                curr = off.get("currency") or currency or ""
+                try:
+                    price_txt = f"{float(price):.0f} {curr}".strip() if price is not None else "?"
+                except Exception:
+                    price_txt = f"{price} {curr}".strip()
+                dur = off.get("duration") or "?"
+                stops = off.get("stops")
+                stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                lines.append(f"{idx}) {date_txt} | {stops_txt} | {dur} | **{price_txt}**")
+            return lines
+        alt_text_block = None
+        if not offers and alternatives:
+            alt_text_block = "\n".join(["No offers on requested dates. Nearby alternatives:"] + _alt_lines(alternatives))
+        

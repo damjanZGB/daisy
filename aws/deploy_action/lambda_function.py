@@ -1919,26 +1919,81 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                 offer_text_block = "\n".join(lines2)
             except Exception:
                 offer_text_block = None
-        # Build textual alternatives list if applicable
-        def _alt_lines(alts: List[Dict[str, Any]]) -> List[str]:
-            lines: List[str] = []
-            for idx, alt in enumerate(alts[:5], start=1):
-                off = alt.get("offer") or {}
-                date_txt = alt.get("date") or "?"
-                price = off.get("totalPrice")
-                curr = off.get("currency") or currency or ""
+        # Build textual alternatives list if applicable (partitioned, compact, PDF-compatible)
+        def _alt_sections(alts: List[Dict[str, Any]]) -> List[str]:
+            lines: List[str] = ["No offers on requested dates. Nearby alternatives:"]
+            direct = [a for a in alts if ((a.get("offer") or {}).get("stops") == 0)]
+            conn = [a for a in alts if ((a.get("offer") or {}).get("stops") or 0) > 0]
+            max_total = min(10, RECOMMENDER_MAX_OPTIONS)
+            take_direct = min(len(direct), max_total)
+            take_conn = min(len(conn), max_total - take_direct)
+            def _fmt_price(val: Any, curr: Optional[str]) -> str:
                 try:
-                    price_txt = f"{float(price):.0f} {curr}".strip() if price is not None else "?"
+                    return f"{float(val):.0f} {curr or ''}".strip() if val is not None else "?"
                 except Exception:
-                    price_txt = f"{price} {curr}".strip()
-                dur = off.get("duration") or "?"
-                stops = off.get("stops")
-                stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
-                lines.append(f"{idx}) {date_txt} | {stops_txt} | {dur} | **{price_txt}**")
+                    return f"{val} {curr or ''}".strip()
+            def _hhmm2(ts: Optional[str]) -> str:
+                try:
+                    if not ts:
+                        return "?"
+                    t = str(ts).replace("T", " ").replace("Z", "").split(" ")[1]
+                    return t[:5]
+                except Exception:
+                    return "?"
+            if take_direct:
+                lines.append("Direct Alternatives")
+                for idx, alt in enumerate(direct[:take_direct], start=1):
+                    off = alt.get("offer") or {}
+                    dep_ap = off.get("departureAirport") or "?"
+                    arr_ap = off.get("arrivalAirport") or "?"
+                    dep_tm = _hhmm2(off.get("departureTime"))
+                    dur = off.get("duration") or "?"
+                    price_txt = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
+                    segs = off.get("segments")
+                    seg0 = segs[0] if isinstance(segs, list) and segs else None
+                    c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                    fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                    c0fn = f"{c0}{fn0}".strip() if (c0 or fn0) else None
+                    parts = [f"{idx}) {dep_ap} {dep_tm}", "->", f"{arr_ap}", "|", alt.get("date") or "?", "|", "nonstop", "|", dur]
+                    if c0fn:
+                        parts.extend(["|", c0fn])
+                    parts.extend(["|", f"**{price_txt}**"])
+                    lines.append(" ".join(str(p) for p in parts if str(p)))
+                    carriers2 = off.get("carriers") or []
+                    carriers_txt2 = ",".join(carriers2) if isinstance(carriers2, list) else str(carriers2 or "")
+                    if carriers_txt2:
+                        lines.append(f"    - Carriers: {carriers_txt2}")
+            if take_conn:
+                if take_direct:
+                    lines.append("")
+                lines.append("Connecting Alternatives")
+                for idx, alt in enumerate(conn[:take_conn], start=1):
+                    off = alt.get("offer") or {}
+                    dep_ap = off.get("departureAirport") or "?"
+                    arr_ap = off.get("arrivalAirport") or "?"
+                    dep_tm = _hhmm2(off.get("departureTime"))
+                    dur = off.get("duration") or "?"
+                    price_txt = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
+                    stops = off.get("stops")
+                    stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                    segs = off.get("segments")
+                    seg0 = segs[0] if isinstance(segs, list) and segs else None
+                    c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                    fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                    c0fn = f"{c0}{fn0}".strip() if (c0 or fn0) else None
+                    parts = [f"{idx}) {dep_ap} {dep_tm}", "->", f"{arr_ap}", "|", alt.get("date") or "?", "|", stops_txt, "|", dur]
+                    if c0fn:
+                        parts.extend(["|", c0fn])
+                    parts.extend(["|", f"**{price_txt}**"])
+                    lines.append(" ".join(str(p) for p in parts if str(p)))
+                    carriers2 = off.get("carriers") or []
+                    carriers_txt2 = ",".join(carriers2) if isinstance(carriers2, list) else str(carriers2 or "")
+                    if carriers_txt2:
+                        lines.append(f"    - Carriers: {carriers_txt2}")
             return lines
         alt_text_block = None
         if not offers and alternatives:
-            alt_text_block = "\n".join(["No offers on requested dates. Nearby alternatives:"] + _alt_lines(alternatives))
+            alt_text_block = "\n".join(_alt_sections(alternatives))
         return _wrap_openapi(
             event,
             200,
@@ -2222,7 +2277,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     carriers = offer.get("carriers") or []
                     carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
                     # Header line with bold price
-                    header = f"{idx}) {label} - {dep} → {arr} • {opt.get('date')} • {stops_txt} • {dur} • **{price}**"
+                    header = f"{idx}) {label} - {dep} -> {arr} | {opt.get('date')} | {stops_txt} | {dur} | **{price}**"
                     # Rebuild header to include first carrier/flight and departure HH:MM when available
                     try:
                         segs = offer.get("segments")
@@ -2261,7 +2316,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                             s_arr = s.get("to") or "?"
                             s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
                             s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
-                            lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} → {s_arr} {s_at}")
+                            lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} -> {s_arr} {s_at}")
                     if pitch:
                         lines.append(f"    - {pitch}")
                 if lines:
@@ -2632,7 +2687,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 # Partition into direct and connecting, enforce max 10 total
                 direct = [o for o in offers if (o.get("stops") == 0)]
                 conn = [o for o in offers if (o.get("stops") and o.get("stops") > 0) or o.get("stops") is None]
-                max_total = 10
+                max_total = min(10, RECOMMENDER_MAX_OPTIONS)
                 take_direct = min(len(direct), max_total)
                 take_conn = min(len(conn), max_total - take_direct)
                 lines2: List[str] = []
