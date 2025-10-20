@@ -999,6 +999,92 @@ def amadeus_search_flight_offers(
     _log("Amadeus search completed", offers=offer_count)
     return response
 
+
+def _nearest_date_alternatives(
+    origin: str,
+    destination: str,
+    departure_date: str,
+    return_date: Optional[str],
+    adults: int,
+    cabin: str,
+    currency: Optional[str],
+    lh_group_only: bool,
+    max_results: int,
+    *,
+    nonstop: bool,
+    limit: int = 5,
+    timeout: float = 7.0,
+) -> List[Dict[str, Any]]:
+    """When no offers are found for the requested dates, probe nearby dates and
+    return up to `limit` alternative offers for the same route.
+
+    Offsets searched (in days): -1,+1,-2,+2,-3,+3,-7,+7,-14,+14
+    
+    We allow connections in this fallback to maximize chance of results.
+    """
+    try:
+        dep_dt = datetime.fromisoformat(str(departure_date))
+    except Exception:
+        return []
+    ret_dt: Optional[datetime] = None
+    if return_date:
+        try:
+            ret_dt = datetime.fromisoformat(str(return_date))
+        except Exception:
+            ret_dt = None
+
+    seen_dates: set[str] = set()
+    results: List[Dict[str, Any]] = []
+    offsets = [-1, 1, -2, 2, -3, 3, -7, 7, -14, 14]
+    for off in offsets:
+        if len(results) >= max(1, limit):
+            break
+        d2 = (dep_dt + timedelta(days=off)).date().isoformat()
+        if d2 in seen_dates:
+            continue
+        seen_dates.add(d2)
+        r2 = (ret_dt + timedelta(days=off)).date().isoformat() if ret_dt else None
+        try:
+            raw = amadeus_search_flight_offers(
+                origin,
+                destination,
+                d2,
+                r2,
+                adults,
+                cabin,
+                False,  # allow connections in fallback
+                currency,
+                lh_group_only,
+                max_results,
+                timeout,
+            )
+            offers = _summarize_offers(raw, currency)
+            if offers:
+                best = offers[0]
+                # brief form to keep payload small
+                brief = {
+                    "id": best.get("id"),
+                    "departureAirport": best.get("departureAirport"),
+                    "arrivalAirport": best.get("arrivalAirport"),
+                    "departureTime": best.get("departureTime"),
+                    "arrivalTime": best.get("arrivalTime"),
+                    "duration": best.get("duration"),
+                    "stops": best.get("stops"),
+                    "carriers": best.get("carriers"),
+                    "totalPrice": best.get("totalPrice"),
+                    "currency": best.get("currency") or currency,
+                }
+                results.append({
+                    "date": d2,
+                    **({"returnDate": r2} if r2 else {}),
+                    "offer": brief,
+                })
+        except Exception as exc:
+            _log("Nearest-date alternative probe failed", offset=off, error=str(exc))
+            continue
+    _log("Nearest-date alternatives prepared", count=len(results))
+    return results
+
 def iata_lookup_via_proxy(term: Optional[str]) -> Dict[str, Any]:
     if not term:
         _log("Proxy IATA lookup helper called without term")
@@ -1716,7 +1802,23 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                 max_results,
             )
             offers = _summarize_offers(raw, currency)
-        _log("OpenAPI flight search success", origin=origin, destination=destination, offers=len(offers))
+        # If still none, probe nearest alternative dates and include up to 5.
+        alternatives: List[Dict[str, Any]] = []
+        if not offers:
+            alternatives = _nearest_date_alternatives(
+                origin,
+                destination,
+                departure_date,
+                return_date,
+                adults,
+                cabin,
+                currency,
+                lh_group_only,
+                max_results,
+                nonstop=nonstop,
+                limit=5,
+            )
+        _log("OpenAPI flight search success", origin=origin, destination=destination, offers=len(offers), alternatives=len(alternatives))
         # If we auto-filled origin from context, cache it into session and surface a brief note.
         note = None
         if filled_from_context and origin:
@@ -1744,6 +1846,10 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                 },
                 **({"note": note, "message": note} if note else {}),
                 "offers": offers,
+                **({
+                    "message": "No offers found on requested dates; showing nearby alternatives.",
+                    "alternatives": alternatives,
+                } if not offers and alternatives else {}),
                 "provider": "Amadeus Flight Offers Search v2",
             },
         )
@@ -2166,7 +2272,23 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 max_results,
             )
             offers = _summarize_offers(raw, currency)
-        _log("Function flight search success", origin=origin, destination=destination, offers=len(offers))
+        # If still none, probe nearest alternative dates and include up to 5.
+        alternatives: List[Dict[str, Any]] = []
+        if not offers:
+            alternatives = _nearest_date_alternatives(
+                origin,
+                destination,
+                departure_date,
+                return_date,
+                adults,
+                cabin,
+                currency,
+                lh_group_only,
+                max_results,
+                nonstop=nonstop,
+                limit=5,
+            )
+        _log("Function flight search success", origin=origin, destination=destination, offers=len(offers), alternatives=len(alternatives))
         note = None
         if filled_from_context and origin:
             try:
@@ -2193,6 +2315,10 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 },
                 **({"note": note, "message": note} if note else {}),
                 "offers": offers,
+                **({
+                    "message": "No offers found on requested dates; showing nearby alternatives.",
+                    "alternatives": alternatives,
+                } if not offers and alternatives else {}),
                 "provider": "Amadeus Flight Offers Search v2",
             },
         )
