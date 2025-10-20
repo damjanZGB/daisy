@@ -1,0 +1,100 @@
+{
+  "flight": "LH1378",
+  "session": "2a422dff-3f11-44e9-aee7-bdca3aa8ec0b",
+  "bedrockSessionId": "249920f2-d5a4-4d6e-ba0d-f1b2cd8beb7f",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul , your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Could you please confirm the departure airport? If you prefer, I can use the default origin, Zapresic, Croatia (ZAG).",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Correct. Use default",
+      "assistant": "",
+      "trace": [],
+      "error": "Received failed response from API execution. Retry the request later.",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      }
+    },
+    {
+      "turn": 4,
+      "user": "Zagreb to Zurich, departure, 25.10.2025",
+      "assistant": "Could you please confirm the departure airport? If you prefer, I can use the default origin, Zapresic, Croatia (ZAG).",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 5,
+      "user": "01.11.2025",
+      "assistant": "Could you please confirm the return date? If you prefer, I can use the default return date, which is one week after the departure date.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 6,
+      "user": "Show me the alternatives",
+      "assistant": "Here are the alternatives for your travel from Zagreb to Zurich on October 25, 2025:",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 7,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "",
+      "trace": [],
+      "error": "Received failed response from API execution. Retry the request later.",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      }
+    }
+  ]
+}

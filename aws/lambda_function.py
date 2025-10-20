@@ -1938,6 +1938,22 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             return lines
         alt_text_block = None
         if not offers and alternatives:
+            # Persist alternatives in session for later confirmation
+            try:
+                sess = event.setdefault("sessionAttributes", {})
+                sess["last_alternatives"] = [
+                    {
+                        "date": a.get("date"),
+                        "price": (a.get("offer") or {}).get("totalPrice"),
+                        "currency": (a.get("offer") or {}).get("currency") or currency,
+                        "stops": (a.get("offer") or {}).get("stops"),
+                        "duration": (a.get("offer") or {}).get("duration"),
+                    }
+                    for a in alternatives[:5]
+                ]
+            except Exception:
+                pass
+            # Do not expand to full itineraries until user confirms booking; keep compact text
             alt_text_block = "\n".join(["No offers on requested dates. Nearby alternatives:"] + _alt_lines(alternatives))
         return _wrap_openapi(
             event,

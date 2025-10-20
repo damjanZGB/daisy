@@ -1,0 +1,61 @@
+{
+  "flight": "LH9998",
+  "session": "fc6c9c4f-6c3e-4a9e-9a9a-999899989998",
+  "bedrockSessionId": "1c713b0d-1e33-4853-a741-263d02d71b0b",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Family city break in April weekend",
+      "assistant": "Could you please confirm the departure city for your city break? If you'd like to use the default origin, just let me know.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "Any nonstop suggestions?",
+      "assistant": "Here are some nonstop city break destinations for you to consider in April:",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Show me alternative dates",
+      "assistant": "Could you please confirm the destination city for your city break? If you'd like to suggest alternative dates, just let me know.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "",
+      "trace": [],
+      "error": "Received failed response from API execution. Retry the request later.",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      }
+    }
+  ]
+}

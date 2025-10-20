@@ -32,6 +32,8 @@ const SESSIONS = [
       'Zagreb, zurich, 01.11.2025, one passenger return 03.11.2025',
       'Yes',
       'Show me the alternatives same departure airport same destination',
+      // Force an explicit tool call for formatting verification
+      'ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.',
     ],
   },
   {
@@ -45,6 +47,8 @@ const SESSIONS = [
       'Zagreb to Zurich, departure, 25.10.2025',
       '01.11.2025',
       'Show me the alternatives',
+      // Force an explicit tool call for formatting verification
+      'ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.',
     ],
   },
   {
@@ -58,6 +62,8 @@ const SESSIONS = [
       'Show me the alternatives',
       'Show me the alternatives. Inspire me',
       'Yes. Show me the alternatives',
+      // Force an explicit tool call for formatting verification
+      'ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.',
     ],
   },
   {
@@ -68,6 +74,8 @@ const SESSIONS = [
       'Some warm place with beach in March next year',
       'Yes, show me a few options',
       'Option 1 looks good',
+      // Force an explicit tool call for formatting verification
+      'ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.',
     ],
   },
   {
@@ -78,6 +86,8 @@ const SESSIONS = [
       'Cold place for skiing in January',
       'Prefer shortest travel time',
       'Hold the best value option',
+      // Force an explicit tool call for formatting verification
+      'ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.',
     ],
   },
   {
@@ -88,6 +98,8 @@ const SESSIONS = [
       'Family city break in April weekend',
       'Any nonstop suggestions?',
       'Show me alternative dates',
+      // Force an explicit tool call for formatting verification
+      'ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.',
     ],
   },
 ];

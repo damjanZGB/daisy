@@ -1,0 +1,61 @@
+{
+  "flight": "LH7777",
+  "session": "fa4a9a2f-6c3e-4a9e-9a9a-777777777777",
+  "bedrockSessionId": "e5e8ba05-0425-476f-ab06-e7b90a052bd6",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Some warm place with beach in March next year",
+      "assistant": "Here are some warm beach destinations for March next year:\n1. Hurghada, Egypt (HRG) - Average high temperature: 26°C, water temperature: 22°C\n2. Marsa Alam, Egypt (RMF) - Average high temperature: 26°C, water temperature: 22°C\n3. Sharm El Sheikh, Egypt (SSH) - Average high temperature: 25°C, water temperature: 22°C\n4. Victoria Falls, Zimbabwe (VFA) - Average high temperature: 31°C\n5. Kruger Mpumalanga, South Africa (MQP) - Average high temperature: 29°C\nWhich of these destinations interests you the most, or do you have any other preferences?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "Yes, show me a few options",
+      "assistant": "Sure, could you please specify which destination from the list you would like to explore flight options for?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Option 1 looks good",
+      "assistant": "I'm sorry, but I couldn't find the IATA code for Hurghada, Egypt. Could you please provide the exact name of the airport in Hurghada, Egypt?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "",
+      "trace": [],
+      "error": "Received failed response from API execution. Retry the request later.",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      }
+    }
+  ]
+}

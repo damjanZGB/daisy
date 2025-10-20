@@ -1,0 +1,167 @@
+{
+  "flight": "LH6814",
+  "session": "03b364a6-904f-4eba-ac72-9bc8bae96966",
+  "bedrockSessionId": "4cfc2423-669e-496e-b162-39969b8ef4d9",
+  "aliasKey": "mira",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul , your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today? What kind of memories do you hope to create?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "",
+      "trace": [],
+      "error": "Received failed response from API execution. Retry the request later.",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Next saturday",
+      "assistant": "Great! Could you please let me know your departure city and destination for your trip on October 25, 2025?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "Closest ariport to me.",
+      "assistant": "Based on the default information, your closest airport is Zapresic, Croatia (ZAG). Is this correct, or would you like to choose a different departure city?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 5,
+      "user": "Nearest airport to my location",
+      "assistant": "Based on the default information, your closest airport is Zapresic, Croatia (ZAG). Is this correct, or would you like to choose a different departure city?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 6,
+      "user": "ZAG",
+      "assistant": "Thank you for confirming. Could you please let me know your destination city for your trip on October 25, 2025?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 7,
+      "user": "Yes",
+      "assistant": "Thank you for confirming. Could you please let me know your destination city for your trip on October 25, 2025?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 8,
+      "user": "Show me the alternatives",
+      "assistant": "Could you please let me know your preferred destination city for your trip on October 25, 2025? This will help me show you some alternative destinations.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 9,
+      "user": "Zagreb, zurich, 01.11.2025, one passenger return 03.11.2025",
+      "assistant": "",
+      "trace": [],
+      "error": "Received failed response from API execution. Retry the request later.",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      }
+    },
+    {
+      "turn": 10,
+      "user": "Yes",
+      "assistant": "Could you please let me know your preferred destination city for your trip on October 25, 2025? This will help me show you some alternative destinations.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 11,
+      "user": "Show me the alternatives same departure airport same destination",
+      "assistant": "Could you please let me know your preferred destination city for your trip on October 25, 2025? This will help me show you some alternative destinations from the same departure airport.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 12,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "",
+      "trace": [],
+      "error": "Received failed response from API execution. Retry the request later.",
+      "format_ok": false,
+      "format_checks": {
+        "empty": true
+      }
+    }
+  ]
+}
