@@ -95,34 +95,60 @@ const SESSIONS = [
 const client = new BedrockAgentRuntimeClient({ region: REGION });
 const decoder = new TextDecoder();
 
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sanitizeAskUser(text) {
+  if (!text) return '';
+  let out = String(text);
+  out = out.replace(/<user__askuser[^>]*question=\"([^\"]+)\"[^>]*>/gi, '$1');
+  out = out.replace(/<\/user__askuser>/gi, '');
+  out = out.replace(/<sources>[\s\S]*?<\/sources>/gi, '');
+  out = out.replace(/\n{3,}/g, '\n\n');
+  return out.trim();
+}
 async function invokeWithTrace(aliasId, sessionId, inputText, carryState) {
-  const cmd = new InvokeAgentCommand({ agentId: AGENT_ID, agentAliasId: aliasId, sessionId, inputText, enableTrace: true, sessionState: carryState });
-  const response = await client.send(cmd);
-  const trace = [];
-  let assistantText = '';
-  if (response.completion) {
-    for await (const ev of response.completion) {
-      if (ev.chunk?.bytes) {
-        const txt = decoder.decode(ev.chunk.bytes, { stream: true });
-        assistantText += txt;
+  const maxRetries = 2;
+  let lastErr;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const cmd = new InvokeAgentCommand({ agentId: AGENT_ID, agentAliasId: aliasId, sessionId, inputText, enableTrace: true, sessionState: carryState });
+      const response = await client.send(cmd);
+      const trace = [];
+      let assistantText = '';
+      if (response.completion) {
+        for await (const ev of response.completion) {
+          if (ev.chunk?.bytes) {
+            const txt = decoder.decode(ev.chunk.bytes, { stream: true });
+            assistantText += txt;
+          }
+          if (ev.outputText?.items?.length) {
+            assistantText += ev.outputText.items.map(i => i.text || '').join('');
+          }
+          if (ev.contentBlock?.text) {
+            assistantText += ev.contentBlock.text;
+          }
+          if (ev.trace?.observation) {
+            trace.push(ev.trace);
+            fs.writeFileSync(path.join(OUTPUT_DIR, 'event_'+Date.now()+'.json'), JSON.stringify(ev, null, 2));
+          }
+          if (ev.trace?.invocation) {
+            trace.push(ev.trace);
+            fs.writeFileSync(path.join(OUTPUT_DIR, 'event_'+Date.now()+'.json'), JSON.stringify(ev, null, 2));
+          }
+        }
       }
-      if (ev.outputText?.items?.length) {
-        assistantText += ev.outputText.items.map(i => i.text || '').join('');
+      assistantText = sanitizeAskUser(assistantText);
+      return { assistantText, sessionState: response.sessionState, trace };
+    } catch (e) {
+      lastErr = e;
+      const msg = String(e?.name || '') + ' ' + String(e?.message || '');
+      if (/DependencyFailedException/i.test(e?.name || '') || /timeout/i.test(msg)) {
+        await sleep(1500 + attempt * 1500);
+        continue;
       }
-      if (ev.contentBlock?.text) {
-        assistantText += ev.contentBlock.text;
-      }
-      if (ev.trace?.observation) {
-        // Observation events carry tool call inputs/outputs
-        trace.push(ev.trace); fs.writeFileSync(path.join(OUTPUT_DIR, 'event_'+Date.now()+'.json'), JSON.stringify(ev, null, 2));
-      }
-      if (ev.trace?.invocation) {
-        trace.push(ev.trace); fs.writeFileSync(path.join(OUTPUT_DIR, 'event_'+Date.now()+'.json'), JSON.stringify(ev, null, 2));
-      }
+      throw e;
     }
   }
-  assistantText = assistantText.trim();
-  return { assistantText, sessionState: response.sessionState, trace };
+  throw lastErr;
 }
 
 async function run() {

@@ -171,7 +171,12 @@
         <div className={`w-full flex ${isUser ? 'justify-end' : 'justify-start'}`}>
           <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 border ${isUser ? 'bg-lhYellow/95 text-lhBlue border-transparent' : 'bg-white/5 text-white/95 border-white/10'}`}>
             <p className="whitespace-pre-wrap text-sm leading-6">{text}</p>
-            {meta ? <p className={`mt-1 text-[10px] ${isUser ? 'text-lhBlue/70' : 'text-white/50'}`}>{meta}</p> : null}
+            {meta?.pdfUrl && (
+              <p className={`mt-2 text-[12px] ${isUser ? 'text-lhBlue/80' : 'text-white/80'}`}>
+                <a className="underline decoration-dotted" href={meta.pdfUrl} download={meta.pdfName || 'itinerary.pdf'}>Download itinerary (PDF)</a>
+              </p>
+            )}
+            {meta && !meta.pdfUrl ? <p className={`mt-1 text-[10px] ${isUser ? 'text-lhBlue/70' : 'text-white/50'}`}>{meta}</p> : null}
           </div>
         </div>
       );
@@ -194,6 +199,7 @@
       const [messages, setMessages] = useState([
         { id: uid(), role: 'assistant', text: INITIAL_ASSISTANT_TEXT, ts: new Date().toISOString() }
       ]);
+      const [lastItinerary, setLastItinerary] = useState(null);
       const transcriptSentRef = useRef(0);
       const deriveLookupUrl = (base) => {
         try {
@@ -593,10 +599,24 @@
           }
           setProxyOnline(true);
           const data = await res.json();
-          const reply = (data.text || data.responseText || data.answer || '').trim();
+          const reply = sanitizeAssistantText((data.text || data.responseText || data.answer || '').trim());
           const meta = data.cid ? `cid ${data.cid}` : undefined;
+          // track last itinerary options for possible PDF generation
+          const parsedOptions = parseItineraryOptions(reply);
+          if (parsedOptions && parsedOptions.length) {
+            setLastItinerary(parsedOptions);
+          }
           const botMsg = { id: uid(), role: 'assistant', text: reply || 'No text response.', meta, ts: new Date().toISOString() };
           setMessages(m => [...m, botMsg]);
+          // If user just confirmed/held/booking and we have an itinerary, generate a PDF link as last message
+          if (/(confirm|confirmed|book|hold)/i.test(input) && parsedOptions && parsedOptions.length) {
+            const blob = await generatePdf(parsedOptions[0]);
+            if (blob) {
+              const url = URL.createObjectURL(blob);
+              const pdfMsg = { id: uid(), role: 'assistant', text: 'Your booking is confirmed. Download your itinerary (PDF):', meta: { pdfUrl: url, pdfName: 'itinerary.pdf' }, ts: new Date().toISOString() };
+              setMessages(m => [...m, pdfMsg]);
+            }
+          }
         } catch (err) {
           if (!err?.isHttpError) {
             setProxyOnline(false);
@@ -658,6 +678,50 @@
     }
     ReactDOM.createRoot(document.getElementById('root')).render(<ChatApp />);
   </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-9q8vXJ8zxV/9dR3+WQZ2w6JYf1zbhD0FQ8h1C9J+z7V0U8rQ6k9d8lQHhJH6w1FvXRv1+Sip3C5b5pGmQh2C8g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </body>
 
 </html>
+      const sanitizeAssistantText = (t) => {
+        if (!t) return '';
+        let out = String(t);
+        out = out.replace(/<user__askuser[^>]*question=\"([^\"]+)\"[^>]*>/gi, '$1');
+        out = out.replace(/<\/user__askuser>/gi, '');
+        out = out.replace(/<sources>[\s\S]*?<\/sources>/gi, '');
+        out = out.replace(/\n{3,}/g, '\n\n');
+        return out.trim();
+      };
+      const parseItineraryOptions = (text) => {
+        const lines = String(text||'').split(/\r?\n/);
+        const options = [];
+        let current = null;
+        const headerRe = /^\s*(\d+)\)\s+(.+)$/;
+        for (const raw of lines) {
+          const m = raw.match(headerRe);
+          if (m) {
+            if (current) options.push(current);
+            current = { header: m[2], legs: [] };
+            continue;
+          }
+          const leg = raw.trim();
+          if (/^\-\s+THEN\s+/i.test(leg)) {
+            current && current.legs.push(leg.replace(/^\-\s+/, ''));
+          }
+        }
+        if (current) options.push(current);
+        return options;
+      };
+      const generatePdf = async (opt) => {
+        try {
+          const { jsPDF } = window.jspdf || {};
+          if (!jsPDF) return null;
+          const doc = new jsPDF({ unit: 'pt' });
+          let y = 40; const x = 40;
+          doc.setFont('helvetica','bold'); doc.setFontSize(14);
+          doc.text('Itinerary (Example)', x, y); y+=24;
+          doc.setFont('helvetica','normal'); doc.setFontSize(12);
+          doc.text(opt.header, x, y); y+=18;
+          for (const leg of (opt.legs || [])) { if (y>760){ doc.addPage(); y=40;} doc.text(leg, x, y); y+=16; }
+          return doc.output('blob');
+        } catch (_) { return null; }
+      };

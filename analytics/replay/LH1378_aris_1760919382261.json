@@ -1,0 +1,44 @@
+{
+  "flight": "LH1378",
+  "session": "2a422dff-3f11-44e9-aee7-bdca3aa8ec0b",
+  "bedrockSessionId": "3e999ed4-4099-4101-99e1-7e097c3fc306",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hello and welcome aboard the Lufthansa Group experience. I am Aris, your digital travel orchestrator. Tell me—what kind of journey are you envisioning today?",
+      "trace": []
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Here are the flight options for your journey from Zapresic, Croatia (ZAG) to Zurich, Switzerland (ZRH) on October 25, 2025:   Unfortunately, there are no direct Lufthansa Group flights available for this route on the specified date. However, I can suggest alternative dates or nearby Lufthansa Group destinations if you'd like.",
+      "trace": []
+    },
+    {
+      "turn": 3,
+      "user": "Correct. Use default",
+      "assistant": "Here are the flight options for your journey from Zapresic, Croatia (ZAG) to Zurich, Switzerland (ZRH) on October 25, 2025:   Unfortunately, there are no direct Lufthansa Group flights available for this route on the specified date. However, I can suggest alternative dates or nearby Lufthansa Group destinations if you'd like.",
+      "trace": []
+    },
+    {
+      "turn": 4,
+      "user": "Zagreb to Zurich, departure, 25.10.2025",
+      "assistant": "Unfortunately, there are no direct Lufthansa Group flights available for the route from Zagreb (ZAG) to Zurich (ZRH) on October 25, 2025. However, I can suggest alternative dates or nearby Lufthansa Group destinations if you'd like.",
+      "trace": []
+    },
+    {
+      "turn": 5,
+      "user": "01.11.2025",
+      "assistant": "Unfortunately, there are no direct Lufthansa Group flights available for the route from Zagreb (ZAG) to Zurich (ZRH) on November 1, 2025. However, I can suggest alternative dates or nearby Lufthansa Group destinations if you'd like.",
+      "trace": []
+    },
+    {
+      "turn": 6,
+      "user": "Show me the alternatives",
+      "assistant": "I'm sorry, but there are no alternative destinations available for travel from Zagreb in November 2025 based on the current data. However, I can certainly help you find flights for other months or suggest nearby destinations if you're open to exploring more options.",
+      "trace": []
+    }
+  ]
+}
