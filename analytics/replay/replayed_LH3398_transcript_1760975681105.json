@@ -1,0 +1,28 @@
+{
+  "file": "analytics\\replay\\LH3398_transcript.json",
+  "agentId": "JDLTXAKYJY",
+  "aliasId": "D84WDVHMZR",
+  "sessionId": "7882a994-4cfc-44d0-94d1-4c6b5c0146ff",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul , your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today?"
+    },
+    {
+      "turn": 2,
+      "user": "Inspire me for some trip next Februara where I can go skiing.",
+      "assistant": "Here are some skiing destinations for February that I found for you:\n1. **Innsbruck, Austria (INN)** - with a snow reliability score of 0.85\n2. **Salzburg, Austria (SZG)** - with a snow reliability score of 0.8\n3. **Geneva, Switzerland (GVA)** - with a snow reliability score of 0.75\n4. **Grenoble, France (GNB)** - with a snow reliability score of 0.75\n5. **Chambery, France (CMF)** - with a snow reliability score of 0.75\nWould you like to explore any of these destinations further?"
+    },
+    {
+      "turn": 3,
+      "user": "Inspire me for some trip next February where I can go skiing.",
+      "assistant": "Here are some skiing destinations for February that I found for you:\n1. **Innsbruck, Austria (INN)** - with a snow reliability score of 0.85\n2. **Salzburg, Austria (SZG)** - with a snow reliability score of 0.8\n3. **Geneva, Switzerland (GVA)** - with a snow reliability score of 0.75\n4. **Grenoble, France (GNB)** - with a snow reliability score of 0.75\n5. **Chambery, France (CMF)** - with a snow reliability score of 0.75\nWould you like to explore any of these destinations further?"
+    },
+    {
+      "turn": 4,
+      "user": "Yes.",
+      "assistant": "Great! Which of these destinations would you like to explore further?"
+    }
+  ]
+}

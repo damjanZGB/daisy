@@ -48,6 +48,7 @@ RECOMMENDER_MAX_TEXT_BYTES = int((os.getenv("RECOMMENDER_MAX_TEXT_BYTES") or "40
 # --------------- Destination Catalog (recommender) ----------------
 _DEST_CATALOG_PATHS = [
     os.path.join(os.getcwd(), "data", "lh_destinations_catalog.json"),
+    os.path.join(os.path.dirname(__file__), "data", "lh_destinations_catalog.json"),
     os.path.join(os.path.dirname(__file__), "..", "data", "lh_destinations_catalog.json"),
 ]
 _DEST_CATALOG: Optional[list] = None
@@ -295,6 +296,10 @@ LH_GROUP_CODES = ["LH", "LX", "OS", "SN", "EW", "4Y", "EN"]
 PROXY_BASE_URL = (os.getenv("PROXY_BASE_URL") or "http://localhost:8787").rstrip("/")
 
 MAX_LOOKAHEAD_DAYS = 365
+
+# Action group names (function-details)
+ACTION_GROUP_NAME = os.getenv("ACTION_GROUP_NAME", "daisy_in_action")
+ACTION_GROUP_RECOMMENDER = os.getenv("ACTION_GROUP_RECOMMENDER", "DestinationRecommender")
 
 _MONTH_LOOKUP = {
     "jan": 1,
@@ -1543,10 +1548,19 @@ def _wrap_function(
         except Exception:
             text_body = str(response_payload)
     _log("Function response wrapped", status=status, function=event.get("function"))
+    # Resolve action group for function-details responses. Event may not include actionGroup.
+    # Use env-configured names to avoid drift with Bedrock agent setup.
+    action_group_default = ACTION_GROUP_NAME
+    action_group_reco = ACTION_GROUP_RECOMMENDER
+    func_for_group = func_name  # already lower-cased above
+    action_group_val = (
+        event.get("actionGroup")
+        or (action_group_reco if func_for_group == "recommend_destinations" else action_group_default)
+    )
     return {
         "messageVersion": "1.0",
         "response": {
-            "actionGroup": event.get("actionGroup"),
+            "actionGroup": action_group_val,
             "function": event.get("function", "search_flights"),
             "functionResponse": {
                 "responseBody": {

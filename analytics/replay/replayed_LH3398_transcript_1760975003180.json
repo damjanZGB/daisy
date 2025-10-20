@@ -1,0 +1,28 @@
+{
+  "file": "analytics\\replay\\LH3398_transcript.json",
+  "agentId": "JDLTXAKYJY",
+  "aliasId": "D84WDVHMZR",
+  "sessionId": "a85fc7b5-5028-4e3f-ae04-ae04cfd80c33",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul , your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today?"
+    },
+    {
+      "turn": 2,
+      "user": "Inspire me for some trip next Februara where I can go skiing.",
+      "assistant": "ERROR: DependencyFailedException The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    },
+    {
+      "turn": 3,
+      "user": "Inspire me for some trip next February where I can go skiing.",
+      "assistant": "ERROR: DependencyFailedException The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    },
+    {
+      "turn": 4,
+      "user": "Yes.",
+      "assistant": "Great! To start planning your adventure, could you please share your preferred travel destination, the dates you're considering, and any specific preferences you might have?"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "flight": "LH7777",
+  "session": "fa4a9a2f-6c3e-4a9e-9a9a-777777777777",
+  "bedrockSessionId": "dd9a128f-2700-4e20-b9fb-5c7e814a7811",
+  "aliasKey": "aris",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Some warm place with beach in March next year",
+      "assistant": "Sorry, but I'm currently unable to provide beach destinations for March next year as the tool is temporarily unavailable. Would you like to try again later or specify another time or preference for your travel plans?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "Yes, show me a few options",
+      "assistant": "I'll look up some popular beach destinations for you. Please hold on for a moment.",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Option 1 looks good",
+      "assistant": "I'm sorry, but I couldn't find specific details about Option 1. Could you please clarify what Option 1 refers to or provide more details about the beach destination you're interested in?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 4,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "Here are the flight options for your trip from ZAG to ZRH:\n\n1. **Flight 460**:\n   - Departure: ZAG at 08:45\n   - Arrival: ZRH at 10:05\n   - Departure: ZRH at 11:05\n   - Arrival: ZAG at 12:10\n   - **Price: €203.07. 0 stops.**\n\n2. **Flight 460**:\n   - Departure: ZAG at 08:45\n   - Arrival: ZRH at 10:05\n   - Departure: ZRH at 19:55\n   - Arrival: ZAG at 21:00\n   - **Price: €203.07. 0 stops.**\n\n3. **Flight 464**:\n   - Departure: ZAG at 17:55\n   - Arrival: ZRH at 19:15\n   - Departure: ZRH at 11:05\n   - Arrival: ZAG at 12:10\n   - **Price: €203.07. 0 stops.**\n\n4. **Flight 464**:\n   - Departure: ZAG at 17:55\n   - Arrival: ZRH at 19:15\n   - Departure: ZRH at 19:55\n   - Arrival: ZAG at 21:00\n   - **Price: €203.07. 0 stops.**\n\n5. **Flight 460**:\n   - Departure: ZAG at 08:45\n   - Arrival: ZRH at 10:05\n   - Departure: ZRH at 07:30\n   - Arrival: BRU at 08:50\n   - Departure: BRU at 10:30\n   - Arrival: ZAG at 12:10\n   - **Price: €261.72. 2 stops.**\n\n6. **Flight 464**:\n   - Departure: ZAG at 17:55\n   - Arrival: ZRH at 19:15\n   - Departure: ZRH at 07:30\n   - Arrival: BRU at 08:50\n   - Departure: BRU at 10:30\n   - Arrival: ZAG at 12:10\n   - **Price: €261.72. 2 stops.**\n\n7. **Flight 460**:\n   - Departure: ZAG at 08:45\n   - Arrival: ZRH at 10:05\n   - Departure: ZRH at 07:20\n   - Arrival: VIE at 08:40\n   - Departure: VIE at 10:10\n   - Arrival: ZAG at 11:00\n   - **Price: €262.43. 2 stops.**\n\n8. **Flight 464**:\n   - Departure: ZAG at 17:55\n   - Arrival: ZRH at 19:15\n   - Departure: ZRH at 07:20\n   - Arrival: VIE at 08:40\n   - Departure: VIE at 10:10\n   - Arrival: ZAG at 11:00\n   - **Price: €262.43. 2 stops.**\n\n9. **Flight 460**:\n   - Departure: ZAG at 08:45\n   - Arrival: ZRH at 10:05\n   - Departure: ZRH at 15:05\n   - Arrival: VIE at 16:25\n   - Departure: VIE at 19:35\n   - Arrival: ZAG at 20:25",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    }
+  ]
+}

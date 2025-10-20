@@ -1,0 +1,1 @@
+{"function":"recommend_destinations","promptSessionAttributes":{},"parameters":[{"value":"ZAG","name":"originCode"},{"value":"2025-02","name":"month"},{"value":"[\"winter_sports\"]","name":"themeTags"},{"value":false,"name":"withItineraries"},{"value":"EUR","name":"currency"}],"sessionAttributes":{},"messageVersion":"1.0"}

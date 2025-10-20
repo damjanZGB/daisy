@@ -1,0 +1,106 @@
+{
+  "flight": "LH9999",
+  "session": "0aae5c0f-61e4-407a-83cf-bda1d58cd552",
+  "bedrockSessionId": "e9636b28-e3f0-412c-ad39-8a3fcdad6f3e",
+  "aliasKey": "leo",
+  "turns": [
+    {
+      "turn": 1,
+      "user": "Hi",
+      "assistant": "Hi, I am Paul , your inspirational Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today?",
+      "trace": [],
+      "format_ok": false,
+      "format_checks": {
+        "hasNumbered": false,
+        "hasSections": false,
+        "hasThen": false,
+        "hasArrow": false,
+        "hasPrice": false
+      }
+    },
+    {
+      "turn": 2,
+      "user": "I want to go to Zurich. Next saturday.",
+      "assistant": "Here are some flight options for your trip to Zurich next Saturday:\n\n1. **Flight 601**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Belgrade, Serbia (BEG)\n   - DEPARTURE: 2025-10-25 09:50\n   - ARRIVAL: 2025-10-25 11:00\n   - **THEN, Flight 332**:\n   - FROM: Belgrade, Serbia (BEG)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 12:00\n   - ARRIVAL: 2025-10-25 13:50\n   - **Price: €128.77. 1 stop.**\n\n2. **Flight 460**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 09:15\n   - ARRIVAL: 2025-10-25 10:45\n   - **Price: €133.34. Direct.**\n\n3. **Flight 464**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 17:50\n   - ARRIVAL: 2025-10-25 19:20\n   - **Price: €133.34. Direct.**\n\n4. **Flight 384**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Dubrovnik, Croatia (DBV)\n   - DEPARTURE: 2025-10-25 14:25\n   - ARRIVAL: 2025-10-25 15:20\n   - **THEN, Flight 5204**:\n   - FROM: Dubrovnik, Croatia (DBV)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 19:40\n   - ARRIVAL: 2025-10-25 21:30\n   - **Price: €165.67. 1 stop.**\n\n5. **Flight 781**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Athens, Greece (ATH)\n   - DEPARTURE: 2025-10-25 19:15\n   - ARRIVAL: 2025-10-25 22:05\n   - **THEN, Flight 850**:\n   - FROM: Athens, Greece (ATH)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-26 08:30\n   - ARRIVAL: 2025-10-26 10:20\n   - **Price: €185.06. 1 stop.**\n\nPlease let me know which option you prefer or if you need more information on any of the flights.",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 3,
+      "user": "I can be connecting flight",
+      "assistant": "Here are some connecting flight options for your trip to Zurich next Saturday:\n\n1. **Flight 601**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Belgrade, Serbia (BEG)\n   - DEPARTURE: 2025-10-25 09:50\n   - ARRIVAL: 2025-10-25 11:00\n   - **THEN, Flight 332**:\n   - FROM: Belgrade, Serbia (BEG)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 12:00\n   - ARRIVAL: 2025-10-25 13:50\n   - **Price: €128.77. 1 stop.**\n\n4. **Flight 384**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Dubrovnik, Croatia (DBV)\n   - DEPARTURE: 2025-10-25 14:25\n   - ARRIVAL: 2025-10-25 15:20\n   - **THEN, Flight 5204**:\n   - FROM: Dubrovnik, Croatia (DBV)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 19:40\n   - ARRIVAL: 2025-10-25 21:30\n   - **Price: €165.67. 1 stop.**\n\n5. **Flight 781**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Athens, Greece (ATH)\n   - DEPARTURE: 2025-10-25 19:15\n   - ARRIVAL: 2025-10-25 22:05\n   - **THEN, Flight 850**:\n   - FROM: Athens, Greece (ATH)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-26 08:30\n   - ARRIVAL: 2025-10-26 10:20\n   - **Price: €185.06. 1 stop.**\n\n6. **Flight 436**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Munich, Germany (MUC)\n   - DEPARTURE: 2025-10-25 18:45\n   - ARRIVAL: 2025-10-25 19:55\n   - **THEN, Flight 1111**:\n   - FROM: Munich, Germany (MUC)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 20:55\n   - ARRIVAL: 2025-10-25 21:50\n   - **Price: €203.45. 1 stop.**\n\nPlease let me know which connecting flight option you prefer or if you need more information on any of the flights.",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 4,
+      "user": "Show me the alternatives",
+      "assistant": "Here are some additional connecting flight options for your trip to Zurich next Saturday:\n\n7. **Flight 5396**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Frankfurt, Germany (FRA)\n   - DEPARTURE: 2025-10-25 06:00\n   - ARRIVAL: 2025-10-25 07:45\n   - **THEN, Flight 1069**:\n   - FROM: Frankfurt, Germany (FRA)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 08:50\n   - ARRIVAL: 2025-10-25 09:45\n   - **Price: €200.45. 1 stop.**\n\n8. **Flight 416**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Frankfurt, Germany (FRA)\n   - DEPARTURE: 2025-10-25 09:05\n   - ARRIVAL: 2025-10-25 10:40\n   - **THEN, Flight 1190**:\n   - FROM: Frankfurt, Germany (FRA)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 13:10\n   - ARRIVAL: 2025-10-25 14:05\n   - **Price: €202.45. 1 stop.**\n\n9. **Flight 410**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Frankfurt, Germany (FRA)\n   - DEPARTURE: 2025-10-25 07:40\n   - ARRIVAL: 2025-10-25 09:15\n   - **THEN, Flight 1190**:\n   - FROM: Frankfurt, Germany (FRA)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 13:10\n   - ARRIVAL: 2025-10-25 14:05\n   - **Price: €202.45. 1 stop.**\n\nPlease let me know if you prefer any of these alternative connecting flight options or if you need more information on any of the flights.",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 5,
+      "user": "Show me the alternatives. Inspire me",
+      "assistant": "Here are some additional connecting flight options for your trip to Zurich next Saturday, each offering a unique journey:\n\n7. **Flight 5396**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Frankfurt, Germany (FRA)\n   - DEPARTURE: 2025-10-25 06:00\n   - ARRIVAL: 2025-10-25 07:45\n   - **THEN, Flight 1069**:\n   - FROM: Frankfurt, Germany (FRA)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 08:50\n   - ARRIVAL: 2025-10-25 09:45\n   - **Price: €200.45. 1 stop.**\n   - **Inspiration**: Imagine stepping off a plane in Frankfurt, a city known for its financial prowess and rich history, and then making your way to Zurich, where you can explore its stunning lakes and mountains.\n\n8. **Flight 416**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Frankfurt, Germany (FRA)\n   - DEPARTURE: 2025-10-25 09:05\n   - ARRIVAL: 2025-10-25 10:40\n   - **THEN, Flight 1190**:\n   - FROM: Frankfurt, Germany (FRA)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 13:10\n   - ARRIVAL: 2025-10-25 14:05\n   - **Price: €202.45. 1 stop.**\n   - **Inspiration**: Picture yourself flying over the Rhine River as you travel from Frankfurt to Zurich, with the opportunity to explore both cities' unique cultures and attractions.\n\n9. **Flight 410**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Frankfurt, Germany (FRA)\n   - DEPARTURE: 2025-10-25 07:40\n   - ARRIVAL: 2025-10-25 09:15\n   - **THEN, Flight 1190**:\n   - FROM: Frankfurt, Germany (FRA)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 13:10\n   - ARRIVAL: 2025-10-25 14:05\n   - **Price: €202.45. 1 stop.**\n   - **Inspiration**: Envision a journey that allows you to experience the charm of Frankfurt before arriving in Zurich, where you can indulge in its renowned chocolate and cheese.\n\nPlease let me know if any of these alternative connecting flight options inspire you or if you need more information on any of the flights.",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 6,
+      "user": "Yes. Show me the alternatives",
+      "assistant": "Here are some additional connecting flight options for your trip to Zurich next Saturday:\n\n10. **Flight 384**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Dubrovnik, Croatia (DBV)\n   - DEPARTURE: 2025-10-25 14:25\n   - ARRIVAL: 2025-10-25 15:20\n   - **THEN, Flight 5204**:\n   - FROM: Dubrovnik, Croatia (DBV)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 19:40\n   - ARRIVAL: 2025-10-25 21:30\n   - **Price: €165.67. 1 stop.**\n\n11. **Flight 781**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Athens, Greece (ATH)\n   - DEPARTURE: 2025-10-25 19:15\n   - ARRIVAL: 2025-10-25 22:05\n   - **THEN, Flight 850**:\n   - FROM: Athens, Greece (ATH)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-26 08:30\n   - ARRIVAL: 2025-10-26 10:20\n   - **Price: €185.06. 1 stop.**\n\n12. **Flight 436**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Munich, Germany (MUC)\n   - DEPARTURE: 2025-10-25 18:45\n   - ARRIVAL: 2025-10-25 19:55\n   - **THEN, Flight 1111**:\n   - FROM: Munich, Germany (MUC)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-10-25 20:55\n   - ARRIVAL: 2025-10-25 21:50\n   - **Price: €203.45. 1 stop.**\n\nPlease let me know if you prefer any of these alternative connecting flight options or if you need more information on any of the flights.",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    },
+    {
+      "turn": 7,
+      "user": "ZAG to ZRH, 2025-12-10 return 2025-12-12, 1 adult. Show options.",
+      "assistant": "Here are some round-trip flight options for your trip from Zapresic, Croatia (ZAG) to Zurich, Switzerland (ZRH) for the dates 2025-12-10 to 2025-12-12:\n\n1. **Flight 460**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-12-10 08:45\n   - ARRIVAL: 2025-12-10 10:05\n   - **THEN, Flight 461**:\n   - FROM: Zurich, Switzerland (ZRH)\n   - TO: Zapresic, Croatia (ZAG)\n   - DEPARTURE: 2025-12-12 11:05\n   - ARRIVAL: 2025-12-12 12:10\n   - **Price: €203.07**\n\n2. **Flight 460**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-12-10 08:45\n   - ARRIVAL: 2025-12-10 10:05\n   - **THEN, Flight 465**:\n   - FROM: Zurich, Switzerland (ZRH)\n   - TO: Zapresic, Croatia (ZAG)\n   - DEPARTURE: 2025-12-12 19:55\n   - ARRIVAL: 2025-12-12 21:00\n   - **Price: €203.07**\n\n3. **Flight 464**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-12-10 17:55\n   - ARRIVAL: 2025-12-10 19:15\n   - **THEN, Flight 461**:\n   - FROM: Zurich, Switzerland (ZRH)\n   - TO: Zapresic, Croatia (ZAG)\n   - DEPARTURE: 2025-12-12 11:05\n   - ARRIVAL: 2025-12-12 12:10\n   - **Price: €203.07**\n\n4. **Flight 464**:\n   - FROM: Zapresic, Croatia (ZAG)\n   - TO: Zurich, Switzerland (ZRH)\n   - DEPARTURE: 2025-12-10 17:55\n   - ARRIVAL: 2025-12-10 19:15\n   - **THEN, Flight 465**:\n   - FROM: Zurich, Switzerland (ZRH)\n   - TO: Zapresic, Croatia (ZAG)\n   - DEPARTURE: 2025-12-12 19:55\n   - ARRIVAL: 2025-12-12 21:00\n   - **Price: €203.07**\n\nPlease let me know which round-trip flight option you prefer or if you need more information on any of the flights.",
+      "trace": [],
+      "format_ok": true,
+      "format_checks": {
+        "hasNumbered": true,
+        "hasSections": false,
+        "hasThen": true,
+        "hasArrow": false,
+        "hasPrice": true
+      }
+    }
+  ]
+}
