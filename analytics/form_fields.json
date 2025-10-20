@@ -3,10 +3,6 @@
   "fieldCount": 20,
   "fields": [
     {
-      "name": "Text17",
-      "type": "PDFTextField"
-    },
-    {
       "name": "passenger_left",
       "type": "PDFTextField"
     },
@@ -80,6 +76,10 @@
     },
     {
       "name": "flight_right",
+      "type": "PDFTextField"
+    },
+    {
+      "name": "seq_no_right",
       "type": "PDFTextField"
     }
   ]

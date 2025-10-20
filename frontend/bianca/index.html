@@ -143,9 +143,9 @@
     });
     const generatePdf = async (opt) => {
       try {
-        const { PDFDocument } = window.PDFLib || {};
+        const { PDFDocument, StandardFonts } = window.PDFLib || {};
         if (!PDFDocument) return null;
-        const tryFetch = async (paths) => { for (const p of paths) { try { const res = await fetch(p); if (res.ok) return await res.arrayBuffer(); } catch(_){} } return null; }; const candidates = ['/lufthansa_template_empty_form.pdf','./lufthansa_template_empty_form.pdf','../lufthansa_template_empty_form.pdf','../img/lufthansa_template_empty_form.pdf','./img/lufthansa_template_empty_form.pdf']; const formBytes = await tryFetch(candidates); if (!formBytes) return null;
+        const tryFetch = async (paths) => { for (const p of paths) { try { const res = await fetch(p); if (res.ok) return await res.arrayBuffer(); } catch(_){} } return null; }; const candidates = [ '../img/lufthansa_template_empty_form.pdf', './img/lufthansa_template_empty_form.pdf', '/lufthansa_template_empty_form.pdf', './lufthansa_template_empty_form.pdf', '../lufthansa_template_empty_form.pdf' ]; const formBytes = await tryFetch(candidates); if (!formBytes) return null;
         const parseLeg = (line) => {
           const m = String(line).match(/THEN\s+([A-Z]{1,3})\s*(\d{2,5})\s+([A-Z]{3})\s+(\d{2}:\d{2})\s*->\s*([A-Z]{3})\s+(\d{2}:\d{2})/i);
           return m ? { carrier:m[1].toUpperCase(), flightNo:m[2], from:m[3].toUpperCase(), dep:m[4], to:m[5].toUpperCase(), arr:m[6] } : null;
@@ -177,8 +177,15 @@
           set('date_right', date); set('departure_right', leg.dep);
           set('gate_right', gate); set('zone_right', zone); set('seat_right', seat); set('seq_no_right', seq);
           set('flight_right', `${leg.carrier} ${leg.flightNo}`);
-          try{ form.getTextField('Text17').setText(''); }catch(e){}
-          form.flatten();
+          try { const helv = await src.embedFont(window.PDFLib.StandardFonts.Helvetica);
+            form.updateFieldAppearances(helv); 
+          } 
+            catch (e) { 
+              try { 
+                form.updateFieldAppearances(); 
+              } 
+              catch(_){} 
+            }
           const [pg]=await finalDoc.copyPages(src,[0]); finalDoc.addPage(pg);
         }
         if (finalDoc.getPageCount() === 0) { finalDoc.addPage(); } const bytes=await finalDoc.save();
@@ -799,4 +806,6 @@
  </body>
 
  </html>
+
+
 
