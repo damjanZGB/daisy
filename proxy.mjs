@@ -1042,7 +1042,6 @@ const server = http.createServer(async (req, res) => {
         promptAttributes.default_origin_label = locationLabel;
       }
       // Preflight: only add origin context (date/destination are tool responsibilities)
-      // Preflight: only add origin context (date/destination are tool responsibilities)
       try {
         const ctxLines = [];
         if (defaultOrigin) ctxLines.push(`SYSTEM CONTEXT: Inferred default departure is ${defaultOrigin}.`);
@@ -1052,8 +1051,6 @@ const server = http.createServer(async (req, res) => {
       } catch (e) {
         logger.warn(`[${requestId}] Preflight enrichment failed`, { message: e?.message || String(e) });
       }
-
-
 
       const data = await awsInvokeAgent({
         aliasId: AGENT_ALIAS_ID,
