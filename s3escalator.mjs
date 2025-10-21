@@ -1,4 +1,4 @@
-﻿// s3escalator.mjs -- Generic S3 uploader for transcripts, logs, and alerts.
+// s3escalator.mjs -- Generic S3 uploader for transcripts, logs, and alerts.
 //
 // Expected POST /tools/s3escalator JSON payload fields:
 // {

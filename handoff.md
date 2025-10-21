@@ -49,6 +49,7 @@ Proxy (Node)
   - POST /invoke ? forwards to Bedrock Agent Runtime (streams events)
   - POST /tools/amadeus/search ? Amadeus Flight Offers Search adapter
   - GET  /tools/iata/lookup ? local deterministic IATA resolver
+  - POST /tools/give_me_tools ? return JSON catalogue of available proxy tools
   - GET/HEAD /health ? liveness (JSON for GET, empty for HEAD)
   - GET/HEAD /ready ? readiness (cached background checks, JSON for GET, empty for HEAD)
   - GET/HEAD / ? plain text banner for probes (200)
@@ -134,4 +135,21 @@ Recommended (edge/ops)
 - Rate limiting at the edge (CloudFront/ALB + AWS WAF). In-app rate limiting only if required; exempt /health and /ready.
 - Downgrade benign HEAD/GET 404 logs to info/debug if needed (current explicit routes avoid probe noise).
 - Emit minimal counters/timers (success rate, p95 duration) per route; keep debug captures gated.
+
+Supplementary Microservices
+- s3escalator (s3escalator.mjs, PORT default 8788)
+  - Purpose: generic S3 uploader for transcripts/logs/alerts.
+  - Env: `S3_BUCKET`, `S3_PREFIX`, `UPLOADER_TOKEN`, `ORIGIN`, optional `AGENT_ALIAS_ID`/`AGENT_VERSION`.
+  - Notes: requires `ORIGIN` allowlist; proxy forwards `/log/transcript` payloads when `TRANSCRIPT_UPLOADER_URL` is set.
+- antiPhaser (antiPhaser.mjs, PORT default 8789)
+  - Purpose: parse natural-language date phrases (uses `chrono-node`, `luxon`).
+  - Routes: `POST /tools/antiPhaser`, `GET /tools/antiPhaser`, plus /health and /ready.
+  - Env: `ORIGIN`, optional `DEFAULT_TIMEZONE`.
+- derDrucker (derDrucker.mjs, PORT default 8790)
+  - Purpose: format offers into Markdown and emit PDF tickets.
+  - Routes: `POST /tools/derDrucker/wannaCandy`, `POST /tools/derDrucker/generateTickets`, plus /health and /ready.
+  - Env: `ORIGIN`, optional `DEFAULT_TIMEZONE`.
+
+Node Dependencies
+- Install once in the repository: `npm install chrono-node luxon pdf-lib` (needed by antiPhaser and derDrucker).
 
