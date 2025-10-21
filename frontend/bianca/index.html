@@ -487,6 +487,27 @@
             return null;
           }
         };
+        const geocodeByCityCountry = async (city, country, region) => {
+          const parts = [city, region, country].filter(part => typeof part === 'string' && part.trim().length > 0);
+          if (!parts.length) return null;
+          const search = parts.join(', ');
+          try {
+            const url = `https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&format=json&name=${encodeURIComponent(search)}`;
+            const resp = await fetch(url);
+            if (!resp.ok) return null;
+            const data = await resp.json();
+            const result = (data.results || [])[0];
+            if (!result) return null;
+            const lat = Number(result.latitude);
+            const lon = Number(result.longitude);
+            if (Number.isFinite(lat) && Number.isFinite(lon)) {
+              return { lat, lon };
+            }
+          } catch (_) {
+            return null;
+          }
+          return null;
+        };
         const applyLocation = (label, tz, inferred, lat, lon) => {
           setLocationInfo(prev => ({
             ...prev,
@@ -529,8 +550,15 @@
             const country = data.country_name || data.country;
             const tz = data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
             const label = [city, region, country].filter(Boolean).join(', ') || 'Approximate location';
-            const lat = Number(data.latitude);
-            const lon = Number(data.longitude);
+            let lat = Number(data.latitude);
+            let lon = Number(data.longitude);
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+              const geo = await geocodeByCityCountry(city, country, region);
+              if (geo) {
+                lat = geo.lat;
+                lon = geo.lon;
+              }
+            }
             let inferred = null;
             if (Number.isFinite(lat) && Number.isFinite(lon)) {
               inferred = await inferIata({ lat, lon });
