@@ -602,29 +602,6 @@ _ORIGIN_SENTINELS_NEAREST = {
 }
 
 
-def _lookup_origin_from_label(label: Optional[str]) -> Optional[str]:
-    if not label:
-        return None
-    text = str(label).strip()
-    if not text:
-        return None
-    try:
-        matches = proxy_lookup_iata(text)
-    except Exception as exc:
-        _log("Context origin lookup failed", label=text, error=str(exc))
-        return None
-    for match in matches:
-        if isinstance(match, dict):
-            code = match.get("code")
-            if code:
-                resolved = str(code).strip().upper()
-                if resolved:
-                    _log("Context origin lookup resolved", label=text, code=resolved)
-                    return resolved
-    _log("Context origin lookup returned no codes", label=text)
-    return None
-
-
 def _apply_contextual_defaults(
     normalized: Dict[str, Any],
     event: Dict[str, Any],
@@ -638,31 +615,39 @@ def _apply_contextual_defaults(
         .strip()
         .upper()
     )
-    default_label = (
-        str(
-            prompt_attrs.get("default_origin_label")
-            or session_attrs.get("default_origin_label")
-            or ""
-        ).strip()
-    )
 
     raw_origin = normalized.get("origin")
     if raw_origin:
         origin_text = str(raw_origin).strip()
         origin_lower = origin_text.lower()
-        resolved_origin: Optional[str] = None
         if origin_lower in _ORIGIN_SENTINELS_DEFAULT or origin_lower == "default":
-            resolved_origin = default_origin or _lookup_origin_from_label(default_label)
+            if default_origin:
+                normalized["origin"] = default_origin
+                _log(
+                    "Context origin substituted",
+                    sentinel=origin_text,
+                    resolved=default_origin,
+                )
+            else:
+                normalized.pop("origin", None)
+                _log(
+                    "Context origin sentinel without geolocation default",
+                    sentinel=origin_text,
+                )
         elif origin_lower in _ORIGIN_SENTINELS_NEAREST:
-            resolved_origin = default_origin or _lookup_origin_from_label(default_label)
-        if resolved_origin:
-            normalized["origin"] = resolved_origin
-            _log(
-                "Context origin substituted",
-                sentinel=origin_text,
-                resolved=resolved_origin,
-                default_label=default_label or None,
-            )
+            if default_origin:
+                normalized["origin"] = default_origin
+                _log(
+                    "Context origin substituted (nearest)",
+                    sentinel=origin_text,
+                    resolved=default_origin,
+                )
+            else:
+                normalized.pop("origin", None)
+                _log(
+                    "Context nearest origin sentinel without geolocation default",
+                    sentinel=origin_text,
+                )
     elif default_origin:
         normalized["origin"] = default_origin
         _log("Context origin filled from defaults", resolved=default_origin)

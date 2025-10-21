@@ -509,8 +509,10 @@
             const locality = data.city || data.locality || data.principalSubdivision || '';
             const country = data.countryName || data.countryCode || '';
             const label = [locality, country].filter(Boolean).join(', ') || 'Current location';
-            let inferred = await inferIata({ lat, lon });
-            if (!inferred && country) inferred = await inferIata({ term: country });
+            let inferred = null;
+            if (Number.isFinite(lat) && Number.isFinite(lon)) {
+              inferred = await inferIata({ lat, lon });
+            }
             applyLocation(label, Intl.DateTimeFormat().resolvedOptions().timeZone, inferred, lat, lon);
             return true;
           } catch {
@@ -529,10 +531,9 @@
             const label = [city, region, country].filter(Boolean).join(', ') || 'Approximate location';
             const lat = Number(data.latitude);
             const lon = Number(data.longitude);
-            let inferred = await inferIata({ lat, lon });
-            if (!inferred && (isNaN(lat) || isNaN(lon))) {
-              if (city) inferred = await inferIata({ term: city });
-              if (!inferred && country) inferred = await inferIata({ term: country });
+            let inferred = null;
+            if (Number.isFinite(lat) && Number.isFinite(lon)) {
+              inferred = await inferIata({ lat, lon });
             }
             applyLocation(label, tz, inferred, lat, lon);
           } catch {
