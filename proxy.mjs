@@ -1362,6 +1362,8 @@ const server = http.createServer(async (req, res) => {
       const nonStop = /^true$/i.test(String(searchParams.get("nonStop") || "false"));
       const maxPrice = String(searchParams.get("maxPrice") || "").trim();
       const viewBy = String(searchParams.get("viewBy") || "").trim().toUpperCase();
+      const limit = Math.max(1, Math.min(10, Number(searchParams.get("limit") || "5")));
+      const currencyCode = String(searchParams.get("currencyCode") || "").trim().toUpperCase();
 
       const isIata = (s) => /^[A-Z]{3}$/.test(s || "");
       if (!isIata(origin) || !isIata(destination)) {
@@ -1378,8 +1380,18 @@ const server = http.createServer(async (req, res) => {
         const d = new Date(Date.UTC(y, m - 1, 1));
         return d.toISOString().slice(0, 10);
       }
-      let from = fromQ;
-      let to = toQ;
+      let from = "";
+      let to = "";
+      if (departureDate) {
+        const parts = departureDate.split(",").map(part => part.trim()).filter(Boolean);
+        if (parts.length === 1) {
+          from = parts[0];
+          to = parts[0];
+        } else if (parts.length >= 2) {
+          from = parts[0];
+          to = parts[1];
+        }
+      }
       if (month && (!from || !to)) {
         const m = month.match(/^(\d{4})-(\d{2})$/);
         if (m) {
@@ -1392,7 +1404,7 @@ const server = http.createServer(async (req, res) => {
       if (!from || !to) {
         res.statusCode = 400;
         res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify({ error: "missing_date_window", hint: "Provide month=YYYY-MM or departureDateFrom/To" }));
+        res.end(JSON.stringify({ error: "missing_date_window", hint: "Provide departureDate=YYYY-MM-DD[,YYYY-MM-DD] or month=YYYY-MM" }));
         return;
       }
       const windowKey = `${from}|${to}`;
@@ -1409,7 +1421,8 @@ const server = http.createServer(async (req, res) => {
       params.set("departureDate", `${from},${to}`);
       params.set("oneWay", oneWay ? "true" : "false");
       if (nonStop) params.set("nonStop", "true");
-      // viewBy left to default (DATE)
+      if (maxPrice) params.set("maxPrice", maxPrice);
+      if (viewBy) params.set("viewBy", viewBy);
       let json;
       try {
         const token = await amadeusToken();

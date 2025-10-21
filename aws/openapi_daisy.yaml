@@ -126,72 +126,107 @@ paths:
 
   /tools/amadeus/flex:
     description: One-call flexible dates selection and LH-only pricing (one-way).
-    post:
+    get:
       operationId: amadeusFlex
       summary: Flexible dates priced list
       description: Request the proxy to select cheapest days and return LH-only priced offers for one-way searches.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - originLocationCode
-                - destinationLocationCode
-              properties:
-                originLocationCode:
-                  type: string
-                  description: IATA origin code (for example, MUC)
-                destinationLocationCode:
-                  type: string
-                  description: IATA destination code (for example, ZRH)
-                month:
-                  type: string
-                  description: Month window (YYYY-MM); alternative to departureDateFrom or departureDateTo
-                departureDateFrom:
-                  type: string
-                  format: date
-                  description: Start of date window (YYYY-MM-DD)
-                departureDateTo:
-                  type: string
-                  format: date
-                  description: End of date window (YYYY-MM-DD)
-                oneWay:
-                  type: boolean
-                  default: true
-                  description: Must be true to return priced results (calendar is internal)
-                nonStop:
-                  type: boolean
-                  default: false
-                  description: If true, return only non-stop options
-                currencyCode:
-                  type: string
-                  description: Currency code (ISO 4217), for example EUR
-                limit:
-                  type: integer
-                  minimum: 1
-                  maximum: 10
-                  default: 5
-                  description: Maximum number of cheapest days to select from calendar
-                priceLimit:
-                  type: integer
-                  minimum: 1
-                  maximum: 10
-                  description: Maximum number of days to price (defaults to limit)
-                adults:
-                  type: integer
-                  minimum: 1
-                  default: 1
-                  description: Number of adult passengers
-                travelClass:
-                  type: string
-                  enum:
-                    - ECONOMY
-                    - PREMIUM_ECONOMY
-                    - BUSINESS
-                    - FIRST
-                  description: Preferred cabin class
+      parameters:
+        - in: query
+          name: origin
+          required: true
+          schema:
+            type: string
+          description: IATA origin code (for example, MUC)
+        - in: query
+          name: destination
+          required: true
+          schema:
+            type: string
+          description: IATA destination code (for example, ZRH)
+        - in: query
+          name: departureDate
+          required: false
+          schema:
+            type: string
+          description: Specific departure date or inclusive range (YYYY-MM-DD or YYYY-MM-DD,YYYY-MM-DD)
+        - in: query
+          name: month
+          required: false
+          schema:
+            type: string
+          description: Month window (YYYY-MM); alternative to departureDate
+        - in: query
+          name: oneWay
+          required: false
+          schema:
+            type: boolean
+            default: true
+          description: Must be true to return priced results (calendar is internal)
+        - in: query
+          name: nonStop
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: If true, return only non-stop options
+        - in: query
+          name: maxPrice
+          required: false
+          schema:
+            type: integer
+          description: Maximum price per traveler (positive integer)
+        - in: query
+          name: viewBy
+          required: false
+          schema:
+            type: string
+            enum:
+              - DATE
+              - DURATION
+              - WEEK
+          description: Optional calendar grouping (defaults to DATE for one-way)
+        - in: query
+          name: currencyCode
+          required: false
+          schema:
+            type: string
+          description: Currency code (ISO 4217), for example EUR
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+            default: 5
+          description: Maximum number of cheapest days to select from calendar
+        - in: query
+          name: priceLimit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+          description: Maximum number of days to price (defaults to limit)
+        - in: query
+          name: adults
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Number of adult passengers
+        - in: query
+          name: travelClass
+          required: false
+          schema:
+            type: string
+            enum:
+              - ECONOMY
+              - PREMIUM_ECONOMY
+              - BUSINESS
+              - FIRST
+          description: Preferred cabin class
       responses:
         "200":
           description: OK

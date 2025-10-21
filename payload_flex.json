@@ -1,52 +1,12 @@
 ﻿{
     "apiPath":  "/tools/amadeus/flex",
-    "httpMethod":  "GET",
-    "requestBody":  {
-                        "content":  {
-                                        "application/json":  {
-                                                                 "properties":  [
-                                                                                    {
-                                                                                        "value":  "MUC",
-                                                                                        "name":  "originLocationCode"
-                                                                                    },
-                                                                                    {
-                                                                                        "value":  "ZRH",
-                                                                                        "name":  "destinationLocationCode"
-                                                                                    },
-                                                                                    {
-                                                                                        "value":  "2025-11",
-                                                                                        "name":  "month"
-                                                                                    },
-                                                                                    {
-                                                                                        "value":  true,
-                                                                                        "name":  "oneWay"
-                                                                                    },
-                                                                                    {
-                                                                                        "value":  false,
-                                                                                        "name":  "nonStop"
-                                                                                    },
-                                                                                    {
-                                                                                        "value":  "EUR",
-                                                                                        "name":  "currencyCode"
-                                                                                    },
-                                                                                    {
-                                                                                        "value":  5,
-                                                                                        "name":  "limit"
-                                                                                    },
-                                                                                    {
-                                                                                        "value":  3,
-                                                                                        "name":  "priceLimit"
-                                                                                    },
-                                                                                    {
-                                                                                        "value":  1,
-                                                                                        "name":  "adults"
-                                                                                    },
-                                                                                    {
-                                                                                        "value":  "ECONOMY",
-                                                                                        "name":  "travelClass"
-                                                                                    }
-                                                                                ]
-                                                             }
-                                    }
-                    }
+    "httpMethod":  "POST",
+    "body":  {
+                 "originLocationCode":  "MUC",
+                 "destinationLocationCode":  "ZRH",
+                 "month":  "2025-11",
+                 "oneWay":  true,
+                 "nonStop":  false,
+                 "limit":  5
+             }
 }
