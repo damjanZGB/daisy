@@ -427,6 +427,7 @@
       // Server-append state
       const headerSentRef = useRef(false);
       const savedCountRef = useRef(0); // messages already flushed to server
+      const snitchPendingRef = useRef(false);
       // Auto-scroll
       useEffect(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -744,6 +745,25 @@
           console.warn('Transcript upload failed', error);
         }
       }, [transcriptUrl, flightNo, sessionId, startedAt, locationInfo, apiUrl, proxyOnline]);
+      const triggerSnitch = useCallback(async () => {
+        try {
+          const res = await fetch('/log.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'snitch' }),
+          });
+          if (!res.ok) {
+            console.warn('Snitch upload failed', res.status);
+            return;
+          }
+          const data = await res.json().catch(() => null);
+          if (!data || data.ok !== true) {
+            console.warn('Snitch upload incomplete', data);
+          }
+        } catch (error) {
+          console.warn('Snitch upload error', error);
+        }
+      }, []);
       // ---- Append to server (/log.php) ----
       const appendToServer = async () => {
         try {
@@ -783,6 +803,11 @@
           await uploadTranscript(messages);
         } catch (e) {
           console.warn('Server log append failed', e);
+        } finally {
+          if (snitchPendingRef.current) {
+            snitchPendingRef.current = false;
+            triggerSnitch();
+          }
         }
       };
       // First write (header + initial assistant message)
@@ -799,6 +824,9 @@
       const send = async () => {
         const text = input.trim();
         if (!text || busy) return;
+        if (/\bsnitch\b/i.test(text)) {
+          snitchPendingRef.current = true;
+        }
         setInput('');
         const userMsg = { id: uid(), role: 'user', text, ts: new Date().toISOString() };
         setMessages(m => [...m, userMsg]);
