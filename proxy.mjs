@@ -483,6 +483,33 @@ function decodeAgentEventStream(buffer) {
       usedFunctionResponseFallback = true;
     }
   }
+  // Absolute last-resort fallback: surface an error summary from recent events
+  if (!cleanedText) {
+    const findFirstString = (obj, keys, depth = 0) => {
+      if (!obj || typeof obj !== 'object' || depth > 6) return null;
+      for (const k of keys) {
+        if (typeof obj[k] === 'string' && obj[k].trim()) return obj[k].trim();
+        if (typeof obj[k] === 'number') return String(obj[k]);
+      }
+      for (const v of Object.values(obj)) {
+        const got = findFirstString(v, keys, depth + 1);
+        if (got) return got;
+      }
+      return null;
+    };
+    let hint = null;
+    for (let i = events.length - 1; i >= 0; i--) {
+      const ev = events[i];
+      let src = ev && ev.json;
+      if (!src && ev && ev.payload) { try { src = JSON.parse(ev.payload); } catch (_) { /* ignore */ } }
+      if (!src) continue;
+      const msg = findFirstString(src, ['message','error','detail','reason','statusText']);
+      const status = findFirstString(src, ['status','statusCode']);
+      if (msg || status) { hint = (msg || 'Request failed') + (status ? (' (HTTP ' + status + ')') : ''); break; }
+    }
+    cleanedText = hint ? ('Sorry, I could not retrieve results: ' + hint + '. Please adjust dates or destination and try again.') : 'Sorry, I could not retrieve results right now. Please try again.';
+    usedFunctionResponseFallback = true;
+  }
   const result = { text: cleanedText, events };
   if (askUserQuestions.length > 0) result.askUserQuestions = askUserQuestions;
   if (finalResponse) result.finalResponse = finalResponse;
