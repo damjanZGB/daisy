@@ -1,4 +1,4 @@
-// proxy.mjs -- Render backend for Bedrock Agent + Amadeus adapter + IATA lookup
+﻿// proxy.mjs -- Render backend for Bedrock Agent + Amadeus adapter + IATA lookup
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -28,6 +28,7 @@ const LH_GROUP_ONLY = /^true$/i.test(String(process.env.LH_GROUP_ONLY || 'true')
 const LH_GROUP_CODES = ["LH","LX","OS","SN","EW","4Y","EN"];
 const IATA_DB_PATH = process.env.IATA_DB_PATH || "./iata.json";
 const AGENT_ALIAS_ID = (process.env.AGENT_ALIAS_ID || "").trim();
+const AGENT_VERSION = (process.env.AGENT_VERSION || "").trim();
 const AWS_ACCESS_KEY_ID = (process.env.AWS_ACCESS_KEY_ID || "").trim();
 const AWS_SECRET_ACCESS_KEY = (process.env.AWS_SECRET_ACCESS_KEY || "").trim();
 const rawOrigin = process.env.ORIGIN || "";
@@ -58,9 +59,57 @@ const MAX_BODY_SIZE = 1024 * 1024; // 1 MiB
 const TRANSCRIPT_BUCKET = (process.env.TRANSCRIPT_BUCKET || "").trim();
 const TRANSCRIPT_PREFIX = (process.env.TRANSCRIPT_PREFIX || "").trim();
 const TRANSCRIPT_SCHEMA_VERSION = "2025-10-18";
+const TRANSCRIPT_UPLOADER_URL = (process.env.TRANSCRIPT_UPLOADER_URL || "").trim();
+const TRANSCRIPT_UPLOADER_TOKEN = (process.env.TRANSCRIPT_UPLOADER_TOKEN || "").trim();
 const transcriptS3Client = TRANSCRIPT_BUCKET
   ? new S3Client({ region: REGION, maxAttempts: 3 })
   : null;
+const TOOL_LIST = [
+  {
+    tool_name: "give_me_tools",
+    tool_description: "Returns a catalogue of available proxy tools in JSON format.",
+    tool_route: "/tools/give_me_tools",
+  },
+  {
+    tool_name: "iata_lookup",
+    tool_description: "Deterministically resolve cities/airports to IATA codes (supports geo-coordinates).",
+    tool_route: "/tools/iata/lookup",
+  },
+  {
+    tool_name: "amadeus_search",
+    tool_description: "Search LH Group flight offers via Amadeus Flight Offers Search (POST JSON).",
+    tool_route: "/tools/amadeus/search",
+  },
+  {
+    tool_name: "amadeus_dates",
+    tool_description: "Query flexible date pricing windows via Amadeus Flight Cheapest Date Search (GET).",
+    tool_route: "/tools/amadeus/dates",
+  },
+  {
+    tool_name: "amadeus_flex",
+    tool_description: "One-call flexible date orchestrator that combines calendar selection and offer pricing.",
+    tool_route: "/tools/amadeus/flex",
+  },
+  {
+    tool_name: "log_transcript",
+    tool_description: "Upload chat transcripts/logs to S3 or the configured escalator service.",
+    tool_route: "/log/transcript",
+  },
+  {
+    tool_name: "s3escalator",
+    tool_description: "Accept generic files/alerts for storage through the proxy-equipped s3escalator service.",
+    tool_route: "/tools/s3escalator",
+  },
+  {
+    tool_name: "antiPhaser",
+    tool_description: "Parse natural-language date phrases into structured ISO dates.",
+    tool_route: "/tools/antiPhaser",
+  },
+];
+function give_me_tools() {
+  return TOOL_LIST;
+}
+
 const AMADEUS_TIMEOUT_MS = (() => {
   const raw = Number(process.env.AMADEUS_TIMEOUT_MS);
   if (Number.isFinite(raw) && raw > 0) return raw;
@@ -99,19 +148,24 @@ async function runReadinessCheck() {
   } catch (e) {
     errors.push("bedrock:" + (e?.name || e?.message || "error"));
   }
-  // s3 optional
+  // s3 optional (skip when external uploader is configured)
   let s3Ok = true;
-  if (transcriptS3Client && TRANSCRIPT_BUCKET) {
-    try {
-      const head = new HeadBucketCommand({ Bucket: TRANSCRIPT_BUCKET });
-      const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), 4000);
-      await transcriptS3Client.send(head, { abortSignal: controller.signal });
-      clearTimeout(t);
-      s3Ok = true;
-    } catch (e) {
+  if (!TRANSCRIPT_UPLOADER_URL) {
+    if (transcriptS3Client && TRANSCRIPT_BUCKET) {
+      try {
+        const head = new HeadBucketCommand({ Bucket: TRANSCRIPT_BUCKET });
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 4000);
+        await transcriptS3Client.send(head, { abortSignal: controller.signal });
+        clearTimeout(t);
+        s3Ok = true;
+      } catch (e) {
+        s3Ok = false;
+        errors.push("s3:" + (e?.name || e?.message || "denied"));
+      }
+    } else {
       s3Ok = false;
-      errors.push("s3:" + (e?.name || e?.message || "denied"));
+      errors.push("s3:missing_config");
     }
   }
   const amadeusConfigured = !!(AMADEUS_API_KEY && AMADEUS_API_SECRET);
@@ -1324,6 +1378,74 @@ const server = http.createServer(async (req, res) => {
         logger.warn(`[${requestId}] Transcript validation failed`, { reason: validated.error });
         return;
       }
+      if (TRANSCRIPT_UPLOADER_URL) {
+        try {
+          const senderForUpload = String(
+            validated.sessionId ||
+            validated.flight ||
+            AGENT_ALIAS_ID ||
+            "unknown"
+          ).trim();
+
+          const filePayload = {
+            schemaVersion: validated.schemaVersion,
+            persona: validated.persona,
+            variant: validated.variant,
+            sessionId: validated.sessionId,
+            flight: validated.flight || null,
+            startedAt: validated.startedAt,
+            completedAt: validated.completedAt,
+            location: validated.location,
+            messages: validated.messages,
+            extra: validated.raw?.extra ?? null,
+          };
+
+          const uploadPayload = {
+            type: "transcript",
+            path: `${AGENT_ALIAS_ID || "unknown"}/${AGENT_VERSION || "unknown"}`,
+            sender: senderForUpload || "unknown",
+            file: JSON.stringify(filePayload, null, 2),
+            fileEncoding: "utf8",
+            contentType: "application/json",
+          };
+
+          const headers = { "Content-Type": "application/json" };
+          if (TRANSCRIPT_UPLOADER_TOKEN) {
+            headers["X-Proxy-Token"] = TRANSCRIPT_UPLOADER_TOKEN;
+          }
+
+          const uploadResp = await fetch(TRANSCRIPT_UPLOADER_URL, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(uploadPayload),
+          });
+          const uploadBody = await uploadResp.json().catch(() => ({}));
+          if (!uploadResp.ok || !uploadBody?.ok) {
+            res.statusCode = uploadResp.status === 403 ? 502 : uploadResp.status || 502;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({
+              error: "transcript_upload_failed",
+              status: uploadResp.status,
+              details: uploadBody,
+            }));
+            logger.warn(`[${requestId}] Transcript uploader rejected request`, {
+              status: uploadResp.status,
+              body: uploadBody,
+            });
+          } else {
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify(uploadBody));
+            logger.info(`[${requestId}] Transcript forwarded to uploader`, { key: uploadBody.key });
+          }
+        } catch (error) {
+          logger.error(`[${requestId}] Transcript uploader error`, { message: error.message });
+          res.statusCode = 502;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ error: "transcript_upload_failed" }));
+        }
+        return;
+      }
+
       const key = buildTranscriptKey(validated);
       const objectBody = JSON.stringify({
         schemaVersion: validated.schemaVersion,
@@ -1362,6 +1484,16 @@ const server = http.createServer(async (req, res) => {
         res.setHeader("Content-Type", "application/json");
         res.end(JSON.stringify({ error: "transcript_upload_failed" }));
       }
+      return;
+    }
+
+    if (req.method === "GET" && pathname === "/tools/give_me_tools") {
+      const body = {
+        generatedAt: new Date().toISOString(),
+        tools: give_me_tools(),
+      };
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify(body));
       return;
     }
 
@@ -1629,6 +1761,7 @@ if (shouldStartServer) {
 }
 
 export { iataLookup, loadIata, interpretDatePhrase };
+
 
 
 
