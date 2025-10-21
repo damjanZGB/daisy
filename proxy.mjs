@@ -59,7 +59,7 @@ const readiness = {
 
 async function runReadinessCheck() {
   const errors = [];
-  const configOk = !!(AGENT_ID && AGENT_ALIAS_ID && AWS_ACCESS_KEY_ID && AWS_SECRET_ACCESS_KEY && (ALLOW_ORIGINS.length || ALLOW_ORIGIN_SET.size));
+  const configOk = !!(AGENT_ID && AGENT_ALIAS_ID && AWS_ACCESS_KEY_ID && AWS_SECRET_ACCESS_KEY && ALLOW_ORIGINS.length);
   // iata loadable
   let iataOk = false;
   try {
