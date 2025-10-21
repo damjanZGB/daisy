@@ -95,6 +95,27 @@ setInterval(() => { runReadinessCheck().catch(() => {}); }, 60_000);
   return 12000;
 })();
 
+// Simple in-proxy cache for calendar (flexible dates) to reduce quota
+// Keyed by normalized O/D + date window + core filters; TTL short to avoid staleness
+const DATES_CACHE = new Map(); // key -> { value, expiresAt }
+const DATES_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+function getFromDatesCache(key) {
+  const now = Date.now();
+  const entry = DATES_CACHE.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt <= now) { DATES_CACHE.delete(key); return null; }
+  return entry.value;
+}
+function putInDatesCache(key, value) {
+  // Simple size bound
+  if (DATES_CACHE.size > 200) {
+    // delete oldest 50
+    const keys = [...DATES_CACHE.keys()].slice(0, 50);
+    for (const k of keys) DATES_CACHE.delete(k);
+  }
+  DATES_CACHE.set(key, { value, expiresAt: Date.now() + DATES_CACHE_TTL_MS });
+}
+
 const missingEnv = [];
 if (!AGENT_ID) missingEnv.push("AGENT_ID");
 if (!AGENT_ALIAS_ID) missingEnv.push("AGENT_ALIAS_ID");
@@ -1312,6 +1333,124 @@ const server = http.createServer(async (req, res) => {
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify({ matches }));
       logger.info(`[${requestId}] IATA lookup returned ${matches.length} results`);
+      return;
+    }
+
+    if (req.method === "GET" && pathname === "/tools/amadeus/dates") {
+      if (!AMADEUS_API_KEY || !AMADEUS_API_SECRET) {
+        res.statusCode = 503;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: "amadeus_not_configured" }));
+        logger.warn(`[${requestId}] Amadeus dates requested without credentials`);
+        return;
+      }
+      // Input normalization (compat with existing naming)
+      const origin = String(searchParams.get("originLocationCode") || "").trim().toUpperCase();
+      const destination = String(searchParams.get("destinationLocationCode") || "").trim().toUpperCase();
+      const month = String(searchParams.get("month") || "").trim(); // YYYY-MM
+      const fromQ = String(searchParams.get("departureDateFrom") || "").trim(); // YYYY-MM-DD
+      const toQ = String(searchParams.get("departureDateTo") || "").trim();
+      const oneWay = /^true$/i.test(String(searchParams.get("oneWay") || "false"));
+      const nonStop = /^true$/i.test(String(searchParams.get("nonStop") || "false"));
+      const currencyCode = String(searchParams.get("currencyCode") || "").trim().toUpperCase();
+      const limit = Math.max(1, Math.min(10, Number(searchParams.get("limit") || "3")));
+
+      const isIata = (s) => /^[A-Z]{3}$/.test(s || "");
+      if (!isIata(origin) || !isIata(destination)) {
+        res.statusCode = 400;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: "invalid_iata", origin, destination }));
+        return;
+      }
+      function endOfMonth(y, m) {
+        const d = new Date(Date.UTC(y, m, 0));
+        return d.toISOString().slice(0, 10);
+      }
+      function startOfMonth(y, m) {
+        const d = new Date(Date.UTC(y, m - 1, 1));
+        return d.toISOString().slice(0, 10);
+      }
+      let from = fromQ;
+      let to = toQ;
+      if (month && (!from || !to)) {
+        const m = month.match(/^(\d{4})-(\d{2})$/);
+        if (m) {
+          const y = Number(m[1]);
+          const mm = Number(m[2]);
+          from = startOfMonth(y, mm);
+          to = endOfMonth(y, mm);
+        }
+      }
+      if (!from || !to) {
+        res.statusCode = 400;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: "missing_date_window", hint: "Provide month=YYYY-MM or departureDateFrom/To" }));
+        return;
+      }
+      const windowKey = `${from}|${to}`;
+      const cacheKey = [origin, destination, windowKey, oneWay ? 1 : 0, nonStop ? 1 : 0, currencyCode || "-"].join("|");
+      const cached = getFromDatesCache(cacheKey);
+      if (cached) {
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ ...cached, cache: true }));
+        return;
+      }
+      const params = new URLSearchParams();
+      // Amadeus Flight Cheapest Date Search expects 'origin', 'destination', 'departureDate' (single date or range)
+      params.set("origin", origin);
+      params.set("destination", destination);
+      params.set("departureDate", `${from},${to}`);
+      params.set("oneWay", String(!!oneWay));
+      if (currencyCode) params.set("currencyCode", currencyCode);
+      if (nonStop) params.set("nonStop", "true");
+      // viewBy left to default (DATE)
+      let json;
+      try {
+        const token = await amadeusToken();
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), Math.min(AMADEUS_TIMEOUT_MS, 10000));
+        const url = `${AMADEUS_HOST}/v1/shopping/flight-dates?${params.toString()}`;
+        const resp = await fetch(url, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.amadeus+json" },
+          signal: controller.signal,
+        });
+        clearTimeout(t);
+        json = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+          res.statusCode = 502;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ error: "amadeus_dates_error", status: resp.status, details: json }));
+          return;
+        }
+      } catch (e) {
+        res.statusCode = 504;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: "amadeus_dates_timeout", message: e?.message || String(e) }));
+        return;
+      }
+      // Normalize output: list of { date, price, currency }
+      const rows = Array.isArray(json?.data) ? json.data : [];
+      const days = rows.map((item) => {
+        const date = item?.departureDate || item?.date || item?.departure?.at || null;
+        const priceNum = Number(item?.price?.total ?? item?.price?.grandTotal ?? item?.price);
+        const currency = (item?.price?.currency || json?.meta?.currency || currencyCode || "").toUpperCase();
+        return { date, price: priceNum, currency };
+      }).filter(d => typeof d.date === 'string' && d.date.length >= 10 && Number.isFinite(d.price));
+      days.sort((a, b) => a.price === b.price ? (a.date < b.date ? -1 : 1) : a.price - b.price);
+      const top = days.slice(0, limit);
+      const body = {
+        originLocationCode: origin,
+        destinationLocationCode: destination,
+        oneWay: !!oneWay,
+        currencyCode: currencyCode || (json?.meta?.currency || ""),
+        window: { from, to },
+        days,
+        top,
+      };
+      putInDatesCache(cacheKey, body);
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify(body));
       return;
     }
 

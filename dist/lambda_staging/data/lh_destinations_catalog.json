@@ -1,0 +1,866 @@
+[
+  {
+    "code": "TFS",
+    "city": "Tenerife South",
+    "country": "Spain",
+    "tags": ["beach", "warm", "cycling"],
+    "avgHighCByMonth": {"1": 21, "2": 21, "3": 23, "4": 24, "5": 25, "6": 27, "7": 29, "8": 29, "9": 28, "10": 26, "11": 24, "12": 22},
+    "waterTempCByMonth": {"1": 20, "2": 19, "3": 20, "4": 20, "5": 21, "6": 22, "7": 23, "8": 24, "9": 24, "10": 23, "11": 22, "12": 21},
+    "lhGroupCarriers": ["EW", "4Y", "LH"],
+    "notes": "Canary Islands; year-round beach climate."
+  },
+  {
+    "code": "MQP",
+    "city": "Kruger Mpumalanga",
+    "country": "South Africa",
+    "tags": ["safari", "wildlife", "wildlife_photography", "nature", "warm"],
+    "avgHighCByMonth": {"1": 30, "2": 30, "3": 29, "4": 28, "5": 26, "6": 24, "7": 24, "8": 27, "9": 28, "10": 29, "11": 30, "12": 31},
+    "lhGroupCarriers": ["4Y"],
+    "notes": "Gateway to Kruger National Park private reserves."
+  },
+  {
+    "code": "LPA",
+    "city": "Gran Canaria",
+    "country": "Spain",
+    "tags": ["beach", "warm"],
+    "avgHighCByMonth": {"1": 21, "2": 21, "3": 22, "4": 23, "5": 24, "6": 26, "7": 27, "8": 28, "9": 27, "10": 26, "11": 24, "12": 22},
+    "waterTempCByMonth": {"1": 20, "2": 19, "3": 20, "4": 20, "5": 21, "6": 22, "7": 23, "8": 24, "9": 24, "10": 23, "11": 22, "12": 21},
+    "lhGroupCarriers": ["EW", "4Y", "LH"],
+    "notes": "Canary Islands; reliable winter sun."
+  },
+  {
+    "code": "AGP",
+    "city": "Malaga",
+    "country": "Spain",
+    "tags": ["beach", "warm", "city_break"],
+    "avgHighCByMonth": {"1": 17, "2": 18, "3": 20, "4": 22, "5": 25, "6": 28, "7": 31, "8": 31, "9": 28, "10": 24, "11": 20, "12": 17},
+    "waterTempCByMonth": {"3": 16, "4": 17, "5": 18, "6": 21, "7": 23, "8": 24, "9": 24, "10": 21},
+    "lhGroupCarriers": ["EW", "LH"],
+    "notes": "Costa del Sol; beaches + city vibe."
+  },
+  {
+    "code": "ALC",
+    "city": "Alicante",
+    "country": "Spain",
+    "tags": ["beach", "warm"],
+    "avgHighCByMonth": {"1": 17, "2": 18, "3": 20, "4": 22, "5": 25, "6": 28, "7": 31, "8": 31, "9": 29, "10": 25, "11": 20, "12": 17},
+    "lhGroupCarriers": ["EW", "LH"],
+    "notes": "Costa Blanca; many resorts."
+  },
+  {
+    "code": "PMI",
+    "city": "Palma de Mallorca",
+    "country": "Spain",
+    "tags": ["beach", "warm", "cycling"],
+    "avgHighCByMonth": {"1": 15, "2": 15, "3": 17, "4": 20, "5": 24, "6": 28, "7": 31, "8": 31, "9": 28, "10": 24, "11": 19, "12": 16},
+    "lhGroupCarriers": ["EW", "4Y", "LH"],
+    "notes": "Balearics; warms up from late spring."
+  },
+  {
+    "code": "FNC",
+    "city": "Madeira (Funchal)",
+    "country": "Portugal",
+    "tags": ["beach", "warm", "nature"],
+    "avgHighCByMonth": {"1": 19, "2": 19, "3": 20, "4": 20, "5": 22, "6": 24, "7": 26, "8": 27, "9": 26, "10": 24, "11": 22, "12": 20},
+    "lhGroupCarriers": ["LH", "LX"],
+    "notes": "Subtropical island; hiking + seaside."
+  },
+  {
+    "code": "AYT",
+    "city": "Antalya",
+    "country": "Turkey",
+    "tags": ["beach", "warm", "resort"],
+    "avgHighCByMonth": {"1": 15, "2": 16, "3": 18, "4": 21, "5": 25, "6": 30, "7": 34, "8": 34, "9": 31, "10": 26, "11": 21, "12": 16},
+    "lhGroupCarriers": ["EW", "4Y"],
+    "notes": "Turkish Riviera; early spring can be mild."
+  },
+  {
+    "code": "HRG",
+    "city": "Hurghada",
+    "country": "Egypt",
+    "tags": ["beach", "warm", "diving"],
+    "avgHighCByMonth": {"1": 22, "2": 23, "3": 26, "4": 30, "5": 33, "6": 35, "7": 37, "8": 36, "9": 34, "10": 31, "11": 27, "12": 23},
+    "waterTempCByMonth": {"3": 22, "4": 23, "5": 24},
+    "lhGroupCarriers": ["EW", "4Y"],
+    "notes": "Red Sea; warm water early in the year."
+  },
+  {
+    "code": "INN",
+    "city": "Innsbruck",
+    "country": "Austria",
+    "tags": ["winter_sports", "cold", "mountain"],
+    "avgHighCByMonth": {"1": 2, "2": 4, "3": 9, "4": 14, "5": 19, "6": 22, "7": 25, "8": 24, "9": 20, "10": 14, "11": 7, "12": 3},
+    "snowReliability": {"1": 0.9, "2": 0.85, "3": 0.6, "12": 0.9},
+    "elevationM": 574,
+    "lhGroupCarriers": ["OS", "LH"],
+    "notes": "Gateway to Tyrol ski resorts."
+  },
+  {
+    "code": "SZG",
+    "city": "Salzburg",
+    "country": "Austria",
+    "tags": ["winter_sports", "cold", "mountain"],
+    "avgHighCByMonth": {"1": 2, "2": 4, "3": 9, "4": 14, "5": 19, "6": 22, "7": 25, "8": 24, "9": 20, "10": 14, "11": 7, "12": 3},
+    "snowReliability": {"1": 0.85, "2": 0.8, "3": 0.55, "12": 0.85},
+    "lhGroupCarriers": ["OS", "LH"],
+    "notes": "Ski Amadé region access."
+  },
+  {
+    "code": "GVA",
+    "city": "Geneva",
+    "country": "Switzerland",
+    "tags": ["winter_sports", "cold", "mountain"],
+    "avgHighCByMonth": {"1": 4, "2": 6, "3": 11, "4": 15, "5": 20, "6": 24, "7": 27, "8": 26, "9": 22, "10": 16, "11": 9, "12": 5},
+    "snowReliability": {"1": 0.8, "2": 0.75, "3": 0.5, "12": 0.8},
+    "lhGroupCarriers": ["LX", "LH"],
+    "notes": "Access to Portes du Soleil, 3 Vallées via transfers."
+  },
+  {
+    "code": "ZRH",
+    "city": "Zurich",
+    "country": "Switzerland",
+    "tags": ["winter_sports", "cold", "city_break"],
+    "avgHighCByMonth": {"1": 4, "2": 6, "3": 10, "4": 15, "5": 20, "6": 23, "7": 26, "8": 26, "9": 21, "10": 15, "11": 9, "12": 5},
+    "snowReliability": {"1": 0.6, "2": 0.55, "3": 0.3, "12": 0.6},
+    "lhGroupCarriers": ["LX", "LH"],
+    "notes": "Rail access to many Swiss resorts."
+  },
+  {
+    "code": "MUC",
+    "city": "Munich",
+    "country": "Germany",
+    "tags": ["winter_sports", "cold", "city_break"],
+    "avgHighCByMonth": {"1": 3, "2": 5, "3": 10, "4": 15, "5": 19, "6": 22, "7": 24, "8": 24, "9": 19, "10": 14, "11": 7, "12": 4},
+    "snowReliability": {"1": 0.5, "2": 0.45, "3": 0.25, "12": 0.5},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Gateway to Bavarian Alps."
+  },
+  {
+    "code": "BCN",
+    "city": "Barcelona",
+    "country": "Spain",
+    "tags": ["city_break", "beach"],
+    "avgHighCByMonth": {"1": 15, "2": 15, "3": 17, "4": 19, "5": 22, "6": 26, "7": 29, "8": 30, "9": 27, "10": 23, "11": 18, "12": 15},
+    "lhGroupCarriers": ["LH", "LX", "OS", "SN"],
+    "notes": "City + beach option."
+  },
+  {
+    "code": "LIS",
+    "city": "Lisbon",
+    "country": "Portugal",
+    "tags": ["city_break", "warm"],
+    "avgHighCByMonth": {"1": 15, "2": 16, "3": 18, "4": 20, "5": 23, "6": 26, "7": 28, "8": 28, "9": 27, "10": 23, "11": 18, "12": 15},
+    "lhGroupCarriers": ["LH", "LX", "SN"],
+    "notes": "Mild spring city break."
+  },
+  {
+    "code": "FUE",
+    "city": "Fuerteventura",
+    "country": "Spain",
+    "tags": ["beach", "warm", "surf"],
+    "avgHighCByMonth": {"1": 20, "2": 21, "3": 22, "4": 23, "5": 25, "6": 27, "7": 28, "8": 29, "9": 28, "10": 26, "11": 24, "12": 21},
+    "waterTempCByMonth": {"3": 19, "4": 20, "5": 21, "6": 22, "7": 23, "8": 24, "9": 24},
+    "lhGroupCarriers": ["EW", "4Y", "LH"],
+    "notes": "Canary Islands; reliable winter sun and surf."
+  },
+  {
+    "code": "ACE",
+    "city": "Lanzarote",
+    "country": "Spain",
+    "tags": ["beach", "warm", "family", "cycling"],
+    "avgHighCByMonth": {"1": 20, "2": 21, "3": 22, "4": 24, "5": 25, "6": 27, "7": 29, "8": 29, "9": 28, "10": 26, "11": 23, "12": 21},
+    "waterTempCByMonth": {"3": 19, "4": 20, "5": 21, "6": 22, "7": 23, "8": 24},
+    "lhGroupCarriers": ["EW", "4Y", "LH"],
+    "notes": "Canaries; year-round beach climate."
+  },
+  {
+    "code": "SPC",
+    "city": "La Palma",
+    "country": "Spain",
+    "tags": ["beach", "warm", "nature"],
+    "avgHighCByMonth": {"1": 20, "2": 20, "3": 21, "4": 22, "5": 24, "6": 26, "7": 28, "8": 28, "9": 27, "10": 26, "11": 23, "12": 21},
+    "lhGroupCarriers": ["EW", "LH"],
+    "notes": "Canaries; laid back, hiking + seaside."
+  },
+  {
+    "code": "IBZ",
+    "city": "Ibiza",
+    "country": "Spain",
+    "tags": ["beach", "warm", "party"],
+    "avgHighCByMonth": {"1": 16, "2": 16, "3": 18, "4": 19, "5": 23, "6": 27, "7": 30, "8": 31, "9": 28, "10": 24, "11": 20, "12": 17},
+    "lhGroupCarriers": ["EW", "4Y", "LH"],
+    "notes": "Balearics; warms up from late spring."
+  },
+  {
+    "code": "FAO",
+    "city": "Faro (Algarve)",
+    "country": "Portugal",
+    "tags": ["beach", "warm", "golf"],
+    "avgHighCByMonth": {"1": 16, "2": 17, "3": 19, "4": 21, "5": 24, "6": 27, "7": 29, "8": 29, "9": 28, "10": 24, "11": 20, "12": 17},
+    "lhGroupCarriers": ["LH", "LX", "4Y"],
+    "notes": "Algarve coast; spring beach weather."
+  },
+  {
+    "code": "LCA",
+    "city": "Larnaca",
+    "country": "Cyprus",
+    "tags": ["beach", "warm", "family"],
+    "avgHighCByMonth": {"1": 17, "2": 18, "3": 20, "4": 24, "5": 28, "6": 31, "7": 33, "8": 33, "9": 31, "10": 28, "11": 23, "12": 18},
+    "waterTempCByMonth": {"3": 18, "4": 20, "5": 22},
+    "lhGroupCarriers": ["LH", "OS"],
+    "notes": "Eastern Med; warm water from late spring."
+  },
+  {
+    "code": "HER",
+    "city": "Heraklion (Crete)",
+    "country": "Greece",
+    "tags": ["beach", "warm", "family"],
+    "avgHighCByMonth": {"1": 15, "2": 16, "3": 17, "4": 20, "5": 24, "6": 28, "7": 30, "8": 30, "9": 27, "10": 24, "11": 20, "12": 16},
+    "lhGroupCarriers": ["LH", "OS"],
+    "notes": "Greek islands; beach season from May."
+  },
+  {
+    "code": "RHO",
+    "city": "Rhodes",
+    "country": "Greece",
+    "tags": ["beach", "warm", "family"],
+    "avgHighCByMonth": {"1": 15, "2": 15, "3": 17, "4": 20, "5": 24, "6": 28, "7": 31, "8": 31, "9": 29, "10": 25, "11": 20, "12": 16},
+    "lhGroupCarriers": ["LH", "OS"],
+    "notes": "Dodecanese; beach and heritage."
+  },
+  {
+    "code": "CFU",
+    "city": "Corfu",
+    "country": "Greece",
+    "tags": ["beach", "warm", "family"],
+    "avgHighCByMonth": {"1": 14, "2": 14, "3": 16, "4": 19, "5": 24, "6": 28, "7": 31, "8": 31, "9": 27, "10": 23, "11": 19, "12": 15},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Ionian islands; family friendly."
+  },
+  {
+    "code": "CHQ",
+    "city": "Chania",
+    "country": "Greece",
+    "tags": ["beach", "warm", "nature"],
+    "avgHighCByMonth": {"1": 15, "2": 16, "3": 17, "4": 20, "5": 24, "6": 28, "7": 30, "8": 30, "9": 27, "10": 24, "11": 20, "12": 16},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Crete west; beaches + hikes."
+  },
+  {
+    "code": "SKG",
+    "city": "Thessaloniki",
+    "country": "Greece",
+    "tags": ["city_break", "warm"],
+    "avgHighCByMonth": {"1": 9, "2": 11, "3": 14, "4": 19, "5": 24, "6": 29, "7": 31, "8": 31, "9": 27, "10": 21, "11": 15, "12": 10},
+    "lhGroupCarriers": ["LH", "OS"],
+    "notes": "City + seaside nearby."
+  },
+  {
+    "code": "CTA",
+    "city": "Catania",
+    "country": "Italy",
+    "tags": ["beach", "warm", "nature"],
+    "avgHighCByMonth": {"1": 15, "2": 16, "3": 18, "4": 20, "5": 24, "6": 28, "7": 31, "8": 31, "9": 29, "10": 24, "11": 20, "12": 16},
+    "lhGroupCarriers": ["LH", "OS"],
+    "notes": "Sicily; Etna + coastline."
+  },
+  {
+    "code": "CAG",
+    "city": "Cagliari",
+    "country": "Italy",
+    "tags": ["beach", "warm", "nature"],
+    "avgHighCByMonth": {"1": 14, "2": 15, "3": 16, "4": 19, "5": 23, "6": 28, "7": 31, "8": 31, "9": 27, "10": 23, "11": 18, "12": 14},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Sardinia south; crystal waters."
+  },
+  {
+    "code": "OLB",
+    "city": "Olbia",
+    "country": "Italy",
+    "tags": ["beach", "warm", "family"],
+    "avgHighCByMonth": {"1": 14, "2": 14, "3": 16, "4": 19, "5": 23, "6": 28, "7": 31, "8": 31, "9": 27, "10": 23, "11": 18, "12": 14},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Costa Smeralda resorts."
+  },
+  {
+    "code": "PMO",
+    "city": "Palermo",
+    "country": "Italy",
+    "tags": ["beach", "warm", "city_break"],
+    "avgHighCByMonth": {"1": 15, "2": 15, "3": 17, "4": 20, "5": 24, "6": 28, "7": 31, "8": 31, "9": 29, "10": 24, "11": 20, "12": 16},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Sicily; food + seaside."
+  },
+  {
+    "code": "BRI",
+    "city": "Bari",
+    "country": "Italy",
+    "tags": ["beach", "warm", "city_break"],
+    "avgHighCByMonth": {"1": 12, "2": 13, "3": 15, "4": 18, "5": 22, "6": 26, "7": 29, "8": 29, "9": 25, "10": 20, "11": 16, "12": 13},
+    "lhGroupCarriers": ["LH", "OS"],
+    "notes": "Puglia; trulli towns + coast."
+  },
+  {
+    "code": "BDS",
+    "city": "Brindisi",
+    "country": "Italy",
+    "tags": ["beach", "warm", "family"],
+    "avgHighCByMonth": {"1": 12, "2": 13, "3": 15, "4": 18, "5": 22, "6": 26, "7": 29, "8": 29, "9": 25, "10": 20, "11": 16, "12": 13},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Salento; beaches + villages."
+  },
+  {
+    "code": "NAP",
+    "city": "Naples",
+    "country": "Italy",
+    "tags": ["city_break", "warm"],
+    "avgHighCByMonth": {"1": 12, "2": 13, "3": 16, "4": 19, "5": 23, "6": 27, "7": 30, "8": 30, "9": 27, "10": 22, "11": 17, "12": 13},
+    "lhGroupCarriers": ["LH", "OS", "SN"],
+    "notes": "Amalfi access; pizza capital."
+  },
+  {
+    "code": "NCE",
+    "city": "Nice",
+    "country": "France",
+    "tags": ["city_break", "beach"],
+    "avgHighCByMonth": {"1": 13, "2": 13, "3": 15, "4": 17, "5": 21, "6": 25, "7": 28, "8": 28, "9": 25, "10": 21, "11": 16, "12": 13},
+    "lhGroupCarriers": ["LH", "LX", "OS", "SN"],
+    "notes": "Cote d'Azur; city + beach."
+  },
+  {
+    "code": "GNB",
+    "city": "Grenoble",
+    "country": "France",
+    "tags": ["winter_sports", "cold", "mountain"],
+    "avgHighCByMonth": {"1": 5, "2": 7, "3": 12, "4": 16, "5": 21, "6": 25, "7": 28, "8": 28, "9": 24, "10": 18, "11": 10, "12": 6},
+    "snowReliability": {"1": 0.8, "2": 0.75, "12": 0.8},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Gateway to French Alps."
+  },
+  {
+    "code": "CMF",
+    "city": "Chambery",
+    "country": "France",
+    "tags": ["winter_sports", "cold", "mountain"],
+    "avgHighCByMonth": {"1": 5, "2": 7, "3": 12, "4": 16, "5": 21, "6": 25, "7": 28, "8": 28, "9": 23, "10": 17, "11": 10, "12": 6},
+    "snowReliability": {"1": 0.8, "2": 0.75, "12": 0.8},
+    "lhGroupCarriers": ["LH"],
+    "notes": "French Alps regional hub (seasonal)."
+  },
+  {
+    "code": "TRN",
+    "city": "Turin",
+    "country": "Italy",
+    "tags": ["winter_sports", "cold", "city_break"],
+    "avgHighCByMonth": {"1": 6, "2": 9, "3": 14, "4": 18, "5": 23, "6": 27, "7": 30, "8": 29, "9": 24, "10": 18, "11": 11, "12": 7},
+    "snowReliability": {"1": 0.7, "2": 0.65, "12": 0.7},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Access to Piedmont resorts."
+  },
+  {
+    "code": "LYS",
+    "city": "Lyon",
+    "country": "France",
+    "tags": ["winter_sports", "cold", "city_break"],
+    "avgHighCByMonth": {"1": 6, "2": 8, "3": 13, "4": 17, "5": 21, "6": 25, "7": 28, "8": 28, "9": 23, "10": 17, "11": 10, "12": 6},
+    "snowReliability": {"1": 0.6, "2": 0.55, "12": 0.6},
+    "lhGroupCarriers": ["LH", "LX"],
+    "notes": "French Alps gateway + food capital."
+  },
+  {
+    "code": "SOF",
+    "city": "Sofia",
+    "country": "Bulgaria",
+    "tags": ["winter_sports", "cold", "city_break"],
+    "avgHighCByMonth": {"1": 4, "2": 7, "3": 12, "4": 17, "5": 22, "6": 26, "7": 29, "8": 29, "9": 25, "10": 19, "11": 11, "12": 5},
+    "snowReliability": {"1": 0.6, "2": 0.55, "12": 0.6},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Access to Borovets/Vitosha."
+  },
+  {
+    "code": "MXP",
+    "city": "Milan Malpensa",
+    "country": "Italy",
+    "tags": ["winter_sports", "city_break"],
+    "avgHighCByMonth": {"1": 7, "2": 10, "3": 15, "4": 18, "5": 23, "6": 27, "7": 30, "8": 29, "9": 24, "10": 18, "11": 11, "12": 7},
+    "lhGroupCarriers": ["LH", "LX", "OS", "SN"],
+    "notes": "Lombardy; access to Alps and lakes."
+  },
+  {
+    "code": "AMS",
+    "city": "Amsterdam",
+    "country": "Netherlands",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 6, "2": 7, "3": 10, "4": 13, "5": 17, "6": 20, "7": 22, "8": 22, "9": 19, "10": 14, "11": 10, "12": 7},
+    "lhGroupCarriers": ["LH", "LX", "OS", "SN"],
+    "notes": "Classic city break."
+  },
+  {
+    "code": "CDG",
+    "city": "Paris",
+    "country": "France",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 7, "2": 8, "3": 12, "4": 16, "5": 20, "6": 24, "7": 26, "8": 26, "9": 22, "10": 16, "11": 10, "12": 7},
+    "lhGroupCarriers": ["LH", "LX", "OS", "SN"],
+    "notes": "City break staple."
+  },
+  {
+    "code": "PRG",
+    "city": "Prague",
+    "country": "Czechia",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 2, "2": 4, "3": 9, "4": 14, "5": 19, "6": 22, "7": 24, "8": 24, "9": 19, "10": 14, "11": 7, "12": 3},
+    "lhGroupCarriers": ["LH", "OS", "SN"],
+    "notes": "City break classic."
+  },
+  {
+    "code": "VIE",
+    "city": "Vienna",
+    "country": "Austria",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 3, "2": 6, "3": 11, "4": 16, "5": 21, "6": 24, "7": 27, "8": 27, "9": 21, "10": 15, "11": 8, "12": 4},
+    "lhGroupCarriers": ["OS", "LH", "SN"],
+    "notes": "Imperial city break."
+  },
+  {
+    "code": "BUD",
+    "city": "Budapest",
+    "country": "Hungary",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 3, "2": 6, "3": 11, "4": 17, "5": 22, "6": 26, "7": 28, "8": 28, "9": 23, "10": 17, "11": 10, "12": 4},
+    "lhGroupCarriers": ["LH", "OS"],
+    "notes": "Thermal baths + architecture."
+  },
+  {
+    "code": "VCE",
+    "city": "Venice",
+    "country": "Italy",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 6, "2": 9, "3": 13, "4": 17, "5": 22, "6": 26, "7": 29, "8": 29, "9": 24, "10": 18, "11": 11, "12": 6},
+    "lhGroupCarriers": ["LH", "OS", "SN"],
+    "notes": "Romantic canals."
+  },
+  {
+    "code": "FCO",
+    "city": "Rome",
+    "country": "Italy",
+    "tags": ["city_break", "warm"],
+    "avgHighCByMonth": {"1": 12, "2": 13, "3": 16, "4": 20, "5": 24, "6": 29, "7": 32, "8": 32, "9": 28, "10": 23, "11": 18, "12": 13},
+    "lhGroupCarriers": ["LH", "LX", "OS", "SN"],
+    "notes": "City break icon."
+  },
+  {
+    "code": "MAD",
+    "city": "Madrid",
+    "country": "Spain",
+    "tags": ["city_break", "warm"],
+    "avgHighCByMonth": {"1": 10, "2": 12, "3": 16, "4": 18, "5": 23, "6": 29, "7": 33, "8": 33, "9": 28, "10": 21, "11": 14, "12": 10},
+    "lhGroupCarriers": ["LH", "LX", "OS", "SN"],
+    "notes": "Capital city break."
+  },
+  {
+    "code": "OPO",
+    "city": "Porto",
+    "country": "Portugal",
+    "tags": ["city_break", "warm"],
+    "avgHighCByMonth": {"1": 14, "2": 15, "3": 17, "4": 18, "5": 20, "6": 23, "7": 25, "8": 26, "9": 24, "10": 20, "11": 16, "12": 14},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Wine + riverfront."
+  },
+  {
+    "code": "BER",
+    "city": "Berlin",
+    "country": "Germany",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 3, "2": 5, "3": 9, "4": 14, "5": 19, "6": 22, "7": 25, "8": 25, "9": 20, "10": 14, "11": 8, "12": 4},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Culture + nightlife."
+  },
+  {
+    "code": "CPH",
+    "city": "Copenhagen",
+    "country": "Denmark",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 3, "2": 4, "3": 7, "4": 11, "5": 16, "6": 19, "7": 21, "8": 21, "9": 17, "10": 12, "11": 7, "12": 4},
+    "lhGroupCarriers": ["LH", "SN"],
+    "notes": "Design-forward city escape."
+  },
+  {
+    "code": "OSL",
+    "city": "Oslo",
+    "country": "Norway",
+    "tags": ["city_break", "cold", "nature"],
+    "avgHighCByMonth": {"1": -1, "2": 0, "3": 4, "4": 9, "5": 16, "6": 20, "7": 22, "8": 21, "9": 16, "10": 10, "11": 3, "12": 0},
+    "lhGroupCarriers": ["LH", "LX"],
+    "notes": "Nordic city + fjord vibe."
+  },
+  {
+    "code": "ARN",
+    "city": "Stockholm",
+    "country": "Sweden",
+    "tags": ["city_break", "cold"],
+    "avgHighCByMonth": {"1": -1, "2": 0, "3": 3, "4": 9, "5": 15, "6": 20, "7": 23, "8": 22, "9": 16, "10": 10, "11": 4, "12": 1},
+    "lhGroupCarriers": ["LH", "LX"],
+    "notes": "City on islands."
+  },
+  {
+    "code": "EDI",
+    "city": "Edinburgh",
+    "country": "United Kingdom",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 6, "2": 6, "3": 8, "4": 11, "5": 15, "6": 18, "7": 20, "8": 20, "9": 17, "10": 12, "11": 8, "12": 6},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Historic city break."
+  },
+  {
+    "code": "DUB",
+    "city": "Dublin",
+    "country": "Ireland",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 8, "2": 8, "3": 10, "4": 12, "5": 15, "6": 18, "7": 20, "8": 20, "9": 18, "10": 14, "11": 10, "12": 8},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Friendly pub culture."
+  },
+  {
+    "code": "SSH",
+    "city": "Sharm El Sheikh",
+    "country": "Egypt",
+    "tags": ["beach", "warm", "diving"],
+    "avgHighCByMonth": {"1": 21, "2": 22, "3": 25, "4": 29, "5": 33, "6": 36, "7": 37, "8": 37, "9": 35, "10": 31, "11": 26, "12": 22},
+    "waterTempCByMonth": {"3": 22, "4": 23, "5": 24},
+    "lhGroupCarriers": ["EW", "4Y"],
+    "notes": "Red Sea; warm water early in the year."
+  },
+  {
+    "code": "RMF",
+    "city": "Marsa Alam",
+    "country": "Egypt",
+    "tags": ["beach", "warm", "diving"],
+    "avgHighCByMonth": {"1": 22, "2": 23, "3": 26, "4": 30, "5": 33, "6": 36, "7": 37, "8": 37, "9": 35, "10": 31, "11": 27, "12": 23},
+    "waterTempCByMonth": {"3": 22, "4": 23, "5": 24},
+    "lhGroupCarriers": ["EW", "4Y"],
+    "notes": "Red Sea; reef access."
+  },
+  {
+    "code": "BJV",
+    "city": "Bodrum",
+    "country": "Turkey",
+    "tags": ["beach", "warm", "resort"],
+    "avgHighCByMonth": {"1": 14, "2": 15, "3": 17, "4": 20, "5": 25, "6": 30, "7": 34, "8": 34, "9": 30, "10": 25, "11": 19, "12": 15},
+    "lhGroupCarriers": ["EW", "4Y"],
+    "notes": "Turkish Aegean; upscale resorts."
+  },
+  {
+    "code": "DLM",
+    "city": "Dalaman",
+    "country": "Turkey",
+    "tags": ["beach", "warm", "resort"],
+    "avgHighCByMonth": {"1": 14, "2": 16, "3": 18, "4": 22, "5": 26, "6": 31, "7": 35, "8": 35, "9": 32, "10": 27, "11": 21, "12": 16},
+    "lhGroupCarriers": ["EW", "4Y"],
+    "notes": "Turkish Riviera."
+  },
+  {
+    "code": "RAK",
+    "city": "Marrakesh",
+    "country": "Morocco",
+    "tags": ["city_break", "warm"],
+    "avgHighCByMonth": {"1": 19, "2": 20, "3": 23, "4": 26, "5": 30, "6": 35, "7": 38, "8": 38, "9": 33, "10": 28, "11": 23, "12": 20},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Warm, exotic city break."
+  },
+  {
+    "code": "AGA",
+    "city": "Agadir",
+    "country": "Morocco",
+    "tags": ["beach", "warm", "surf"],
+    "avgHighCByMonth": {"1": 20, "2": 21, "3": 22, "4": 23, "5": 25, "6": 27, "7": 29, "8": 29, "9": 28, "10": 26, "11": 24, "12": 21},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Atlantic surf + sun."
+  },
+  {
+    "code": "KEF",
+    "city": "Reykjavik",
+    "country": "Iceland",
+    "tags": ["cold", "nature", "city_break"],
+    "avgHighCByMonth": {"1": 2, "2": 3, "3": 3, "4": 6, "5": 9, "6": 12, "7": 14, "8": 14, "9": 11, "10": 7, "11": 4, "12": 2},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Nordic nature + city."
+  },
+  {
+    "code": "ATH",
+    "city": "Athens",
+    "country": "Greece",
+    "tags": ["city_break", "warm"],
+    "avgHighCByMonth": {"1": 13, "2": 14, "3": 16, "4": 20, "5": 25, "6": 30, "7": 33, "8": 33, "9": 29, "10": 24, "11": 19, "12": 15},
+    "lhGroupCarriers": ["LH", "OS", "LX"],
+    "notes": "Historic city with nearby beaches."
+  },
+  {
+    "code": "IST",
+    "city": "Istanbul",
+    "country": "Turkey",
+    "tags": ["city_break", "warm"],
+    "avgHighCByMonth": {"1": 9, "2": 9, "3": 12, "4": 16, "5": 21, "6": 26, "7": 29, "8": 29, "9": 25, "10": 20, "11": 15, "12": 11},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Vibrant city straddling Europe and Asia."
+  },
+  {
+    "code": "MLA",
+    "city": "Malta",
+    "country": "Malta",
+    "tags": ["beach", "warm", "city_break"],
+    "avgHighCByMonth": {"1": 16, "2": 16, "3": 17, "4": 20, "5": 24, "6": 28, "7": 31, "8": 31, "9": 29, "10": 25, "11": 20, "12": 17},
+    "waterTempCByMonth": {"3": 15, "4": 16, "5": 19, "6": 22, "7": 25, "8": 26, "9": 25},
+    "lhGroupCarriers": ["LH", "4Y"],
+    "notes": "Island nation; beaches and history."
+  },
+  {
+    "code": "PFO",
+    "city": "Paphos",
+    "country": "Cyprus",
+    "tags": ["beach", "warm", "family"],
+    "avgHighCByMonth": {"1": 17, "2": 18, "3": 19, "4": 22, "5": 26, "6": 29, "7": 31, "8": 31, "9": 29, "10": 26, "11": 22, "12": 18},
+    "waterTempCByMonth": {"3": 18, "4": 20, "5": 22},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Cyprus coast; warm early season."
+  },
+  {
+    "code": "JTR",
+    "city": "Santorini",
+    "country": "Greece",
+    "tags": ["beach", "warm", "romance"],
+    "avgHighCByMonth": {"1": 14, "2": 14, "3": 16, "4": 19, "5": 23, "6": 27, "7": 29, "8": 29, "9": 26, "10": 22, "11": 18, "12": 15},
+    "lhGroupCarriers": ["LH", "OS"],
+    "notes": "Cyclades; iconic views and beaches."
+  },
+  {
+    "code": "JMK",
+    "city": "Mykonos",
+    "country": "Greece",
+    "tags": ["beach", "warm", "party"],
+    "avgHighCByMonth": {"1": 14, "2": 14, "3": 16, "4": 19, "5": 23, "6": 27, "7": 29, "8": 29, "9": 26, "10": 22, "11": 18, "12": 15},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Aegean island; summer party scene."
+  },
+  {
+    "code": "KGS",
+    "city": "Kos",
+    "country": "Greece",
+    "tags": ["beach", "warm", "family"],
+    "avgHighCByMonth": {"1": 14, "2": 14, "3": 16, "4": 20, "5": 24, "6": 28, "7": 31, "8": 31, "9": 28, "10": 24, "11": 19, "12": 15},
+    "lhGroupCarriers": ["LH", "OS"],
+    "notes": "Dodecanese; great for families."
+  },
+  {
+    "code": "SPU",
+    "city": "Split",
+    "country": "Croatia",
+    "tags": ["beach", "warm", "city_break"],
+    "avgHighCByMonth": {"1": 10, "2": 11, "3": 13, "4": 17, "5": 22, "6": 27, "7": 30, "8": 30, "9": 25, "10": 20, "11": 15, "12": 12},
+    "waterTempCByMonth": {"5": 19, "6": 22, "7": 24, "8": 25, "9": 23},
+    "lhGroupCarriers": ["LH", "OS"],
+    "notes": "Dalmatian coast; islands nearby."
+  },
+  {
+    "code": "DBV",
+    "city": "Dubrovnik",
+    "country": "Croatia",
+    "tags": ["beach", "warm", "city_break"],
+    "avgHighCByMonth": {"1": 11, "2": 12, "3": 14, "4": 17, "5": 22, "6": 26, "7": 29, "8": 29, "9": 25, "10": 20, "11": 16, "12": 12},
+    "lhGroupCarriers": ["LH", "OS"],
+    "notes": "Walled city + beaches."
+  },
+  {
+    "code": "VRN",
+    "city": "Verona",
+    "country": "Italy",
+    "tags": ["winter_sports", "city_break"],
+    "avgHighCByMonth": {"1": 6, "2": 10, "3": 15, "4": 18, "5": 23, "6": 27, "7": 30, "8": 29, "9": 24, "10": 18, "11": 11, "12": 7},
+    "snowReliability": {"1": 0.6, "2": 0.55, "12": 0.6},
+    "lhGroupCarriers": ["LH", "OS"],
+    "notes": "Access to Dolomites."
+  },
+  {
+    "code": "LJU",
+    "city": "Ljubljana",
+    "country": "Slovenia",
+    "tags": ["winter_sports", "city_break", "nature"],
+    "avgHighCByMonth": {"1": 3, "2": 6, "3": 11, "4": 16, "5": 21, "6": 24, "7": 27, "8": 27, "9": 21, "10": 15, "11": 8, "12": 4},
+    "snowReliability": {"1": 0.5, "2": 0.45, "12": 0.5},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Julian Alps access."
+  },
+  {
+    "code": "SJJ",
+    "city": "Sarajevo",
+    "country": "Bosnia and Herzegovina",
+    "tags": ["winter_sports", "cold", "city_break"],
+    "avgHighCByMonth": {"1": 3, "2": 6, "3": 11, "4": 16, "5": 21, "6": 24, "7": 27, "8": 27, "9": 20, "10": 14, "11": 7, "12": 3},
+    "snowReliability": {"1": 0.6, "2": 0.55, "12": 0.6},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Bjelašnica/Jahorina nearby."
+  },
+  {
+    "code": "WAW",
+    "city": "Warsaw",
+    "country": "Poland",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": -1, "2": 1, "3": 6, "4": 12, "5": 18, "6": 21, "7": 24, "8": 23, "9": 18, "10": 12, "11": 5, "12": 1},
+    "lhGroupCarriers": ["LH", "OS"],
+    "notes": "Capital with museums and food."
+  },
+  {
+    "code": "KRK",
+    "city": "Krakow",
+    "country": "Poland",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 0, "2": 2, "3": 7, "4": 13, "5": 19, "6": 22, "7": 25, "8": 24, "9": 19, "10": 13, "11": 6, "12": 2},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Old town charm."
+  },
+  {
+    "code": "BRU",
+    "city": "Brussels",
+    "country": "Belgium",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 6, "2": 7, "3": 10, "4": 14, "5": 18, "6": 21, "7": 23, "8": 23, "9": 20, "10": 15, "11": 10, "12": 7},
+    "lhGroupCarriers": ["LH", "LX", "OS", "SN"],
+    "notes": "EU capital; chocolate and beer."
+  },
+  {
+    "code": "HEL",
+    "city": "Helsinki",
+    "country": "Finland",
+    "tags": ["city_break", "cold"],
+    "avgHighCByMonth": {"1": -3, "2": -3, "3": 1, "4": 7, "5": 13, "6": 18, "7": 20, "8": 19, "9": 14, "10": 8, "11": 2, "12": -1},
+    "lhGroupCarriers": ["LH", "LX"],
+    "notes": "Nordic design and seaside."
+  },
+  {
+    "code": "ZAG",
+    "city": "Zagreb",
+    "country": "Croatia",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 3, "2": 6, "3": 11, "4": 16, "5": 21, "6": 24, "7": 27, "8": 27, "9": 21, "10": 15, "11": 8, "12": 4},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Capital city break; gateway to coast."
+  },
+  {
+    "code": "TLV",
+    "city": "Tel Aviv",
+    "country": "Israel",
+    "tags": ["beach", "warm", "city_break"],
+    "avgHighCByMonth": {"1": 18, "2": 19, "3": 21, "4": 24, "5": 27, "6": 29, "7": 31, "8": 31, "9": 30, "10": 28, "11": 23, "12": 19},
+    "waterTempCByMonth": {"3": 18, "4": 19, "5": 22, "6": 26, "7": 28, "8": 29, "9": 28},
+    "lhGroupCarriers": ["LH", "LX"],
+    "notes": "Mediterranean beach city."
+  },
+  {
+    "code": "PDL",
+    "city": "Ponta Delgada (Azores)",
+    "country": "Portugal",
+    "tags": ["nature", "mild", "island", "tuna_fishing", "fishing", "diving"],
+    "avgHighCByMonth": {"1": 16, "2": 16, "3": 17, "4": 18, "5": 20, "6": 22, "7": 25, "8": 26, "9": 25, "10": 22, "11": 19, "12": 17},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Volcanic islands; hiking, whale watching, tuna fishing (summer)."
+  },
+  {
+    "code": "TUN",
+    "city": "Tunis",
+    "country": "Tunisia",
+    "tags": ["beach", "warm", "city_break"],
+    "avgHighCByMonth": {"1": 16, "2": 17, "3": 19, "4": 22, "5": 26, "6": 31, "7": 34, "8": 34, "9": 30, "10": 26, "11": 21, "12": 17},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Mediterranean coast; culture + seaside."
+  },
+  {
+    "code": "BSL",
+    "city": "Basel",
+    "country": "Switzerland",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 5, "2": 8, "3": 12, "4": 16, "5": 21, "6": 24, "7": 27, "8": 26, "9": 21, "10": 15, "11": 9, "12": 5},
+    "lhGroupCarriers": ["LX", "LH"],
+    "notes": "Rhineland culture hub."
+  },
+  {
+    "code": "STR",
+    "city": "Stuttgart",
+    "country": "Germany",
+    "tags": ["city_break"],
+    "avgHighCByMonth": {"1": 3, "2": 6, "3": 10, "4": 15, "5": 20, "6": 24, "7": 26, "8": 26, "9": 20, "10": 14, "11": 8, "12": 4},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Automotive museums + parks."
+  },
+  {
+    "code": "WDH",
+    "city": "Windhoek",
+    "country": "Namibia",
+    "tags": ["safari", "wildlife", "wildlife_photography", "nature", "warm"],
+    "avgHighCByMonth": {"1": 31, "2": 30, "3": 29, "4": 26, "5": 22, "6": 20, "7": 20, "8": 23, "9": 27, "10": 29, "11": 30, "12": 31},
+    "lhGroupCarriers": ["4Y", "LH"],
+    "notes": "Gateway to Etosha; self-drive safari."
+  },
+  {
+    "code": "JNB",
+    "city": "Johannesburg",
+    "country": "South Africa",
+    "tags": ["safari", "wildlife", "wildlife_photography", "city_break", "warm"],
+    "avgHighCByMonth": {"1": 26, "2": 26, "3": 25, "4": 22, "5": 19, "6": 17, "7": 17, "8": 20, "9": 24, "10": 26, "11": 26, "12": 26},
+    "lhGroupCarriers": ["LH", "LX", "4Y"],
+    "notes": "Access to Kruger private reserves."
+  },
+  {
+    "code": "NBO",
+    "city": "Nairobi",
+    "country": "Kenya",
+    "tags": ["safari", "wildlife", "wildlife_photography", "warm"],
+    "avgHighCByMonth": {"1": 26, "2": 27, "3": 27, "4": 25, "5": 24, "6": 22, "7": 21, "8": 22, "9": 24, "10": 25, "11": 23, "12": 24},
+    "lhGroupCarriers": ["LH", "SN"],
+    "notes": "Masai Mara & Amboseli access."
+  },
+  {
+    "code": "VFA",
+    "city": "Victoria Falls",
+    "country": "Zimbabwe",
+    "tags": ["safari", "wildlife", "wildlife_photography", "nature", "warm"],
+    "avgHighCByMonth": {"1": 32, "2": 32, "3": 31, "4": 31, "5": 29, "6": 25, "7": 25, "8": 28, "9": 31, "10": 33, "11": 34, "12": 32},
+    "lhGroupCarriers": ["4Y"],
+    "notes": "Falls + safari circuits (Chobe, Hwange)."
+  },
+  {
+    "code": "HOR",
+    "city": "Horta (Faial)",
+    "country": "Portugal",
+    "tags": ["tuna_fishing", "fishing", "sailing", "island", "mild"],
+    "avgHighCByMonth": {"1": 16, "2": 16, "3": 17, "4": 18, "5": 20, "6": 23, "7": 25, "8": 26, "9": 25, "10": 22, "11": 19, "12": 17},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Azores big-game fishing hub; sailing marina."
+  },
+  {
+    "code": "GRO",
+    "city": "Girona",
+    "country": "Spain",
+    "tags": ["cycling", "beach", "warm", "city_break"],
+    "avgHighCByMonth": {"1": 14, "2": 16, "3": 18, "4": 20, "5": 24, "6": 29, "7": 32, "8": 32, "9": 28, "10": 23, "11": 18, "12": 15},
+    "lhGroupCarriers": ["EW", "LH"],
+    "notes": "Pro-cycling base; Costa Brava nearby."
+  },
+  {
+    "code": "RVN",
+    "city": "Rovaniemi",
+    "country": "Finland",
+    "tags": ["winter_sports", "cold", "northern_lights", "hunting"],
+    "avgHighCByMonth": {"1": -6, "2": -6, "3": -1, "4": 5, "5": 12, "6": 18, "7": 20, "8": 17, "9": 10, "10": 3, "11": -2, "12": -5},
+    "lhGroupCarriers": ["LH", "LX"],
+    "notes": "Lapland; auroras, winter activities."
+  },
+  {
+    "code": "KTT",
+    "city": "Kittilä",
+    "country": "Finland",
+    "tags": ["winter_sports", "cold", "northern_lights", "hunting"],
+    "avgHighCByMonth": {"1": -10, "2": -9, "3": -5, "4": 1, "5": 8, "6": 14, "7": 17, "8": 14, "9": 8, "10": 1, "11": -5, "12": -8},
+    "lhGroupCarriers": ["LH"],
+    "notes": "Ski resorts Levi/Ylläs; winter wildlife."
+  }
+]
