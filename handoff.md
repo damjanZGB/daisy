@@ -63,7 +63,7 @@ Proxy (Node)
 - Body limit: 1 MiB; strict JSON parse
 - Amadeus timeout: 12000 ms (AbortController)
 
-Tool I/O Debug Capture (S3)
+Tool I/O Debug Capture (S3) 
 - Enabled (DEBUG_TOOL_IO=true)
 - Bucket/prefix: s3://origin-daisy-bucket/debug-tool-io/YYYY/MM/DD/
 - Contents: full request (proxy payload) and full response (simplified offers and raw Amadeus JSON)
@@ -71,7 +71,7 @@ Tool I/O Debug Capture (S3)
 
 Verified Behaviors (CloudWatch)
 - Tools working: OpenAPI /tools/amadeus/search calls and recommender enrichment calls succeeded (200) and returned offers during sessions LH2943, LH6638, LH6119, LH4128.
-- Function-details streaming: Bedrock may return only a final functionResponse (no streamed outputText). This previously led to “No text response.”
+- Function-details streaming: Bedrock may return only a final functionResponse (no streamed outputText). This previously led to ï¿½No text response.ï¿½
   - Implemented fix: proxy appends functionResponse TEXT when stream is empty/heading-only; frontend logic no longer parses finalResponse (backend owns fallback).
 
 Instruction Updates (ASCII variants)
@@ -93,7 +93,7 @@ Frontend (PDF and parsing)
   - generatePdf constructs legs from bullets when needed; carrier+number without space; blanks instead of random gate/zone/seat/seq; multi-page generation fixed (one page per leg).
   - Trigger words include: confirm, confirmed, book, hold, pdf, download, itinerary, ticket, boarding pass.
   - Removed UI-level fallback for functionResponse; UI uses `text` from proxy only (backend-controlled).
-  - Frontends send `locationLat/locationLon` when available; proxy infers `default_origin` (nearest airport). Never send locality labels (e.g., “Zaprešic”) to tools.
+  - Frontends send `locationLat/locationLon` when available; proxy infers `default_origin` (nearest airport). Never send locality labels (e.g., ï¿½Zapreï¿½icï¿½) to tools.
 
 Amadeus API Compatibility
 - Requests sent through proxy use fields aligned with v2.8/2.9: originLocationCode, destinationLocationCode, departureDate, returnDate, adults, children, infants, travelClass, nonStop, currencyCode, includedAirlineCodes, excludedAirlineCodes, max.
@@ -124,10 +124,10 @@ Open Items (handoff)
 
 Proxy Best Practices (implemented)
 - Use AWS SDK v3 for Bedrock Agent Runtime streaming.
-- Separate liveness (/health) and readiness (/ready) — readiness uses cached background checks.
+- Separate liveness (/health) and readiness (/ready) ï¿½ readiness uses cached background checks.
 - Strict CORS allowlist (env `ORIGIN`), 1 MiB body limit, strict JSON parsing.
 - Only minimal context injection: origin (IATA) inferred from lat/lon; date/destination parsing is tool responsibility.
-- Never pass locality labels (e.g., “Zaprešic”) to tools — only IATA codes or coordinates.
+- Never pass locality labels (e.g., ï¿½Zapreï¿½icï¿½) to tools ï¿½ only IATA codes or coordinates.
 - Accept header set for Amadeus; forward airline filters when provided.
 - Structured logs include requestId, method, path, status, duration, UA.
 
