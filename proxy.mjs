@@ -24,6 +24,8 @@ const AMADEUS_HOST =
     : "https://test.api.amadeus.com";
 const AMADEUS_API_KEY = process.env.AMADEUS_API_KEY || "";
 const AMADEUS_API_SECRET = process.env.AMADEUS_API_SECRET || "";
+const LH_GROUP_ONLY = /^true$/i.test(String(process.env.LH_GROUP_ONLY || 'true'));
+const LH_GROUP_CODES = ["LH","LX","OS","SN","EW","4Y","EN"];
 const IATA_DB_PATH = process.env.IATA_DB_PATH || "./iata.json";
 const AGENT_ALIAS_ID = (process.env.AGENT_ALIAS_ID || "").trim();
 const AWS_ACCESS_KEY_ID = (process.env.AWS_ACCESS_KEY_ID || "").trim();
@@ -1201,6 +1203,13 @@ const server = http.createServer(async (req, res) => {
         logger.warn(`[${requestId}] Amadeus payload not an object`);
         return;
       }
+      // Enforce LH Group only if configured
+      if (LH_GROUP_ONLY) {
+        try {
+          q.includedAirlineCodes = LH_GROUP_CODES.join(',');
+          if (q.excludedAirlineCodes) delete q.excludedAirlineCodes;
+        } catch (_) {}
+      }
       const requiredFields = ["originLocationCode", "destinationLocationCode", "departureDate"];
       const missing = requiredFields.filter(field => !q[field]);
       if (missing.length > 0) {
@@ -1451,6 +1460,7 @@ const server = http.createServer(async (req, res) => {
       putInDatesCache(cacheKey, body);
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify(body));
+      logger.info(`[${requestId}] Amadeus dates succeeded`, { origin, destination, from, to, days: days.length, top: top.length });
       return;
     }
 

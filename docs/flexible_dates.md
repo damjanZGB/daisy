@@ -36,6 +36,41 @@ Notes:
 - Pricing applies LH Group only via `includedAirlineCodes` in the Amadeus pricing adapter.
 - The calendar endpoint itself does not filter by airline.
 
+## Orchestrator OpenAPI (One‑Call Flex)
+
+To keep the proxy thin while giving the agent a single operation, the Lambda exposes an orchestrator route that runs the calendar and (optionally) prices the top days in one call.
+
+- `GET /tools/amadeus/flex` (OpenAPI → Lambda)
+- Body fields (JSON map, same keys as calendar):
+  - Required: `originLocationCode`, `destinationLocationCode`
+  - Date window: `month=YYYY-MM` or `departureDateFrom/To=YYYY-MM-DD`
+  - Optional: `oneWay` (default true), `nonStop`, `currencyCode`, `limit<=10`
+  - Pricing: `priceLimit<=10` (defaults to `limit`); always LH Group only
+  - Passenger/class: `adults` (default 1), `cabin`/`travelClass` (default ECONOMY)
+
+Returns only `priced[]` for the top N days (one‑way only) along with a `query` echo. The calendar is used internally for selection and is not included in the response to avoid showing unfiltered results. Roundtrip pairing is not implemented here.
+
+Example body:
+
+```
+{
+  "apiPath": "/tools/amadeus/flex",
+  "httpMethod": "GET",
+  "body": {
+    "originLocationCode": "MUC",
+    "destinationLocationCode": "ZRH",
+    "month": "2025-11",
+    "oneWay": true,
+    "nonStop": true,
+    "currencyCode": "EUR",
+    "limit": 5,
+    "priceLimit": 3,
+    "adults": 1,
+    "travelClass": "ECONOMY"
+  }
+}
+```
+
 ## Example
 
 Calendar only:
@@ -75,4 +110,3 @@ powershell -ExecutionPolicy Bypass -File scripts/deploy_lambda.ps1
 ```
 
 The script zips `aws/lambda_function.py` and `data/lh_destinations_catalog.json`, then calls `aws lambda update-function-code` for `daisy_in_action-0k2c0` in `us-west-2`. Ensure your AWS CLI profile has access (default: `reStrike`).
-

@@ -20,6 +20,9 @@ from urllib import request as _urlreq
 import os
 import uuid
 from zoneinfo import ZoneInfo
+import threading
+import time
+import hashlib
 
 # Optional S3 debug capture for tool I/O
 try:
@@ -292,6 +295,68 @@ def _score_destination(dest: dict, theme_tags: set[str], target_month: int, orig
     return score, reason
 
 LH_GROUP_CODES = ["LH", "LX", "OS", "SN", "EW", "4Y", "EN"]
+
+# Short-TTL pricing cache and in-flight coalescing (per-container)
+_PRICE_CACHE: Dict[str, Tuple[Dict[str, Any], float]] = {}
+_PRICE_INFLIGHT: Dict[str, threading.Event] = {}
+_PRICE_LOCK = threading.Lock()
+_PRICE_TTL_SEC = 10.0
+
+def _build_price_key(
+    origin: str,
+    destination: str,
+    departure_date: Optional[str],
+    return_date: Optional[str],
+    adults: int,
+    cabin: str,
+    nonstop: bool,
+    currency: Optional[str],
+) -> str:
+    parts = [
+        (origin or '').upper(),
+        (destination or '').upper(),
+        (departure_date or '-')[:10],
+        (return_date or '-')[:10],
+        str(max(1, int(adults or 1))),
+        (cabin or 'ECONOMY').upper(),
+        '1' if nonstop else '0',
+        (currency or '-').upper(),
+        'LHONLY',
+    ]
+    return hashlib.sha256('|'.join(parts).encode('utf-8')).hexdigest()
+
+def _amadeus_search_cached(key: str, do_request, *, timeout: float = 8.0) -> Dict[str, Any]:
+    now = time.time()
+    with _PRICE_LOCK:
+        tup = _PRICE_CACHE.get(key)
+        if tup and tup[1] > now:
+            _log("Amadeus dedupe hit", cacheKey=key[:8])
+            return tup[0]
+        ev = _PRICE_INFLIGHT.get(key)
+        if ev is None:
+            ev = threading.Event()
+            _PRICE_INFLIGHT[key] = ev
+        else:
+            start = time.time()
+            ev.wait(timeout=max(0.5, min(timeout, 8.0)))
+            waited_ms = int((time.time() - start) * 1000)
+            _log("Amadeus coalesce wait", cacheKey=key[:8], waitedMs=waited_ms)
+            tup2 = _PRICE_CACHE.get(key)
+            if tup2 and tup2[1] > time.time():
+                return tup2[0]
+    try:
+        resp = do_request()
+        with _PRICE_LOCK:
+            if len(_PRICE_CACHE) > 200:
+                _PRICE_CACHE.clear()
+            _PRICE_CACHE[key] = (resp, time.time() + _PRICE_TTL_SEC)
+        return resp
+    finally:
+        with _PRICE_LOCK:
+            try:
+                _PRICE_INFLIGHT.get(key) and _PRICE_INFLIGHT[key].set()
+            finally:
+                _PRICE_INFLIGHT.pop(key, None)
 
 PROXY_BASE_URL = (os.getenv("PROXY_BASE_URL") or "http://localhost:8787").rstrip("/")
 
@@ -984,7 +1049,19 @@ def amadeus_search_flight_offers(
         lhGroupOnly=lh_group_only,
         maxResults=max_results,
     )
-    response = _proxy_post("/tools/amadeus/search", payload, timeout=timeout)
+    _key = _build_price_key(
+        origin,
+        destination,
+        payload.get("departureDate"),
+        payload.get("returnDate"),
+        payload.get("adults", 1),
+        payload.get("travelClass", "ECONOMY"),
+        bool(payload.get("nonStop")),
+        payload.get("currencyCode"),
+    )
+    def _do():
+        return _proxy_post("/tools/amadeus/search", payload, timeout=timeout)
+    response = _amadeus_search_cached(_key, _do, timeout=timeout)
     if isinstance(response, dict):
         offers = response.get("offers")
         offer_count = len(offers) if isinstance(offers, list) else None
@@ -1766,6 +1843,110 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         if isinstance(out, dict):
             out["priced"] = priced
         return _wrap_openapi(event, 200, out)
+
+    if api_path == "/tools/amadeus/flex":
+        origin = (body.get("originLocationCode") or "").strip().upper()
+        destination = (body.get("destinationLocationCode") or "").strip().upper()
+        month = (body.get("month") or "").strip()
+        date_from = (body.get("departureDateFrom") or "").strip()
+        date_to = (body.get("departureDateTo") or "").strip()
+        one_way = bool(body.get("oneWay", True))
+        non_stop = bool(body.get("nonStop", False))
+        currency = (body.get("currencyCode") or "").strip().upper()
+        limit = body.get("limit")
+        try:
+            limit_n = int(limit) if limit is not None else 5
+        except Exception:
+            limit_n = 5
+        price_limit = body.get("priceLimit")
+        try:
+            price_limit_n = int(price_limit) if price_limit is not None else limit_n
+        except Exception:
+            price_limit_n = limit_n
+        price_limit_n = max(1, min(10, price_limit_n))
+        adults = _to_int(body.get("adults", 1), 1)
+        cabin = (body.get("cabin") or body.get("travelClass") or "ECONOMY").upper()
+
+        # Validate IATA quickly (proxy will re-validate)
+        if not re.fullmatch(r"[A-Z]{3}", origin or "") or not re.fullmatch(r"[A-Z]{3}", destination or ""):
+            _log("OpenAPI validation error", reason="invalid_iata", origin=origin, destination=destination)
+            return _wrap_openapi(event, 400, {"error": "invalid_iata"})
+
+        params: Dict[str, str] = {
+            "originLocationCode": origin,
+            "destinationLocationCode": destination,
+            "oneWay": str(bool(one_way)).lower(),
+            "nonStop": str(bool(non_stop)).lower(),
+            "limit": str(max(1, min(10, limit_n))),
+        }
+        if currency:
+            params["currencyCode"] = currency
+        if month:
+            params["month"] = month
+        if date_from:
+            params["departureDateFrom"] = date_from
+        if date_to:
+            params["departureDateTo"] = date_to
+
+        # Step 1: calendar (proxy)
+        try:
+            cal = _proxy_get("/tools/amadeus/dates", params, timeout=7.0)
+        except Exception as exc:
+            _log("OpenAPI flex: calendar error", error=str(exc))
+            return _wrap_openapi(event, 502, {"error": f"amadeus_dates_failed: {exc}"})
+
+        # Step 2: pricing (one-way only)
+        if not one_way:
+            # Do not return unfiltered calendar. Require oneWay or explicit dates.
+            return _wrap_openapi(event, 400, {"error": "one_way_required", "message": "Set oneWay=true or provide explicit departure/return dates to return priced results."})
+
+        top_days = []
+        if isinstance(cal, dict):
+            top_days = cal.get("top") or []
+        priced: List[Dict[str, Any]] = []
+        for item in top_days[: price_limit_n]:
+            d = (item.get("date") if isinstance(item, dict) else None) or ""
+            d_iso = _iso_date(str(d))
+            if not d_iso:
+                continue
+            try:
+                raw = amadeus_search_flight_offers(
+                    origin,
+                    destination,
+                    d_iso,
+                    None,
+                    adults,
+                    cabin,
+                    non_stop,
+                    currency or None,
+                    True,  # LH Group only at pricing
+                    10,
+                )
+                offers = _summarize_offers(raw, currency or None, True)
+            except Exception as exc:
+                _log("OpenAPI flex: pricing error", date=d_iso, error=str(exc))
+                offers = []
+            priced.append({
+                "departureDate": d_iso,
+                "offers": offers,
+            })
+        # Return priced results only; do not include unfiltered calendar in response
+        return _wrap_openapi(event, 200, {
+            "generatedAt": _now_iso(),
+            "query": {
+                "origin": origin,
+                "destination": destination,
+                "oneWay": True,
+                "nonstop": non_stop,
+                "adults": adults,
+                "cabin": cabin,
+                "currency": currency or None,
+                "lhGroupOnly": True,
+                "priceLimit": price_limit_n,
+            },
+            "priced": priced,
+            "provider": "Amadeus Flight Cheapest Date + Flight Offers Search v2 (LH-only)",
+        })
 
     if api_path == "/tools/datetime/interpret":
         _log(
