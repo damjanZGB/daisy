@@ -1725,10 +1725,6 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             if code:
                 _log("IATA lookup: substituting nearest/closest with default_origin code", code=code)
                 term = code
-            elif label:
-                lab = str(label).strip()
-                _log("IATA lookup: substituting nearest/closest with context label", label=lab)
-                term = lab
         if not term:
             _log("OpenAPI validation error", reason="missing_term")
             return _wrap_openapi(
