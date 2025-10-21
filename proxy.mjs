@@ -1354,8 +1354,8 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       // Input normalization (compat with existing naming)
-      const origin = String(searchParams.get("originLocationCode") || "").trim().toUpperCase();
-      const destination = String(searchParams.get("destinationLocationCode") || "").trim().toUpperCase();
+      const origin = String(searchParams.get("originLocationCode") || searchParams.get("origin") || "").trim().toUpperCase();
+      const destination = String(searchParams.get("destinationLocationCode") || searchParams.get("destination") || "").trim().toUpperCase();
       const month = String(searchParams.get("month") || "").trim(); // YYYY-MM
       const fromQ = String(searchParams.get("departureDateFrom") || "").trim(); // YYYY-MM-DD
       const toQ = String(searchParams.get("departureDateTo") || "").trim();
@@ -1405,12 +1405,10 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       const params = new URLSearchParams();
-      // Amadeus Flight Cheapest Date Search expects 'origin', 'destination', 'departureDate' (single date or range)
       params.set("origin", origin);
       params.set("destination", destination);
       params.set("departureDate", `${from},${to}`);
-      params.set("oneWay", String(!!oneWay));
-      if (currencyCode) params.set("currencyCode", currencyCode);
+      params.set("oneWay", oneWay ? "true" : "false");
       if (nonStop) params.set("nonStop", "true");
       // viewBy left to default (DATE)
       let json;

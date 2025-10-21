@@ -1773,20 +1773,20 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         cabin = (body.get("cabin") or body.get("travelClass") or "ECONOMY").upper()
 
         params: Dict[str, str] = {
-            "originLocationCode": origin,
-            "destinationLocationCode": destination,
+            "origin": origin,
+            "destination": destination,
             "oneWay": str(bool(one_way)).lower(),
             "nonStop": str(bool(non_stop)).lower(),
-            "limit": str(max(1, min(10, limit_n))),
         }
-        if currency:
-            params["currencyCode"] = currency
         if month:
             params["month"] = month
         if date_from:
             params["departureDateFrom"] = date_from
         if date_to:
             params["departureDateTo"] = date_to
+        params["limit"] = str(max(1, min(10, limit_n)))
+        if currency:
+            params["currencyCode"] = currency
         # Validate IATA quickly (proxy will re-validate)
         if not re.fullmatch(r"[A-Z]{3}", origin or "") or not re.fullmatch(r"[A-Z]{3}", destination or ""):
             _log("OpenAPI validation error", reason="invalid_iata", origin=origin, destination=destination)
