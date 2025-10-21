@@ -49,6 +49,7 @@
     .btn { background:#1f2937; color:#e5e7eb; border:1px solid #374151; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; }
     .btn:hover { background:#111827; }
     .diagram { background:#0b1229; border:1px solid #1f2937; border-radius:12px; padding:12px; }
+    #diag-data { margin-left:auto; margin-right:auto; max-width: 1000px; }
     .hint { font-size:12px; color:#9ca3af; }
     .ok { color: var(--ok); }
     .warn { color: var(--warn); }
@@ -60,7 +61,19 @@
   </style>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script>
-    mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose', flowchart: { useMaxWidth: true, htmlLabels: true } });
+    function applyMermaid(theme){
+      try {
+        mermaid.initialize({ startOnLoad: false, theme: theme || 'dark', securityLevel: 'loose', flowchart: { useMaxWidth: true, htmlLabels: true } });
+        mermaid.run({ querySelector: '.mermaid' });
+      } catch(_) { /* no-op */ }
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const sel = document.getElementById('themeSelect');
+      if (sel) {
+        sel.addEventListener('change', () => applyMermaid(sel.value));
+      }
+      applyMermaid((sel && sel.value) || 'dark');
+    });
     function copy(elId){ const el = document.getElementById(elId); if(!el) return; const txt = el.innerText; navigator.clipboard.writeText(txt); const btn = document.querySelector(`[data-copy='${elId}']`); if(btn){ const old=btn.textContent; btn.textContent='Copied'; setTimeout(()=>btn.textContent=old,1200);} }
   </script>
   <!-- Emoji icons fallback for browsers without color emoji -->
@@ -86,6 +99,12 @@
       <a href="#deploy">Deploy & Test</a>
       <a href="#troubleshoot">Troubleshooting</a>
       <a href="#appendix">Appendix</a>
+      <h2>Theme</h2>
+      <select id="themeSelect" style="width:100%; background:#0b1229; color:#e5e7eb; border:1px solid #293548; border-radius:8px; padding:6px;">
+        <option value="dark" selected>Dark</option>
+        <option value="forest">Forest</option>
+        <option value="neutral">Neutral</option>
+      </select>
       <div style="height:12px;"></div>
       <div class="meta">Repo paths are clickable in the CLI editor.</div>
     </nav>
@@ -127,60 +146,78 @@
         <h2>Architecture</h2>
         <div class="toolbar"><button class="btn" data-copy="diag-arch" onclick="copy('diag-arch')">Copy diagram</button></div>
         <div class="diagram mermaid" id="diag-arch">
-          flowchart TB
-            subgraph User[User]
-              U[Traveler]
-            end
+%%{init: {"theme": "neutral", "flowchart": {"htmlLabels": true, "useMaxWidth": true}} }%%
+flowchart TB
+    %% --- Nodes ---
+    subgraph User["User"]
+        U["Traveler"]
+    end
 
-            subgraph UI[Frontends]
-              F1[paul/index.html]
-              F2[bianca/index.html]
-              F3[gina/index.html]
-              F4[origin/index.html]
-            end
+    subgraph UI["Frontends"]
+        F1["paul/index.html"]
+        F2["bianca/index.html"]
+        F3["gina/index.html"]
+        F4["origin/index.html"]
+    end
 
-            subgraph Proxy[Node Proxy :8787]
-              P1[/POST /invoke\n(Gateway to Bedrock)/]
-              P2[/POST /tools/amadeus/search/]
-              P3[/GET /tools/iata/lookup/]
-              P4[/POST /tools/datetime/interpret/]
-              P5[/POST /log/transcript/]
-            end
+    subgraph Proxy["Node Proxy :8787"]
+        P1["POST /invoke<br/>(Gateway to Bedrock)"]
+        P2["POST /tools/amadeus/search/"]
+        P3["GET /tools/iata/lookup/"]
+        P4["POST /tools/datetime/interpret/"]
+        P5["POST /log/transcript/"]
+    end
 
-            subgraph Bedrock[Bedrock Agent Runtime]
-              AID[Agent: JDLTXAKYJY\nAliases: Bianca/Paul/Gina]
-              AG[Agent Orchestrator]
-            end
+    subgraph Bedrock["Bedrock Agent Runtime"]
+        AID["Agent: JDLTXAKYJY<br/>Aliases: Bianca/Paul/Gina"]
+        AG["Agent Orchestrator"]
+    end
 
-            subgraph Lambda[Action Group Lambda]
-              L1[daisy_in_action-0k2c0\nPython 3.12]
-              L2[Destination Recommender]
-            end
+    subgraph Lambda["Action Group Lambda"]
+        L1["daisy_in_action-0k2c0<br/>Python 3.12"]
+        L2["Destination Recommender"]
+    end
 
-            subgraph Vendors[External]
-              AMA[(Amadeus Flight Offers v2.8/2.9)]
-            end
+    subgraph Vendors["External"]
+        AMA[(Amadeus Flight Offers v2.8/2.9)]
+    end
 
-            subgraph Logs[Observability]
-              CW[(CloudWatch Logs)]
-              S3[(S3 debug-tool-io/)]
-            end
+    subgraph Logs["Observability"]
+        CW[(CloudWatch Logs)]
+        S3[(S3 debug-tool-io/)]
+    end
 
-            U -->|Chat| F1 & F2 & F3 & F4
-            F1 & F2 & F3 & F4 -->|JSON| P1
-            P1 -->|InvokeAgent (stream)| AG
-            AG -->|function-details| L1
-            L1 -->|IATA| P3
-            L1 -->|Time| P4
-            L1 -->|Pricing| P2
-            P2 -->|GET offers| AMA
-            AMA --> P2
-            L1 -->|functionResponse TEXT| AG
-            AG -.events.-> P1
-            P1 -->|text (w/ fallback)| F1 & F2 & F3 & F4
-            L1 --> S3
-            L1 --> CW
-            P3 & P4 --> CW
+    %% --- Edges ---
+    U -->|Chat| F1
+    U -->|Chat| F2
+    U -->|Chat| F3
+    U -->|Chat| F4
+
+    F1 -->|JSON| P1
+    F2 -->|JSON| P1
+    F3 -->|JSON| P1
+    F4 -->|JSON| P1
+
+    P1 -->|InvokeAgent (stream)| AG
+    AG -->|function-details| L1
+    L1 -->|IATA| P3
+    L1 -->|Time| P4
+    L1 -->|Pricing| P2
+    P2 -->|GET offers| AMA
+    AMA --> P2
+    L1 -->|functionResponse TEXT| AG
+    AG -.-> P1
+
+    P1 -->|text (w/ fallback)| F1
+    P1 -->|text (w/ fallback)| F2
+    P1 -->|text (w/ fallback)| F3
+    P1 -->|text (w/ fallback)| F4
+
+    L1 --> S3
+    L1 --> CW
+    P3 --> CW
+    P4 --> CW
+
         </div>
         <p class="hint">The proxy assembles streamed text from Bedrock and falls back to Lambda’s functionResponse TEXT when Bedrock streams only a heading.</p>
       </section>
@@ -213,32 +250,46 @@
         <h2>Data & Logical Flows</h2>
         <div class="toolbar"><button class="btn" data-copy="diag-seq" onclick="copy('diag-seq')">Copy diagram</button></div>
         <div class="diagram mermaid" id="diag-seq">
-          sequenceDiagram
-            participant U as User
-            participant F as Frontend
-            participant P as Proxy (/invoke)
-            participant B as Bedrock Agent
-            participant L as Lambda (Action Group)
-            participant T as Tools (IATA/Time/Amadeus)
-            participant A as Amadeus API
+sequenceDiagram
+  autonumber
+  
+  %% Group frontend
+  %% Frontend Clients
+    actor U as User
+    participant UI as Frontend UI
 
-            U->>F: inputText (natural language)
-            F->>P: POST /invoke {sessionId, inputText, defaultOrigin?}
-            P->>B: InvokeAgent (stream)
-            B-->>P: outputText (may be empty or heading)
-            B->>L: functionDetails (recommend, iata, time, pricing)
-            L->>P: GET /tools/iata/lookup
-            P-->>L: Airport matches
-            L->>P: POST /tools/datetime/interpret
-            P-->>L: ISO YYYY-MM-DD
-            L->>P: POST /tools/amadeus/search {query}
-            P->>A: GET /v2/shopping/flight-offers
-            A-->>P: offers JSON
-            P-->>L: normalized {offers, raw}
-            L-->>B: functionResponse TEXT {message}
-            B-->>P: final-response
-            P-->>F: { text } (fallback if needed)
-            F-->>U: Render options with THEN lines
+  %% Group middle-tier/backend
+  %% Service Layer
+    participant PX as Proxy
+    participant BR as Bedrock Agent
+    participant L as Lambda
+
+  %% Group external API
+  %% 3rd Party API
+    participant A as Amadeus API
+
+  U->>UI: Natural language intent
+  UI->>PX: POST /invoke
+  PX->>BR: InvokeAgent (stream)
+  BR-->>PX: Streamed outputText
+  
+  BR->>L: function-details (tools)
+  L->>PX: /tools/iata | /tools/datetime
+  PX-->>L: IATA matches | ISO date
+  L->>PX: /tools/amadeus/search
+  PX->>A: GET /v2/shopping/flight-offers
+  A-->>PX: Offers JSON
+  PX-->>L: Normalized offers
+  L-->>BR: functionResponse TEXT
+  BR-->>PX: final-response
+  
+  alt Stream empty or heading-only
+    PX-->>UI: Use TEXT from functionResponse (fallback)
+    Note right of UI: Fallback renders final output only
+  else Stream contains content
+    PX-->>UI: Render streamed text
+    Note right of UI: UI displays live results to user
+  end
         </div>
 
         <div class="two-col">
@@ -411,20 +462,30 @@ curl -s -X POST http://localhost:8787/invoke \
       <section id="appendix">
         <h2>Appendix</h2>
         <div class="diagram mermaid" id="diag-data">
-          flowchart LR
-            subgraph Capture[Tool I/O Capture]
-              P[Proxy payload]\n(POST /tools/*)
-              R[Proxy response]\n(Offers + Raw)
-            end
-            P & R --> S3D[(S3 debug-tool-io/)]
-            subgraph Replay
-              RS[scripts/replay_sessions.mjs]
-              EX[scripts/extract_proxy_logs.py]
-            end
-            S3D -.source.-> RS
-            CWL[(CloudWatch Logs)] --> EX
-            RS --> SUM[analytics/replay/*.json]
-            EX --> SUM
+%%{init: {'theme':'dark'}}%%
+flowchart LR
+  classDef cap fill:#fde68a,stroke:#b45309,stroke-width:2px,color:#111;
+  classDef rep fill:#c4b5fd,stroke:#6d28d9,stroke-width:2px,color:#111;
+  classDef st fill:#99f6e4,stroke:#0f766e,stroke-width:2px,color:#111;
+  classDef lg fill:#fecaca,stroke:#b91c1c,stroke-width:2px,color:#111;
+  classDef out fill:#bfdbfe,stroke:#1d4ed8,stroke-width:2px,color:#111;
+
+  subgraph Capture["Tool I/O Capture"]
+    P["Proxy payload (POST /tools)"]:::cap
+    R["Proxy response (offers + raw)"]:::cap
+  end
+  S3D["S3 debug-tool-io/"]:::st
+  P --> S3D
+  R --> S3D
+  subgraph Replay["Replay & Analytics"]
+    RS["replay_sessions.mjs"]:::rep
+    EX["extract_proxy_logs.py"]:::rep
+  end
+  CWL["CloudWatch Logs"]:::lg
+  S3D -.-> RS
+  CWL --> EX
+  RS --> SUM["analytics/replay results"]:::out
+  EX --> SUM
         </div>
         <p class="hint">Use replay outputs to guide instruction and tool tuning. Keep conversations realistic and enforce tool‑first rules.</p>
       </section>
