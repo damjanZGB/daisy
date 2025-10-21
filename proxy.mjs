@@ -45,6 +45,10 @@ const transcriptS3Client = TRANSCRIPT_BUCKET
   : null;
 const AMADEUS_TIMEOUT_MS = (() => {
   const raw = Number(process.env.AMADEUS_TIMEOUT_MS);
+  if (Number.isFinite(raw) && raw > 0) return raw;
+  return 12000;
+})();
+
 // -------- Readiness (background checks cached) --------
 const readiness = {
   ready: false,
@@ -60,9 +64,11 @@ async function runReadinessCheck() {
   let iataOk = false;
   try {
     const db = loadIata();
-    iataOk = db && typeof db === 'object' && Object.keys(db).length > 0;
-    if (!iataOk) errors.push('iata:empty');
-  } catch (e) { errors.push('iata:' + (e?.message || 'error')); }
+    iataOk = db && typeof db === "object" && Object.keys(db).length > 0;
+    if (!iataOk) errors.push("iata:empty");
+  } catch (e) {
+    errors.push("iata:" + (e?.message || "error"));
+  }
   // bedrock
   let bedrockOk = false;
   try {
@@ -72,7 +78,9 @@ async function runReadinessCheck() {
     await client.send(new CreateSessionCommand({}), { abortSignal: controller.signal }).catch(() => {});
     clearTimeout(t);
     bedrockOk = true;
-  } catch (e) { errors.push('bedrock:' + (e?.name || e?.message || 'error')); }
+  } catch (e) {
+    errors.push("bedrock:" + (e?.name || e?.message || "error"));
+  }
   // s3 optional
   let s3Ok = true;
   if (transcriptS3Client && TRANSCRIPT_BUCKET) {
@@ -83,7 +91,10 @@ async function runReadinessCheck() {
       await transcriptS3Client.send(head, { abortSignal: controller.signal });
       clearTimeout(t);
       s3Ok = true;
-    } catch (e) { s3Ok = false; errors.push('s3:' + (e?.name || e?.message || 'denied')); }
+    } catch (e) {
+      s3Ok = false;
+      errors.push("s3:" + (e?.name || e?.message || "denied"));
+    }
   }
   const amadeusConfigured = !!(AMADEUS_API_KEY && AMADEUS_API_SECRET);
   readiness.checks = { config: configOk, iata: iataOk, bedrock: bedrockOk, s3: s3Ok, amadeusConfigured };
@@ -92,10 +103,9 @@ async function runReadinessCheck() {
   readiness.errors = errors.slice(0, 5);
 }
 runReadinessCheck().catch(() => {});
-setInterval(() => { runReadinessCheck().catch(() => {}); }, 60_000);
-  if (Number.isFinite(raw) && raw > 0) return raw;
-  return 12000;
-})();
+setInterval(() => {
+  runReadinessCheck().catch(() => {});
+}, 60_000);
 
 // Simple in-proxy cache for calendar (flexible dates) to reduce quota
 // Keyed by normalized O/D + date window + core filters; TTL short to avoid staleness
