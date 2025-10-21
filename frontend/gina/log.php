@@ -33,22 +33,119 @@ function deriveToolUrl(string $invokeUrl, string $toolPath): ?string
   return $base . '/' . ltrim($toolPath, '/');
 }
 
-function loadConfigApiUrl(): ?string
+function loadConfig(): array
 {
+  static $cache = null;
+  if (is_array($cache)) {
+    return $cache;
+  }
   $configPath = __DIR__ . '/config.json';
   if (!is_file($configPath)) {
-    return null;
+    $cache = [];
+    return $cache;
   }
   $raw = file_get_contents($configPath);
   if ($raw === false) {
-    return null;
+    $cache = [];
+    return $cache;
   }
   $json = json_decode($raw, true);
-  if (!is_array($json)) {
-    return null;
+  $cache = is_array($json) ? $json : [];
+  return $cache;
+}
+
+function resolveSnitchToken(array $config): ?string
+{
+  $candidates = [
+    $config['snitchUploaderToken'] ?? null,
+    $config['transcriptUploaderToken'] ?? null,
+    getenv('SNITCH_UPLOAD_TOKEN') ?: null,
+    getenv('S3ESCALATOR_TOKEN') ?: null,
+    getenv('TRANSCRIPT_UPLOADER_TOKEN') ?: null,
+    getenv('UPLOADER_TOKEN') ?: null,
+  ];
+  foreach ($candidates as $candidate) {
+    if (is_string($candidate)) {
+      $trimmed = trim($candidate);
+      if ($trimmed !== '') {
+        return $trimmed;
+      }
+    }
   }
-  $apiUrl = $json['apiUrl'] ?? null;
-  return is_string($apiUrl) ? trim($apiUrl) : null;
+  return null;
+}
+
+function resolveSnitchEndpoints(array $config): array
+{
+  $candidates = [];
+  $configKeys = [
+    'snitchUploaderUrl',
+    'snitchUploaderURL',
+    'transcriptUploaderUrl',
+    'transcriptUploaderURL',
+    's3EscalatorUrl',
+    's3EscalatorURL',
+  ];
+  foreach ($configKeys as $key) {
+    if (!empty($config[$key]) && is_string($config[$key])) {
+      $candidates[] = trim($config[$key]);
+    }
+  }
+  $envKeys = [
+    'SNITCH_UPLOAD_URL',
+    'SNITCH_UPLOADER_URL',
+    'S3ESCALATOR_URL',
+    'TRANSCRIPT_UPLOADER_URL',
+  ];
+  foreach ($envKeys as $envKey) {
+    $value = getenv($envKey);
+    if (is_string($value) && trim($value) !== '') {
+      $candidates[] = trim($value);
+    }
+  }
+  $configApi = $config['apiUrl'] ?? null;
+  if (is_string($configApi) && trim($configApi) !== '') {
+    $derived = deriveToolUrl($configApi, '/tools/s3escalator');
+    if ($derived) {
+      $candidates[] = $derived;
+    }
+  }
+  $allowLocalFallback = false;
+  $configFlag = $config['snitchAllowLocalFallback'] ?? null;
+  if (is_bool($configFlag)) {
+    $allowLocalFallback = $configFlag;
+  } elseif (is_string($configFlag)) {
+    $allowLocalFallback = filter_var($configFlag, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+  }
+  if (!$allowLocalFallback) {
+    $envFlag = getenv('SNITCH_ALLOW_LOCALHOST');
+    if ($envFlag !== false) {
+      $allowLocalFallback = filter_var($envFlag, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+    }
+  }
+
+  $unique = [];
+  $seen = [];
+  foreach ($candidates as $candidate) {
+    $trimmed = trim($candidate);
+    if ($trimmed === '') {
+      continue;
+    }
+    if (!preg_match('#^https?://#i', $trimmed)) {
+      continue;
+    }
+    $key = strtolower($trimmed);
+    if (isset($seen[$key])) {
+      continue;
+    }
+    $seen[$key] = true;
+    $unique[] = $trimmed;
+  }
+  if (empty($unique) && $allowLocalFallback) {
+    $unique[] = 'http://127.0.0.1:8788/tools/s3escalator';
+    $unique[] = 'http://localhost:8788/tools/s3escalator';
+  }
+  return $unique;
 }
 
 function ensureLogsDir(): string
@@ -84,7 +181,7 @@ function createZipArchive(string $zipPath, array $sourceFiles): void
   $zip->close();
 }
 
-function uploadZipThroughTool(string $toolUrl, string $shellPretty, string $zipPath, string $pathFragment, string $fileName): array
+function uploadZipThroughTool(array $toolUrls, string $authToken, string $shellPretty, string $zipPath, string $pathFragment, string $fileName): array
 {
   $contents = file_get_contents($zipPath);
   if ($contents === false) {
@@ -103,30 +200,47 @@ function uploadZipThroughTool(string $toolUrl, string $shellPretty, string $zipP
   if ($json === false) {
     respond(500, ['error' => 'payload_encoding_failed']);
   }
-  $ch = curl_init($toolUrl);
-  if ($ch === false) {
-    respond(500, ['error' => 'curl_init_failed']);
+  $attempts = [];
+  foreach ($toolUrls as $toolUrl) {
+    $ch = curl_init($toolUrl);
+    if ($ch === false) {
+      $attempts[] = ['status' => 500, 'detail' => 'curl_init_failed', 'url' => $toolUrl];
+      continue;
+    }
+    $headers = ['Content-Type: application/json'];
+    if ($authToken !== null && $authToken !== '') {
+      $headers[] = 'X-Uploader-Token: ' . $authToken;
+    }
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+    $body = curl_exec($ch);
+    $err = curl_error($ch);
+    $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($body === false) {
+      $attempts[] = ['status' => 502, 'detail' => $err ?: 'curl_exec_failed', 'url' => $toolUrl];
+      continue;
+    }
+    $decoded = json_decode($body, true);
+    if ($status < 200 || $status >= 300) {
+      $detail = is_array($decoded) ? $decoded : $body;
+      $attempts[] = ['status' => $status ?: 502, 'detail' => $detail, 'url' => $toolUrl];
+      continue;
+    }
+    if (!is_array($decoded)) {
+      $decoded = ['raw' => $body];
+    }
+    $decoded['_target'] = $toolUrl;
+    return $decoded;
   }
-  curl_setopt($ch, CURLOPT_POST, true);
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-  curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-  curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
-  $body = curl_exec($ch);
-  $err = curl_error($ch);
-  $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-  curl_close($ch);
-  if ($body === false) {
-    respond(502, ['error' => 'upload_failed', 'detail' => $err ?: 'curl_exec_failed']);
+  if (empty($attempts)) {
+    $attempts[] = ['status' => 502, 'detail' => 'no_tool_url', 'url' => null];
   }
-  $decoded = json_decode($body, true);
-  if ($status < 200 || $status >= 300) {
-    $detail = is_array($decoded) ? $decoded : $body;
-    respond($status ?: 502, ['error' => 'upload_failed', 'detail' => $detail]);
-  }
-  if (!is_array($decoded)) {
-    $decoded = ['raw' => $body];
-  }
-  return $decoded;
+  $primary = $attempts[0];
+  respond((int)($primary['status'] ?? 502), ['error' => 'upload_failed', 'attempts' => $attempts]);
 }
 
 function handleSnitchAction(): void
@@ -150,17 +264,15 @@ function handleSnitchAction(): void
 
   createZipArchive($zipPath, $logFiles);
 
-  $apiUrl = loadConfigApiUrl();
-  if (!$apiUrl) {
-    respond(500, ['error' => 'api_url_missing']);
+  $config = loadConfig();
+  $toolUrls = resolveSnitchEndpoints($config);
+  if (empty($toolUrls)) {
+    respond(500, ['error' => 'snitch_endpoint_missing']);
   }
-  $toolUrl = deriveToolUrl($apiUrl, '/tools/s3escalator');
-  if (!$toolUrl) {
-    respond(500, ['error' => 'tool_url_unavailable']);
-  }
+  $authToken = resolveSnitchToken($config);
 
   $pathFragment = sprintf('dAisys-diary/transcripts/%s/%s/%s', $shellPretty, $year, $month);
-  $uploadResponse = uploadZipThroughTool($toolUrl, $shellPretty, $zipPath, $pathFragment, $zipFileName);
+  $uploadResponse = uploadZipThroughTool($toolUrls, $authToken ?? '', $shellPretty, $zipPath, $pathFragment, $zipFileName);
 
   foreach ($logFiles as $file) {
     @unlink($file);
