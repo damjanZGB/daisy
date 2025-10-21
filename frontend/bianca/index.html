@@ -290,7 +290,7 @@
       }
     };
     const FRONTEND_VARIANT = sanitizeUrl(CONFIG.variant) || deriveVariantFromApi(DEFAULTS.API_URL);
-    const TRANSCRIPT_UPLOAD_ENABLED = CONFIG.transcriptUpload !== false;
+    const TRANSCRIPT_UPLOAD_ENABLED = CONFIG.transcriptUpload === true;
     const TRANSCRIPT_SCHEMA_VERSION = CONFIG.transcriptSchemaVersion || '2025-10-18';
     const MAX_COL = Number.isFinite(CONFIG.maxColumnWidth) ? CONFIG.maxColumnWidth : 250; // hard wrap width for logs
     const HEADER_SUBTITLE = CONFIG.headerSubtitle || 'Agent Chat Â· UI Test';

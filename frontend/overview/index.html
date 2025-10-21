@@ -121,23 +121,6 @@
             </p>
           </div>
         </div>
-        <div class="diagram mermaid" id="diag-data">
-          flowchart LR
-            subgraph Capture["Tool I/O Capture"]
-              P["Proxy payload<br/>(POST /tools)"]
-              R["Proxy response<br/>(Offers + Raw)"]
-            end
-            P --> S3D["S3 debug-tool-io/"]
-            R --> S3D
-            subgraph Replay
-              RS[scripts/replay_sessions.mjs]
-              EX[scripts/extract_proxy_logs.py]
-            end
-            S3D -.-> RS
-            CWL["CloudWatch Logs"] --> EX
-            RS --> SUM["analytics/replay results"]
-            EX --> SUM
-        </div>
       </section>
 
       <section id="architecture">
@@ -427,58 +410,21 @@ curl -s -X POST http://localhost:8787/invoke \
 
       <section id="appendix">
         <h2>Appendix</h2>
-        <div class="diagram mermaid" id="diag-data-old" style="display:none">
-       %%{init: {"themeVariables": { "fontFamily": "sans-serif" }, "flowchart": { "curve": "monotoneX" }}}%%
-flowchart LR
-    %% Subgraphs
-    subgraph CAPTURE ["🛡️ Tool I/O Capture"]
-      direction TB
-      P["Proxy payload<br>POST /tools/*"]:::input
-      R["Proxy response<br>Offers + Raw"]:::input
-    end
-
-    subgraph REPLAY ["🔁 Replay"]
-      direction TB
-      RS["scripts/replay_sessions.mjs"]:::script
-      EX["scripts/extract_proxy_logs.py"]:::script
-    end
-
-    S3D["S3 debug-tool-io"]:::storage
-    CWL["CloudWatch Logs"]:::log
-    SUM["analytics/replay/*.json"]:::summary
-
-    P & R --> S3D
-    S3D -.-> RS
-    CWL --> EX
-    RS --> SUM
-    EX --> SUM
-
-    click S3D "Capture output is stored here"
-    click SUM "Replay analytics summary"
-    click P "Captured traffic"
-    click EX "Parses CloudWatch and proxy logs"
-    click RS "Replays stored sessions for analysis"
-
-    %% Styling - all text and arrows black
-    classDef input fill:#f7b267,stroke:#e87d24,stroke-width:2px,color:#000;
-    classDef storage fill:#4dc9b3,stroke:#219c90,stroke-width:3px,color:#000;
-    classDef log fill:#c7acd6,stroke:#7b519d,stroke-width:2px,color:#000;
-    classDef script fill:#aceca1,stroke:#2b9348,stroke-width:2px,color:#000,font-weight:bold;
-    classDef summary fill:#ffcfd2,stroke:#d72660,stroke-width:4px,color:#000,font-weight:bold;
-    classDef CAPTURE fill:#fff7e0,stroke:#ffd166,stroke-width:4px,color:#000;
-    classDef REPLAY fill:#f6e6e9,stroke:#b48b99,stroke-width:3px,color:#000;
-
-    class CAPTURE CAPTURE;
-    class REPLAY REPLAY;
-    class P,R input;
-    class S3D storage;
-    class CWL log;
-    class RS,EX script;
-    class SUM summary;
-
-    linkStyle default stroke:#000,stroke-width:2px,color:#000;
-
-
+        <div class="diagram mermaid" id="diag-data">
+          flowchart LR
+            subgraph Capture[Tool I/O Capture]
+              P[Proxy payload]\n(POST /tools/*)
+              R[Proxy response]\n(Offers + Raw)
+            end
+            P & R --> S3D[(S3 debug-tool-io/)]
+            subgraph Replay
+              RS[scripts/replay_sessions.mjs]
+              EX[scripts/extract_proxy_logs.py]
+            end
+            S3D -.source.-> RS
+            CWL[(CloudWatch Logs)] --> EX
+            RS --> SUM[analytics/replay/*.json]
+            EX --> SUM
         </div>
         <p class="hint">Use replay outputs to guide instruction and tool tuning. Keep conversations realistic and enforce tool‑first rules.</p>
       </section>
