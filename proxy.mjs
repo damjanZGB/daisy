@@ -1357,12 +1357,11 @@ const server = http.createServer(async (req, res) => {
       const origin = String(searchParams.get("originLocationCode") || searchParams.get("origin") || "").trim().toUpperCase();
       const destination = String(searchParams.get("destinationLocationCode") || searchParams.get("destination") || "").trim().toUpperCase();
       const month = String(searchParams.get("month") || "").trim(); // YYYY-MM
-      const fromQ = String(searchParams.get("departureDateFrom") || "").trim(); // YYYY-MM-DD
-      const toQ = String(searchParams.get("departureDateTo") || "").trim();
+      const departureDate = String(searchParams.get("departureDate") || "").trim();
       const oneWay = /^true$/i.test(String(searchParams.get("oneWay") || "false"));
       const nonStop = /^true$/i.test(String(searchParams.get("nonStop") || "false"));
-      const currencyCode = String(searchParams.get("currencyCode") || "").trim().toUpperCase();
-      const limit = Math.max(1, Math.min(10, Number(searchParams.get("limit") || "3")));
+      const maxPrice = String(searchParams.get("maxPrice") || "").trim();
+      const viewBy = String(searchParams.get("viewBy") || "").trim().toUpperCase();
 
       const isIata = (s) => /^[A-Z]{3}$/.test(s || "");
       if (!isIata(origin) || !isIata(destination)) {
