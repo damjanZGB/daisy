@@ -1,548 +1,87 @@
-open- i: 3.0.3
-info:
-  title: d- sy Tools ÃƒÂ» - - eus & I- A
-  version: 1.0.1
-  description: HTTP tools for the Bedrock - ent to se- ch flights vi- - - eus - d to resolve I- - codes deterministic- ly.
-servers:
-  - url: https://origin-d- sy.onrender.com
-p- hs:
-  /tools/- - eus/se- ch:
-    description: - - eus Flight Offers Se- ch - - ter exposed by your proxy server.
-    post:
-      oper- ionId: - - eusSe- ch
-      summ- y: Se- ch flight offers vi- - - eus
-      description: >
-        C- ls - - eus Flight Offers Se- ch with common p- - eters - d returns - simplified list of offers
-        - ongside the r-  - - eus p- lo-  for tr- e- ility.
-      requestBody:
-        required: true
-        content:
-          - plic- ion/json:
-            schem- 
-              type: object
-              required: [originLoc- ionCode, destin- ionLoc- ionCode, dep- tureD- e, - ults]
-              properties:
-                originLoc- ionCode:
-                  type: string
-                  ex- ple: MUC
-                  description: I- - code of the origin - rport or city.
-                destin- ionLoc- ionCode:
-                  type: string
-                  ex- ple: ZRH
-                  description: I- - code of the destin- ion - rport or city.
-                dep- tureD- e:
-                  type: string
-                  ex- ple: "2025-11-05"
-                  description: Outbound d- e in ISO form-  YYYY-MM-DD.
-                returnD- e:
-                  type: string
-                  null- le: true
-                  description: Option-  return d- e in ISO form-  YYYY-MM-DD.
-                - ults:
-                  type: integer
-                  minimum: 1
-                  def- lt: 1
-                  description: Number of - ult p- sengers.
-                children:
-                  type: integer
-                  minimum: 0
-                  description: Number of children (2ÃƒÂ»11).
-                inf- ts:
-                  type: integer
-                  minimum: 0
-                  description: Number of inf- ts (under 2).
-                nonStop:
-                  type: boole- 
-                  def- lt: f- se
-                  description: If true, restrict to non-stop itiner- ies.
-                tr- elCl- s:
-                  type: string
-                  enum: [ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST]
-                  description: Preferred c- in cl- s.
-                currencyCode:
-                  type: string
-                  ex- ple: EUR
-                  description: T- get currency for pricing tot- s.
-                m- :
-                  type: integer
-                  minimum: 1
-                  m- imum: 250
-                  def- lt: 10
-                  description: M- imum number of offers to return.
-      responses:
-        "200":
-          description: - norm- ized list of flight offers plus the origin-  - - eus response.
-          content:
-            - plic- ion/json:
-              schem- 
-                type: object
-                properties:
-                  offers:
-                    type: - r- 
-                    description: Simplified offers for quick r- king - d displ- .
-                    items:
-                      type: object
-                      properties:
-                        id: { type: string, description: - - eus offer id }
-                        price: { type: string, description: Tot-  price }
-                        currency: { type: string, description: Currency code }
-                        itiner- ies:
-                          type: - r- 
-                          items:
-                            type: object
-                            properties:
-                              dur- ion: { type: string }
-                              segments:
-                                type: - r- 
-                                items:
-                                  type: object
-                                  properties:
-                                    c- rierCode: { type: string }
-                                    number: { type: string }
-                                    dep- ture: { type: string }
-                                    dep- tureTime: { type: string }
-                                    - riv- : { type: string }
-                                    - riv- Time: { type: string }
-                                    - rcr- t: { type: string }
-                  r- :
-                    type: object
-                    description: Origin-  - - eus - I JSON for - diting.
-        "400":
-          description: Inv- id request p- lo- .
-        "500":
-          description: Server or upstre-  error.
-  /tools/i- - lookup:
-    description: Deterministic I- - resolver b- ked by your loc-  JSON m- .
-    get:
-      oper- ionId: i- - ookup
-      summ- y: Resolve I- - code or city/- rport n- e
-      description: Returns up to 20 best m- ches for -  I- - code prefix or - p- ti-  city/- rport n- e.
-      p- - eters:
-        - in: query
-          n- e: term
-          required: true
-          schem- 
-            type: string
-          description: I- - code (e.g., 'MUC') or p- ti-  city/- rport n- e (e.g., 'Munich').
-      responses:
-        "200":
-          description: M- ching I- - records.
-          content:
-            - plic- ion/json:
-              schem- 
-                type: object
-                properties:
-                  m- ches:
-                    type: - r- 
-                    items:
-                      type: object
-                      properties:
-                        code: { type: string, description: I- - code }
-                        n- e: { type: string, description: - rport or city n- e }
-                        city: { type: string, description: City n- e }
-                        country: { type: string, description: Country n- e }
-                        type: { type: string, enum: [- rport, city], description: Record type }
-  /tools/- - eus/flex:
-    description: One-c- l flexible d- es selection - d LH-only pricing (proxy rem- ns thin).
-    get:
-      oper- ionId: - - eusFlex
-      summ- y: Flexible d- es c- end-  + price top N (LH Group only)
-      p- - eters:
-        - in: query
-          n- e: originLoc- ionCode
-          required: true
-          schem- 
-            type: string
-            p- tern: "[- Z]{3}"
-          description: I- - origin code (e.g., MUC)
-        - in: query
-          n- e: destin- ionLoc- ionCode
-          required: true
-          schem- 
-            type: string
-            p- tern: "[- Z]{3}"
-          description: I- - destin- ion code (e.g., ZRH)
-        - in: query
-          n- e: month
-          required: f- se
-          schem- 
-            type: string
-            p- tern: "^\\d{4}-\\d{2}$"
-          description: Month window in YYYY-MM (- tern- ive to dep- tureD- eFrom/To)
-        - in: query
-          n- e: dep- tureD- eFrom
-          required: f- se
-          schem- 
-            type: string
-            form- : d- e
-          description: St- t of d- e window (YYYY-MM-DD)
-        - in: query
-          n- e: dep- tureD- eTo
-          required: f- se
-          schem- 
-            type: string
-            form- : d- e
-          description: End of d- e window (YYYY-MM-DD)
-        - in: query
-          n- e: oneW- 
-          required: f- se
-          schem- 
-            type: boole- 
-            def- lt: true
-          description: Must be true to return priced results (c- end-  is intern- )
-        - in: query
-          n- e: nonStop
-          required: f- se
-          schem- 
-            type: boole- 
-            def- lt: f- se
-        - in: query
-          n- e: currencyCode
-          required: f- se
-          schem- 
-            type: string
-            p- tern: "[- Z]{3}"
-        - in: query
-          n- e: limit
-          required: f- se
-          schem- 
-            type: integer
-            minimum: 1
-            m- imum: 10
-            def- lt: 5
-          description: M-  number of che- est d- s to select from c- end- 
-        - in: query
-          n- e: priceLimit
-          required: f- se
-          schem- 
-            type: integer
-            minimum: 1
-            m- imum: 10
-          description: M-  number of d- s to price (def- lts to limit)
-        - in: query
-          n- e: - ults
-          required: f- se
-          schem- 
-            type: integer
-            minimum: 1
-            def- lt: 1
-        - in: query
-          n- e: tr- elCl- s
-          required: f- se
-          schem- 
-            type: string
-            enum: [ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST]
-      responses:
-        "200":
-          description: Priced offers per selected d-  (LH Group only).
-          content:
-            - plic- ion/json:
-              schem- 
-                type: object
-                properties:
-                  query:
-                    type: object
-                  priced:
-                    type: - r- 
-                    items:
-                      type: object
-                      properties:
-                        dep- tureD- e:
-                          type: string
-                          form- : d- e
-                        offers:
-                          type: - r- 
-                          items:
-                            type: object
-                required: [priced]
-        "400":
-          description: Inv- id input (e.g., oneW-  not true)
-        "502":
-          description: Upstre-  error from c- end-  or pricing
-
-
-
-openapi: 3.0.3
-info:
-  title: dAIsy Tools - Amadeus & IATA
-  version: 1.0.2
-  description: HTTP tools for the Bedrock Agent to search flights via Amadeus and to resolve IATA codes deterministically.
-servers:
-  - url: https://origin-daisy.onrender.com
-paths:
-  /tools/amadeus/search:
-    description: Amadeus Flight Offers Search adapter exposed by your proxy server.
-    post:
-      operationId: amadeusSearch
-      summary: Search flight offers via Amadeus
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [originLocationCode, destinationLocationCode, departureDate, adults]
-              properties:
-                originLocationCode:
-                  type: string
-                  description: IATA code of the origin airport or city.
-                  example: MUC
-                destinationLocationCode:
-                  type: string
-                  description: IATA code of the destination airport or city.
-                  example: ZRH
-                departureDate:
-                  type: string
-                  format: date
-                  example: "2025-11-05"
-                returnDate:
-                  type: string
-                  format: date
-                  nullable: true
-                adults:
-                  type: integer
-                  minimum: 1
-                  default: 1
-                children:
-                  type: integer
-                  minimum: 0
-                infants:
-                  type: integer
-                  minimum: 0
-                nonStop:
-                  type: boolean
-                  default: false
-                travelClass:
-                  type: string
-                  enum: [ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST]
-                currencyCode:
-                  type: string
-                  example: EUR
-                max:
-                  type: integer
-                  minimum: 1
-                  maximum: 250
-                  default: 10
-      responses:
-        "200":
-          description: A normalized list of flight offers plus the original Amadeus response.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  offers:
-                    type: array
-                    items:
-                      type: object
-                  raw:
-                    type: object
-        "400":
-          description: Invalid request payload.
-        "500":
-          description: Server or upstream error.
-  /tools/iata/lookup:
-    description: Deterministic IATA resolver backed by your local JSON map.
-    get:
-      operationId: iataLookup
-      summary: Resolve IATA code or city/airport name
-      parameters:
-        - in: query
-          name: term
-          required: true
-          schema:
-            type: string
-          description: IATA code (e.g., "MUC") or partial city/airport name (e.g., "Munich").
-      responses:
-        "200":
-          description: Matching IATA records.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  matches:
-                    type: array
-                    items:
-                      type: object
-  /tools/amadeus/flex:
-    description: One-call flexible dates selection and LH-only pricing (proxy remains thin).
-    get:
-      operationId: amadeusFlex
-      summary: Flexible dates calendar + price top N (LH Group only)
-      parameters:
-        - in: query
-          name: originLocationCode
-          required: true
-          schema:
-            type: string
-            pattern: "^[A-Z]{3}$"
-          description: IATA origin code (e.g., MUC)
-        - in: query
-          name: destinationLocationCode
-          required: true
-          schema:
-            type: string
-            pattern: "^[A-Z]{3}$"
-          description: IATA destination code (e.g., ZRH)
-        - in: query
-          name: month
-          required: false
-          schema:
-            type: string
-            pattern: "^\\d{4}-\\d{2}$"
-          description: Month window in YYYY-MM (alternative to departureDateFrom/To)
-        - in: query
-          name: departureDateFrom
-          required: false
-          schema:
-            type: string
-            format: date
-        - in: query
-          name: departureDateTo
-          required: false
-          schema:
-            type: string
-            format: date
-        - in: query
-          name: oneWay
-          required: false
-          schema:
-            type: boolean
-            default: true
-          description: Must be true to return priced results (calendar is internal)
-        - in: query
-          name: nonStop
-          required: false
-          schema:
-            type: boolean
-            default: false
-        - in: query
-          name: currencyCode
-          required: false
-          schema:
-            type: string
-            pattern: "^[A-Z]{3}$"
-        - in: query
-          name: limit
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 10
-            default: 5
-        - in: query
-          name: priceLimit
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 10
-        - in: query
-          name: adults
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-        - in: query
-          name: travelClass
-          required: false
-          schema:
-            type: string
-            enum: [ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST]
-      responses:
-        "200":
-          description: Priced offers per selected day (LH Group only).
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  query:
-                    type: object
-                  priced:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        departureDate:
-                          type: string
-                          format: date
-                        offers:
-                          type: array
-                          items:
-                            type: object
-                required: [priced]
-        "400":
-          description: Invalid input (e.g., oneWay not true)
-        "502":
-          description: Upstream error from calendar or pricing
-components: {}
 openapi: 3.0.3
 info:
   title: dAIsy Tools - Amadeus and IATA
-  version: 1.0.3
-  description: HTTP tools for the Bedrock Agent to search flights via Amadeus and to resolve IATA codes deterministically.
+  version: 1.1.1
+  description: HTTP tools for the Bedrock Agent to search flights via Amadeus and resolve IATA codes.
 servers:
   - url: https://origin-daisy.onrender.com
 paths:
   /tools/amadeus/search:
-    description: Amadeus Flight Offers Search adapter exposed by your proxy server.
+    description: Amadeus Flight Offers Search adapter exposed by the proxy server.
     post:
       operationId: amadeusSearch
-      summary: Search flight offers via Amadeus (LH Group enforced by backend)
+      summary: Search flight offers
+      description: Submit a request to Amadeus Flight Offers Search via the proxy and retrieve LH-only offers.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [originLocationCode, destinationLocationCode, departureDate, adults]
+              required:
+                - originLocationCode
+                - destinationLocationCode
+                - departureDate
+                - adults
               properties:
                 originLocationCode:
                   type: string
-                  description: IATA code of the origin airport or city.
-                  example: MUC
+                  description: IATA origin code (for example, MUC)
                 destinationLocationCode:
                   type: string
-                  description: IATA code of the destination airport or city.
-                  example: ZRH
+                  description: IATA destination code (for example, ZRH)
                 departureDate:
                   type: string
                   format: date
-                  example: "2025-11-05"
+                  description: Outbound date in ISO 8601 format (YYYY-MM-DD)
                 returnDate:
                   type: string
                   format: date
                   nullable: true
+                  description: Optional return date in ISO 8601 format (YYYY-MM-DD)
                 adults:
                   type: integer
                   minimum: 1
                   default: 1
+                  description: Number of adult passengers
                 children:
                   type: integer
                   minimum: 0
+                  description: Number of child passengers
                 infants:
                   type: integer
                   minimum: 0
+                  description: Number of infant passengers
                 nonStop:
                   type: boolean
                   default: false
+                  description: If true, return only non-stop options
                 travelClass:
                   type: string
-                  enum: [ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST]
+                  enum:
+                    - ECONOMY
+                    - PREMIUM_ECONOMY
+                    - BUSINESS
+                    - FIRST
+                  description: Preferred cabin class
                 currencyCode:
                   type: string
-                  example: EUR
+                  description: Currency code (ISO 4217), for example EUR
+                includedAirlineCodes:
+                  type: string
+                  description: Only consider these airline codes (comma-separated)
+                excludedAirlineCodes:
+                  type: string
+                  description: Exclude these airline codes (comma-separated)
                 max:
                   type: integer
                   minimum: 1
                   maximum: 250
                   default: 10
+                  description: Maximum number of offers to return
       responses:
         "200":
-          description: A normalized list of flight offers plus the original Amadeus response.
+          description: OK
           content:
             application/json:
               schema:
@@ -551,28 +90,30 @@ paths:
                   offers:
                     type: array
                     items:
-                      type: object
+                      $ref: "#/components/schemas/Offer"
                   raw:
                     type: object
         "400":
-          description: Invalid request payload.
-        "500":
-          description: Server or upstream error.
+          description: Bad Request
+        "502":
+          description: Upstream error
+
   /tools/iata/lookup:
-    description: Deterministic IATA resolver backed by your local JSON map.
+    description: Deterministic IATA resolver backed by the proxy server.
     get:
       operationId: iataLookup
       summary: Resolve IATA code or city or airport name
+      description: Look up IATA codes or names deterministically using the proxy database.
       parameters:
         - in: query
           name: term
           required: true
           schema:
             type: string
-          description: IATA code (e.g., "MUC") or partial city or airport name (e.g., "Munich").
+          description: IATA code (for example, MUC) or partial city or airport name (for example, Munich)
       responses:
         "200":
-          description: Matching IATA records.
+          description: OK
           content:
             application/json:
               schema:
@@ -582,45 +123,46 @@ paths:
                     type: array
                     items:
                       type: object
+
   /tools/amadeus/flex:
-    description: One-call flexible dates selection and LH-only pricing (proxy remains thin).
+    description: One-call flexible dates selection and LH-only pricing (one-way).
     get:
       operationId: amadeusFlex
-      summary: Flexible dates calendar plus price top N (LH Group only)
+      summary: Flexible dates priced list
+      description: Request the proxy to select cheapest days and return LH-only priced offers for one-way searches.
       parameters:
         - in: query
           name: originLocationCode
           required: true
           schema:
             type: string
-            pattern: "^[A-Z]{3}$"
-          description: IATA origin code (e.g., MUC)
+          description: IATA origin code (for example, MUC)
         - in: query
           name: destinationLocationCode
           required: true
           schema:
             type: string
-            pattern: "^[A-Z]{3}$"
-          description: IATA destination code (e.g., ZRH)
+          description: IATA destination code (for example, ZRH)
         - in: query
           name: month
           required: false
           schema:
             type: string
-            pattern: "^\\d{4}-\\d{2}$"
-          description: Month window in YYYY-MM (alternative to departureDateFrom/To)
+          description: Month window (YYYY-MM); alternative to departureDateFrom or departureDateTo
         - in: query
           name: departureDateFrom
           required: false
           schema:
             type: string
             format: date
+          description: Start of date window (YYYY-MM-DD)
         - in: query
           name: departureDateTo
           required: false
           schema:
             type: string
             format: date
+          description: End of date window (YYYY-MM-DD)
         - in: query
           name: oneWay
           required: false
@@ -634,12 +176,13 @@ paths:
           schema:
             type: boolean
             default: false
+          description: If true, return only non-stop options
         - in: query
           name: currencyCode
           required: false
           schema:
             type: string
-            pattern: "^[A-Z]{3}$"
+          description: Currency code (ISO 4217), for example EUR
         - in: query
           name: limit
           required: false
@@ -648,7 +191,7 @@ paths:
             minimum: 1
             maximum: 10
             default: 5
-          description: Maximum number of cheapest days to select from the calendar
+          description: Maximum number of cheapest days to select from calendar
         - in: query
           name: priceLimit
           required: false
@@ -664,15 +207,21 @@ paths:
             type: integer
             minimum: 1
             default: 1
+          description: Number of adult passengers
         - in: query
           name: travelClass
           required: false
           schema:
             type: string
-            enum: [ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST]
+            enum:
+              - ECONOMY
+              - PREMIUM_ECONOMY
+              - BUSINESS
+              - FIRST
+          description: Preferred cabin class
       responses:
         "200":
-          description: Priced offers per selected day (LH Group only).
+          description: OK
           content:
             application/json:
               schema:
@@ -691,10 +240,52 @@ paths:
                         offers:
                           type: array
                           items:
-                            type: object
-                required: [priced]
+                            $ref: "#/components/schemas/Offer"
+                required:
+                  - priced
         "400":
-          description: Invalid input (for example, oneWay not true)
+          description: Bad Request
         "502":
-          description: Upstream error from calendar or pricing
-components: {}
+          description: Upstream error
+
+components:
+  schemas:
+    Offer:
+      type: object
+      properties:
+        id:
+          type: string
+        price:
+          type: string
+        currency:
+          type: string
+        itineraries:
+          type: array
+          items:
+            $ref: "#/components/schemas/Itinerary"
+    Itinerary:
+      type: object
+      properties:
+        duration:
+          type: string
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlightSegment"
+    FlightSegment:
+      type: object
+      properties:
+        carrierCode:
+          type: string
+        number:
+          type: string
+        departure:
+          type: string
+        departureTime:
+          type: string
+        arrival:
+          type: string
+        arrivalTime:
+          type: string
+        aircraft:
+          type: string

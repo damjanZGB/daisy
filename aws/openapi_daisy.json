@@ -1,0 +1,89 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "dAIsy Tools - Amadeus and IATA",
+    "version": "1.0.3",
+    "description": "HTTP tools for the Bedrock Agent to search flights via Amadeus and to resolve IATA codes deterministically."
+  },
+  "servers": [
+    { "url": "https://origin-daisy.onrender.com" }
+  ],
+  "paths": {
+    "/tools/amadeus/search": {
+      "post": {
+        "operationId": "amadeusSearch",
+        "summary": "Search flight offers (LH Group enforced by backend)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "originLocationCode",
+                  "destinationLocationCode",
+                  "departureDate",
+                  "adults"
+                ],
+                "properties": {
+                  "originLocationCode": { "type": "string" },
+                  "destinationLocationCode": { "type": "string" },
+                  "departureDate": { "type": "string", "format": "date" },
+                  "returnDate": { "type": "string", "format": "date" },
+                  "adults": { "type": "integer", "minimum": 1, "default": 1 },
+                  "children": { "type": "integer", "minimum": 0 },
+                  "infants": { "type": "integer", "minimum": 0 },
+                  "nonStop": { "type": "boolean", "default": false },
+                  "travelClass": { "type": "string", "enum": ["ECONOMY","PREMIUM_ECONOMY","BUSINESS","FIRST"] },
+                  "currencyCode": { "type": "string" },
+                  "max": { "type": "integer", "minimum": 1, "maximum": 250, "default": 10 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK" },
+          "400": { "description": "Bad Request" },
+          "502": { "description": "Upstream error" }
+        }
+      }
+    },
+    "/tools/iata/lookup": {
+      "get": {
+        "operationId": "iataLookup",
+        "summary": "Resolve IATA code or city or airport name",
+        "parameters": [
+          { "in": "query", "name": "term", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/tools/amadeus/flex": {
+      "get": {
+        "operationId": "amadeusFlex",
+        "summary": "Flexible dates priced list (LH Group only)",
+        "parameters": [
+          { "in": "query", "name": "originLocationCode", "required": true, "schema": { "type": "string" } },
+          { "in": "query", "name": "destinationLocationCode", "required": true, "schema": { "type": "string" } },
+          { "in": "query", "name": "month", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "departureDateFrom", "required": false, "schema": { "type": "string", "format": "date" } },
+          { "in": "query", "name": "departureDateTo", "required": false, "schema": { "type": "string", "format": "date" } },
+          { "in": "query", "name": "oneWay", "required": false, "schema": { "type": "boolean", "default": true } },
+          { "in": "query", "name": "nonStop", "required": false, "schema": { "type": "boolean", "default": false } },
+          { "in": "query", "name": "currencyCode", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "limit", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 10, "default": 5 } },
+          { "in": "query", "name": "priceLimit", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 10 } },
+          { "in": "query", "name": "adults", "required": false, "schema": { "type": "integer", "minimum": 1, "default": 1 } },
+          { "in": "query", "name": "travelClass", "required": false, "schema": { "type": "string", "enum": ["ECONOMY","PREMIUM_ECONOMY","BUSINESS","FIRST"] } }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "400": { "description": "Bad Request" },
+          "502": { "description": "Upstream error" }
+        }
+      }
+    }
+  },
+  "components": {}
+}
