@@ -488,7 +488,14 @@
           }
         };
         const applyLocation = (label, tz, inferred, lat, lon) => {
-          setLocationInfo(prev => ({ ...prev, label, tz: tz || prev.tz, localTime: new Date(), inferredOrigin: inferred || prev.inferredOrigin || null, lat: (Number.isFinite(lat) ? lat : prev?.lat), lon: (Number.isFinite(lon) ? lon : prev?.lon),
+          setLocationInfo(prev => ({
+            ...prev,
+            label,
+            tz: tz || prev.tz,
+            localTime: new Date(),
+            inferredOrigin: inferred || prev.inferredOrigin || null,
+            lat: (Number.isFinite(lat) ? lat : prev?.lat),
+            lon: (Number.isFinite(lon) ? lon : prev?.lon),
           }));
           if (inferred && typeof sessionStorage !== 'undefined') {
             try { sessionStorage.setItem('inferred_origin', inferred); } catch {}
@@ -889,7 +896,6 @@
  </body>
 
  </html>
-
 
 
 

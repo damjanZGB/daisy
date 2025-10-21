@@ -87,6 +87,8 @@
         out = out.replace(/<br\s*\/?\s*>/gi, '\n');
         out = out.replace(/<\/?p[^>]*>/gi, '\n');
         out = out.replace(/<[^>]+>/g, '');
+        // Strip common Markdown emphasis to simplify downstream parsing
+        out = out.replace(/\*\*/g, '').replace(/__/g, '');
         // Decode a few common HTML entities
         out = out.replace(/&nbsp;/gi, ' ')
                  .replace(/&amp;/gi, '&')
@@ -127,11 +129,14 @@
           if (current) current.legs.push(cleaned);
           continue;
         }
+        if (/^\-\s*(Departure|Arrival|Return)\s*:/i.test(leg)) {
+          const cleaned = leg.replace(/^\-\s*/, '');
+          if (current) current.legs.push(cleaned);
+          continue;
+        }
       }
       if (current) options.push(current);
       if (options.length === 0) {
-        // No numbered options found. Create a single inferred option.
-        // Prefer a line with a clear route pattern, else use the first non-empty line.
         const routeLine = lines.find(l => /\b[A-Z]{3}\b\s*(?:->|to|–|-|—)\s*\b[A-Z]{3}\b/.test(l))
                          || lines.find(l => l.trim().length > 0)
                          || rawText;
@@ -156,26 +161,45 @@
         const { PDFDocument, StandardFonts } = window.PDFLib || {};
         if (!PDFDocument) return null;
         const tryFetch = async (paths) => { for (const p of paths) { try { const res = await fetch(p); if (res.ok) return await res.arrayBuffer(); } catch(_){} } return null; }; const candidates = [ '../img/lufthansa_template_empty_form.pdf', './img/lufthansa_template_empty_form.pdf', '/lufthansa_template_empty_form.pdf', './lufthansa_template_empty_form.pdf', '../lufthansa_template_empty_form.pdf' ]; const formBytes = await tryFetch(candidates); if (!formBytes) return null;
-        const parseLeg = (line) => {
-          const m = String(line).match(/THEN\s+([A-Z]{1,3})\s*(\d{2,5})\s+([A-Z]{3})\s+(\d{2}:\d{2})\s*->\s*([A-Z]{3})\s+(\d{2}:\d{2})/i);
+        const sanitizeLine = (s) => String(s||'').replace(/\*\*/g,'').trim();
+        const parseThenLeg = (line) => {
+          const txt = sanitizeLine(line).replace(/^THEN\s*,?\s*/i, 'THEN ');
+          const m = txt.match(/THEN\s+([A-Z]{2,3})\s*(\d{1,5})\s+([A-Z]{3})\s+(\d{2}:\d{2})\s*->\s*([A-Z]{3})\s+(\d{2}:\d{2})/i);
           return m ? { carrier:m[1].toUpperCase(), flightNo:m[2], from:m[3].toUpperCase(), dep:m[4], to:m[5].toUpperCase(), arr:m[6] } : null;
         };
-        const legs=[]; for(const l of (opt?.legs||[])){ const p=parseLeg(l); if(p) legs.push(p); }
+        const legs=[]; for(const l of (opt?.legs||[])){ const p=parseThenLeg(l); if(p) legs.push(p); }
         const hdr = String(opt?.header||'');
-        const mRoute = hdr.match(/([A-Z]{3})\s*->\s*([A-Z]{3})/); const mDate = hdr.match(/(\d{4}-\d{2}-\d{2})/);
-        const date = mDate ? mDate[1] : new Date().toISOString().slice(0,10);
-        if(!legs.length){
-          if (mRoute) {
-            legs.push({ carrier:'LH', flightNo:'0000', from:mRoute[1], to:mRoute[2], dep:'08:00', arr:'10:00' });
-          } else {
-            const codes = hdr.match(/\b[A-Z]{3}\b/g) || [];
-            if (codes.length >= 2) {
-              legs.push({ carrier:'LH', flightNo:'0000', from:codes[0], to:codes[codes.length-1], dep:'08:00', arr:'10:00' });
-            }
+        const mRoute = hdr.match(/([A-Z]{3})\s*->\s*([A-Z]{3})/);
+        const mDateHdr = hdr.match(/(\d{4}-\d{2}-\d{2})/);
+        const combined = [hdr, ...(opt?.legs||[])].map(sanitizeLine).join(' ');
+        const findFlight = (s) => {
+          const t = String(s||'');
+          const m1 = t.match(/\b(LH|LX|OS|SN|EW|4Y|EN)\s*(\d{2,5})\b/);
+          if (m1) return { carrier:m1[1].toUpperCase(), flightNo:m1[2] };
+          const m2 = t.match(/\bFlight\s*(\d{2,5})\b/i);
+          if (m2) return { carrier:'LH', flightNo:m2[1] };
+          return null;
+        };
+        if (!legs.length) {
+          const depArrLegs = [];
+          const depRegex = /^(Departure|Return)\s*:\s*([A-Z]{3})[^\d]*(\d{2}:\d{2})/i;
+          const arrRegex = /^Arrival\s*:\s*([A-Z]{3})[^\d]*(\d{2}:\d{2})/i;
+          let pending = null;
+          for (const raw of (opt?.legs||[])) {
+            const line = sanitizeLine(raw);
+            const md = line.match(depRegex);
+            if (md) { pending = { from: md[2].toUpperCase(), dep: md[3] }; continue; }
+            const ma = line.match(arrRegex);
+            if (ma && pending) { depArrLegs.push({ from: pending.from, dep: pending.dep, to: ma[1].toUpperCase(), arr: ma[2] }); pending = null; }
           }
+          const guessedFlight = findFlight(combined);
+          for (const d of depArrLegs) { legs.push({ carrier: (guessedFlight?.carrier || 'LH'), flightNo: (guessedFlight?.flightNo || ''), ...d }); }
+          if (!legs.length && mRoute) { legs.push({ carrier: (guessedFlight?.carrier || 'LH'), flightNo: (guessedFlight?.flightNo || ''), from: mRoute[1], to: mRoute[2], dep: '', arr: '' }); }
         }
-        const combined = [hdr, ...(opt?.legs||[])].join(' ');
-        const findFlight = (s) => { const m = String(s).match(/\b([A-Z]{1,3})\s*(\d{1,5})\b/); return m ? { carrier:m[1].toUpperCase(), flightNo:m[2] } : null; };
+        const findDate = (s) => { const m = String(s||'').match(/(\d{4}-\d{2}-\d{2})/); return m ? m[1] : null; };
+        let date = mDateHdr ? mDateHdr[1] : null;
+        if (!date) { for (const raw of (opt?.legs||[])) { const d = findDate(raw); if (d) { date = d; break; } } }
+        if (!date) date = new Date().toISOString().slice(0,10);
         const findClass = (s) => { const t = String(s).toLowerCase(); if (/premium\s*-?\s*economy|\bpe\b/.test(t)) return 'Premium Economy'; if (/business|\bj\b/.test(t)) return 'Business'; if (/first|\bf\b/.test(t)) return 'First'; if (/economy|\by\b/.test(t)) return 'Economy'; return null; };
         const findSeat = (s) => { const m = String(s).match(/\b(\d{1,2}[A-Z])\b/i); return m ? m[1].toUpperCase() : null; };
         const guessedFlight = findFlight(combined);
@@ -197,20 +221,20 @@
           const form = src.getForm();
           form.getFields().forEach(f=>{ try{ f.setText(''); }catch(e){} });
           const set=(n,v)=>{ try{ form.getTextField(n).setText(String(v??'')); }catch(e){} };
-          const gate=randGate(), zone=randZone(), seq=randSeqPair();
-          const seatCode = seatCandidate || randSeat();
+          const gate='', zone='', seq='';
+          const seatCode = seatCandidate || '';
           set('from_to', `${leg.from} -> ${leg.to}`);
-          set('passenger_left', 'Happy User');
-          set('flight_left', `${leg.carrier} ${leg.flightNo}`);
+          set('passenger_left', '');
+          set('flight_left', `${(leg.carrier||'LH')}${(leg.flightNo||'')}`.trim());
           set('date_left', date); set('departure_left', leg.dep);
           set('seq_no_left', seq); set('gate_left', gate); set('zone_left', zone);
           set('from_left', leg.from); set('to_left', leg.to);
           set('class', cabin || 'Economy');
           set('seat', seatCode);
-          set('passenger_right', 'Happy User');
+          set('passenger_right', '');
           set('date_right', date); set('departure_right', leg.dep);
           set('gate_right', gate); set('zone_right', zone); set('seat_right', seatCode); set('seq_no_right', seq);
-          set('flight_right', `${leg.carrier} ${leg.flightNo}`);
+          set('flight_right', `${(leg.carrier||'LH')}${(leg.flightNo||'')}`.trim());
           try { const helv = await src.embedFont(window.PDFLib.StandardFonts.Helvetica);
             form.updateFieldAppearances(helv); 
           } 
@@ -464,7 +488,14 @@
           }
         };
         const applyLocation = (label, tz, inferred, lat, lon) => {
-          setLocationInfo(prev => ({ ...prev, label, tz: tz || prev.tz, localTime: new Date(), inferredOrigin: inferred || prev.inferredOrigin || null, lat: (Number.isFinite(lat) ? lat : prev?.lat), lon: (Number.isFinite(lon) ? lon : prev?.lon),
+          setLocationInfo(prev => ({
+            ...prev,
+            label,
+            tz: tz || prev.tz,
+            localTime: new Date(),
+            inferredOrigin: inferred || prev.inferredOrigin || null,
+            lat: (Number.isFinite(lat) ? lat : prev?.lat),
+            lon: (Number.isFinite(lon) ? lon : prev?.lon),
           }));
           if (inferred && typeof sessionStorage !== 'undefined') {
             try { sessionStorage.setItem('inferred_origin', inferred); } catch {}
@@ -787,7 +818,7 @@
           setMessages(m => [...m, botMsg]);
           // If user asked to confirm/hold/book OR explicitly asked for a PDF/download,
           // generate a PDF from the latest known itinerary options.
-          const wantsPdf = /(confirm|confirmed|book|hold|pdf|download|itinerary)/i.test(input);
+          const wantsPdf = /(confirm|confirmed|book|hold|pdf|download|itinerary|ticket|boarding\s*pass)/i.test(input);
           // Use parsedOptions if it is a non-empty array; otherwise, fall back to lastItinerary.
           const source = Array.isArray(parsedOptions) && parsedOptions.length > 0
             ? parsedOptions
@@ -865,7 +896,6 @@
  </body>
 
  </html>
-
 
 
 
