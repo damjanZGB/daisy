@@ -121,6 +121,23 @@
             </p>
           </div>
         </div>
+        <div class="diagram mermaid" id="diag-data">
+          flowchart LR
+            subgraph Capture["Tool I/O Capture"]
+              P["Proxy payload<br/>(POST /tools)"]
+              R["Proxy response<br/>(Offers + Raw)"]
+            end
+            P --> S3D["S3 debug-tool-io/"]
+            R --> S3D
+            subgraph Replay
+              RS[scripts/replay_sessions.mjs]
+              EX[scripts/extract_proxy_logs.py]
+            end
+            S3D -.-> RS
+            CWL["CloudWatch Logs"] --> EX
+            RS --> SUM["analytics/replay results"]
+            EX --> SUM
+        </div>
       </section>
 
       <section id="architecture">
@@ -410,7 +427,7 @@ curl -s -X POST http://localhost:8787/invoke \
 
       <section id="appendix">
         <h2>Appendix</h2>
-        <div class="diagram mermaid" id="diag-data">
+        <div class="diagram mermaid" id="diag-data-old" style="display:none">
        %%{init: {"themeVariables": { "fontFamily": "sans-serif" }, "flowchart": { "curve": "monotoneX" }}}%%
 flowchart LR
     %% Subgraphs
