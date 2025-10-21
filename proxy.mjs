@@ -32,7 +32,7 @@ const AWS_ACCESS_KEY_ID = (process.env.AWS_ACCESS_KEY_ID || "").trim();
 const AWS_SECRET_ACCESS_KEY = (process.env.AWS_SECRET_ACCESS_KEY || "").trim();
 const rawOrigin = process.env.ORIGIN || "";
 const ALLOW_ORIGINS = String(rawOrigin)
-  .split(/[\s,]+/)
+  .split(",")
   .map(s => s.trim())
   .filter(Boolean);
 const ALLOW_ORIGIN_SET = new Set(ALLOW_ORIGINS);
@@ -1560,11 +1560,7 @@ const server = http.createServer(async (req, res) => {
     if (!res.headersSent) {
       res.statusCode = res.statusCode >= 400 ? res.statusCode : 500;
       res.setHeader("Content-Type", "application/json");
-      const errorPayload = { error: "internal_error", requestId };
-      if (err && err.message) {
-        errorPayload.message = err.message;
-      }
-      res.end(JSON.stringify(errorPayload));
+      res.end(JSON.stringify({ error: "internal_error", requestId }));
     }
   } finally {
     logger.info(`[${requestId}] Completed with status ${res.statusCode} in ${Date.now() - startedAt}ms`);
