@@ -669,6 +669,54 @@ def _apply_contextual_defaults(
     return normalized
 
 
+def _extract_iso_date(value: str) -> Optional[str]:
+    text = (value or "").strip()
+    if not text:
+        return None
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+        return text
+    return None
+
+
+def _extract_month(value: str) -> Optional[str]:
+    text = (value or "").strip()
+    if not text:
+        return None
+    if re.fullmatch(r"\d{4}-\d{2}", text):
+        return text
+    return None
+
+
+def _extract_date_window(body: Dict[str, Any]) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """Return (month, date_from, date_to) from common field permutations."""
+    month = _extract_month(str(body.get("month") or ""))
+    date_from = _extract_iso_date(str(body.get("departureDateFrom") or body.get("departureDateStart") or ""))
+    date_to = _extract_iso_date(str(body.get("departureDateTo") or body.get("departureDateEnd") or ""))
+
+    if not month and not date_from:
+        departure_field = str(body.get("departureDate") or body.get("departureDates") or "").strip()
+        if departure_field:
+            parts = [part.strip() for part in departure_field.split(",") if part.strip()]
+            if len(parts) == 1:
+                month_candidate = _extract_month(parts[0])
+                if month_candidate:
+                    month = month_candidate
+                else:
+                    single = _extract_iso_date(parts[0])
+                    if single:
+                        date_from = single
+                        date_to = single
+            elif len(parts) >= 2:
+                first = _extract_iso_date(parts[0])
+                second = _extract_iso_date(parts[1])
+                if first:
+                    date_from = first
+                if second:
+                    date_to = second
+
+    return month, date_from, date_to
+
+
 def _to_bool(val: Any, default: bool = False) -> bool:
     if isinstance(val, bool):
         return val
@@ -1744,11 +1792,21 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         return _wrap_openapi(event, 200, {"matches": matches})
 
     if api_path == "/tools/amadeus/dates":
-        origin = (body.get("originLocationCode") or "").strip().upper()
-        destination = (body.get("destinationLocationCode") or "").strip().upper()
-        month = (body.get("month") or "").strip()
-        date_from = (body.get("departureDateFrom") or "").strip()
-        date_to = (body.get("departureDateTo") or "").strip()
+        origin = (
+            body.get("origin")
+            or body.get("originLocationCode")
+            or body.get("origin_code")
+            or ""
+        )
+        destination = (
+            body.get("destination")
+            or body.get("destinationLocationCode")
+            or body.get("destination_code")
+            or ""
+        )
+        origin = str(origin).strip().upper()
+        destination = str(destination).strip().upper()
+        month, date_from, date_to = _extract_date_window(body)
         one_way = bool(body.get("oneWay", False))
         non_stop = bool(body.get("nonStop", False))
         currency = (body.get("currencyCode") or "").strip().upper()
@@ -1776,13 +1834,26 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         }
         if month:
             params["month"] = month
-        if date_from:
-            params["departureDateFrom"] = date_from
-        if date_to:
-            params["departureDateTo"] = date_to
+        if date_from and date_to:
+            params["departureDate"] = f"{date_from},{date_to}" if date_from != date_to else date_from
+        elif date_from:
+            params["departureDate"] = date_from
+        elif date_to:
+            params["departureDate"] = date_to
         params["limit"] = str(max(1, min(10, limit_n)))
         if currency:
             params["currencyCode"] = currency
+        max_price = body.get("maxPrice")
+        if max_price not in (None, ""):
+            try:
+                max_price_val = int(max_price)
+                if max_price_val > 0:
+                    params["maxPrice"] = str(max_price_val)
+            except Exception:
+                pass
+        view_by = (body.get("viewBy") or "").strip().upper()
+        if view_by in {"DATE", "DURATION", "WEEK"}:
+            params["viewBy"] = view_by
         # Validate IATA quickly (proxy will re-validate)
         if not re.fullmatch(r"[A-Z]{3}", origin or "") or not re.fullmatch(r"[A-Z]{3}", destination or ""):
             _log("OpenAPI validation error", reason="invalid_iata", origin=origin, destination=destination)
@@ -1841,11 +1912,21 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         return _wrap_openapi(event, 200, out)
 
     if api_path == "/tools/amadeus/flex":
-        origin = (body.get("originLocationCode") or "").strip().upper()
-        destination = (body.get("destinationLocationCode") or "").strip().upper()
-        month = (body.get("month") or "").strip()
-        date_from = (body.get("departureDateFrom") or "").strip()
-        date_to = (body.get("departureDateTo") or "").strip()
+        origin = (
+            body.get("origin")
+            or body.get("originLocationCode")
+            or body.get("origin_code")
+            or ""
+        )
+        destination = (
+            body.get("destination")
+            or body.get("destinationLocationCode")
+            or body.get("destination_code")
+            or ""
+        )
+        origin = str(origin).strip().upper()
+        destination = str(destination).strip().upper()
+        month, date_from, date_to = _extract_date_window(body)
         one_way = bool(body.get("oneWay", True))
         non_stop = bool(body.get("nonStop", False))
         currency = (body.get("currencyCode") or "").strip().upper()
@@ -1869,8 +1950,8 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             return _wrap_openapi(event, 400, {"error": "invalid_iata"})
 
         params: Dict[str, str] = {
-            "originLocationCode": origin,
-            "destinationLocationCode": destination,
+            "origin": origin,
+            "destination": destination,
             "oneWay": str(bool(one_way)).lower(),
             "nonStop": str(bool(non_stop)).lower(),
             "limit": str(max(1, min(10, limit_n))),
@@ -1879,10 +1960,23 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             params["currencyCode"] = currency
         if month:
             params["month"] = month
-        if date_from:
-            params["departureDateFrom"] = date_from
-        if date_to:
-            params["departureDateTo"] = date_to
+        if date_from and date_to:
+            params["departureDate"] = f"{date_from},{date_to}" if date_from != date_to else date_from
+        elif date_from:
+            params["departureDate"] = date_from
+        elif date_to:
+            params["departureDate"] = date_to
+        max_price = body.get("maxPrice")
+        if max_price not in (None, ""):
+            try:
+                max_price_val = int(max_price)
+                if max_price_val > 0:
+                    params["maxPrice"] = str(max_price_val)
+            except Exception:
+                pass
+        view_by = (body.get("viewBy") or "").strip().upper()
+        if view_by in {"DATE", "DURATION", "WEEK"}:
+            params["viewBy"] = view_by
 
         # Step 1: calendar (proxy)
         try:
