@@ -1,4 +1,4 @@
-Handoff - Daisy Agent and Action Groups (Updated 2025-10-20)
+Handoff - Daisy Agent and Action Groups (Updated 2025-10-21)
 
 This document equips the next Codex session with all essentials to continue smoothly: which agent and aliases are live, action groups, Lambda, proxy, logging, verified behaviors, and follow-ups.
 
@@ -44,11 +44,23 @@ Lambda (Flight + Recommender)
 
 Proxy (Node)
 - File: proxy.mjs | Port: 8787
+- Bedrock client: AWS SDK v3 (`@aws-sdk/client-bedrock-agent-runtime`) streaming (no custom SigV4 or eventstream parser)
 - Routes:
-  - POST /invoke -> forwards to Bedrock Agent Runtime (signed)
-  - POST /tools/amadeus/search -> Amadeus Flight Offers Search adapter
-  - GET  /tools/iata/lookup -> local deterministic IATA resolver
-- Amadeus timeout: 12000 ms (AbortController); Bedrock invoke streams events
+  - POST /invoke ? forwards to Bedrock Agent Runtime (streams events)
+  - POST /tools/amadeus/search ? Amadeus Flight Offers Search adapter
+  - GET  /tools/iata/lookup ? local deterministic IATA resolver
+  - GET/HEAD /health ? liveness (JSON for GET, empty for HEAD)
+  - GET/HEAD /ready ? readiness (cached background checks, JSON for GET, empty for HEAD)
+  - GET/HEAD / ? plain text banner for probes (200)
+- Readiness checks (60s cadence, cached):
+  - config: required env present (hard-fail at startup if missing)
+  - iata: DB loadable and non-empty
+  - bedrock: SDK credentials usable (CreateSessionCommand with 5s abort)
+  - s3 (optional): HeadBucket only when transcript upload enabled
+  - amadeusConfigured: reported but not gating readiness
+- CORS: explicit allowlist via `ORIGIN` env (comma-separated)
+- Body limit: 1 MiB; strict JSON parse
+- Amadeus timeout: 12000 ms (AbortController)
 
 Tool I/O Debug Capture (S3)
 - Enabled (DEBUG_TOOL_IO=true)
@@ -58,8 +70,8 @@ Tool I/O Debug Capture (S3)
 
 Verified Behaviors (CloudWatch)
 - Tools working: OpenAPI /tools/amadeus/search calls and recommender enrichment calls succeeded (200) and returned offers during sessions LH2943, LH6638, LH6119, LH4128.
-- Function-details streaming: Bedrock may return only a final functionResponse (no streamed outputText). This previously led to ‚ÄúNo text response.‚Äù
-  - Implemented fix: proxy surfaces TEXT from functionResponse when streamed text is empty or is just a short heading; frontend logic no longer parses finalResponse (backend owns fallback).
+- Function-details streaming: Bedrock may return only a final functionResponse (no streamed outputText). This previously led to ìNo text response.î
+  - Implemented fix: proxy appends functionResponse TEXT when stream is empty/heading-only; frontend logic no longer parses finalResponse (backend owns fallback).
 
 Instruction Updates (ASCII variants)
 - Files updated:
@@ -80,6 +92,7 @@ Frontend (PDF and parsing)
   - generatePdf constructs legs from bullets when needed; carrier+number without space; blanks instead of random gate/zone/seat/seq; multi-page generation fixed (one page per leg).
   - Trigger words include: confirm, confirmed, book, hold, pdf, download, itinerary, ticket, boarding pass.
   - Removed UI-level fallback for functionResponse; UI uses `text` from proxy only (backend-controlled).
+  - Frontends send `locationLat/locationLon` when available; proxy infers `default_origin` (nearest airport). Never send locality labels (e.g., ìZapreöicî) to tools.
 
 Amadeus API Compatibility
 - Requests sent through proxy use fields aligned with v2.8/2.9: originLocationCode, destinationLocationCode, departureDate, returnDate, adults, children, infants, travelClass, nonStop, currencyCode, includedAirlineCodes, excludedAirlineCodes, max.
@@ -99,7 +112,26 @@ CLI Snippets
   - aws bedrock-agent list-agent-action-groups --agent-id JDLTXAKYJY --agent-version <97|98|99> --region us-west-2 --profile reStrike
   - aws bedrock-agent get-agent-action-group --agent-id JDLTXAKYJY --agent-version <ver> --action-group-id <ID> --region us-west-2 --profile reStrike
 - Fetch tool I/O debug: aws s3 ls s3://origin-daisy-bucket/debug-tool-io/2025/10/20/ --profile reStrike --region us-west-2
+- Probe liveness/readiness:
+  - curl -I https://<proxy>/health
+  - curl -s https://<proxy>/ready | jq
 
 Open Items (handoff)
 - DONE: Implement proxy fallback to surface TEXT from functionResponse when streamed text is empty/heading-only; removed frontend fallback.
 - DONE: Extend replay tooling to count tool calls from CloudWatch and flag placeholder patterns.
+
+
+Proxy Best Practices (implemented)
+- Use AWS SDK v3 for Bedrock Agent Runtime streaming.
+- Separate liveness (/health) and readiness (/ready) ó readiness uses cached background checks.
+- Strict CORS allowlist (env `ORIGIN`), 1 MiB body limit, strict JSON parsing.
+- Only minimal context injection: origin (IATA) inferred from lat/lon; date/destination parsing is tool responsibility.
+- Never pass locality labels (e.g., ìZapreöicî) to tools ó only IATA codes or coordinates.
+- Accept header set for Amadeus; forward airline filters when provided.
+- Structured logs include requestId, method, path, status, duration, UA.
+
+Recommended (edge/ops)
+- Rate limiting at the edge (CloudFront/ALB + AWS WAF). In-app rate limiting only if required; exempt /health and /ready.
+- Downgrade benign HEAD/GET 404 logs to info/debug if needed (current explicit routes avoid probe noise).
+- Emit minimal counters/timers (success rate, p95 duration) per route; keep debug captures gated.
+

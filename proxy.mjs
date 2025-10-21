@@ -5,7 +5,8 @@ import path from "node:path";
 import url from "node:url";
 import crypto from "node:crypto";
 
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { PutObjectCommand, S3Client, HeadBucketCommand } from "@aws-sdk/client-s3";
+import { BedrockAgentRuntimeClient, InvokeAgentCommand, CreateSessionCommand } from "@aws-sdk/client-bedrock-agent-runtime";
 
 const logger = {
   info: (...args) => console.log(new Date().toISOString(), "[INFO]", ...args),
@@ -42,6 +43,54 @@ const transcriptS3Client = TRANSCRIPT_BUCKET
   : null;
 const AMADEUS_TIMEOUT_MS = (() => {
   const raw = Number(process.env.AMADEUS_TIMEOUT_MS);
+// -------- Readiness (background checks cached) --------
+const readiness = {
+  ready: false,
+  lastUpdated: 0,
+  checks: { config: false, iata: false, bedrock: false, s3: true, amadeusConfigured: false },
+  errors: [],
+};
+
+async function runReadinessCheck() {
+  const errors = [];
+  const configOk = !!(AGENT_ID && AGENT_ALIAS_ID && AWS_ACCESS_KEY_ID && AWS_SECRET_ACCESS_KEY && (ALLOW_ORIGINS.length || ALLOW_ORIGIN_SET.size));
+  // iata loadable
+  let iataOk = false;
+  try {
+    const db = loadIata();
+    iataOk = db && typeof db === 'object' && Object.keys(db).length > 0;
+    if (!iataOk) errors.push('iata:empty');
+  } catch (e) { errors.push('iata:' + (e?.message || 'error')); }
+  // bedrock
+  let bedrockOk = false;
+  try {
+    const client = new BedrockAgentRuntimeClient({ region: REGION });
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 5000);
+    await client.send(new CreateSessionCommand({}), { abortSignal: controller.signal }).catch(() => {});
+    clearTimeout(t);
+    bedrockOk = true;
+  } catch (e) { errors.push('bedrock:' + (e?.name || e?.message || 'error')); }
+  // s3 optional
+  let s3Ok = true;
+  if (transcriptS3Client && TRANSCRIPT_BUCKET) {
+    try {
+      const head = new HeadBucketCommand({ Bucket: TRANSCRIPT_BUCKET });
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 4000);
+      await transcriptS3Client.send(head, { abortSignal: controller.signal });
+      clearTimeout(t);
+      s3Ok = true;
+    } catch (e) { s3Ok = false; errors.push('s3:' + (e?.name || e?.message || 'denied')); }
+  }
+  const amadeusConfigured = !!(AMADEUS_API_KEY && AMADEUS_API_SECRET);
+  readiness.checks = { config: configOk, iata: iataOk, bedrock: bedrockOk, s3: s3Ok, amadeusConfigured };
+  readiness.ready = configOk && iataOk && bedrockOk && s3Ok; // Amadeus optional
+  readiness.lastUpdated = Date.now();
+  readiness.errors = errors.slice(0, 5);
+}
+runReadinessCheck().catch(() => {});
+setInterval(() => { runReadinessCheck().catch(() => {}); }, 60_000);
   if (Number.isFinite(raw) && raw > 0) return raw;
   return 12000;
 })();
@@ -527,10 +576,7 @@ async function awsInvokeAgent({
   sessionAttributes,
   promptSessionAttributes,
 }) {
-  const service = "bedrock";
-  const hostname = `bedrock-agent-runtime.${REGION}.amazonaws.com`;
-  const path = `/agents/${encodeURIComponent(AGENT_ID)}/agentAliases/${encodeURIComponent(aliasId)}/sessions/${encodeURIComponent(sessionId)}/text`;
-  const payload = { inputText };
+  const client = new BedrockAgentRuntimeClient({ region: REGION });
   const sessionState = {};
   if (sessionAttributes && Object.keys(sessionAttributes).length > 0) {
     sessionState.sessionAttributes = sessionAttributes;
@@ -538,44 +584,83 @@ async function awsInvokeAgent({
   if (promptSessionAttributes && Object.keys(promptSessionAttributes).length > 0) {
     sessionState.promptSessionAttributes = promptSessionAttributes;
   }
-  if (Object.keys(sessionState).length > 0) {
-    payload.sessionState = sessionState;
+  const params = { agentId: AGENT_ID, agentAliasId: aliasId, sessionId, inputText };
+  if (Object.keys(sessionState).length > 0) params.sessionState = sessionState;
+  const cmd = new InvokeAgentCommand(params);
+  const response = await client.send(cmd);
+  const decoder = new TextDecoder();
+  const parts = [];
+  let functionText = null;
+  let finalResponse = null;
+
+  const findTextBody = (node, depth = 0) => {
+    if (!node || typeof node !== "object" || depth > 8) return null;
+    try {
+      if (node.TEXT && typeof node.TEXT.body === "string") return node.TEXT.body;
+      if (node.responseBody && node.responseBody.TEXT && typeof node.responseBody.TEXT.body === "string") return node.responseBody.TEXT.body;
+      for (const key of Object.keys(node)) {
+        const val = node[key];
+        const found = findTextBody(val, depth + 1);
+        if (found) return found;
+      }
+    } catch (_) {}
+    return null;
+  };
+
+  if (response.completion) {
+    for await (const ev of response.completion) {
+      if (ev.chunk?.bytes) parts.push(decoder.decode(ev.chunk.bytes, { stream: true }));
+      if (ev.outputText?.items?.length) parts.push(ev.outputText.items.map(i => i.text || '').join(''));
+      if (ev.contentBlock?.text) parts.push(ev.contentBlock.text);
+      if (ev.contentBlockDelta?.delta?.text) parts.push(ev.contentBlockDelta.delta.text);
+      if (ev.finalResponse) {
+        finalResponse = ev.finalResponse;
+        const body = findTextBody(finalResponse?.response || finalResponse);
+        if (typeof body === 'string' && body) {
+          try {
+            const obj = JSON.parse(body);
+            if (typeof obj === 'string') functionText = obj; else if (obj && typeof obj === 'object') {
+              functionText = String(obj.text || obj.message || (obj.data && (obj.data.text || obj.data.message || obj.data.summary)) || JSON.stringify(obj));
+            }
+          } catch { functionText = body; }
+        }
+      } else if (!functionText) {
+        const body = findTextBody(ev);
+        if (typeof body === 'string' && body) functionText = body;
+      }
+    }
   }
-  const body = JSON.stringify(payload);
-  const headers = { "content-type": "application/json", "host": hostname };
-  const { amzDate, authorization, payloadHash } = signV4({
-    service,
-    region: REGION,
-    method: "POST",
-    hostname,
-    path,
-    headers,
-    body,
-    accessKeyId: AWS_ACCESS_KEY_ID,
-    secretAccessKey: AWS_SECRET_ACCESS_KEY,
-  });
-  headers["x-amz-date"] = amzDate; headers["x-amz-content-sha256"] = payloadHash; headers["authorization"] = authorization;
-  const resp = await fetch(`https://${hostname}${path}`, { method: "POST", headers, body });
-  const arrayBuffer = await resp.arrayBuffer();
-  const rawBuffer = Buffer.from(arrayBuffer);
-  if (!resp.ok) {
-    const errorText = rawBuffer.toString("utf8");
-    logger.error("InvokeAgent failed", {
-      status: resp.status,
-      response: errorText.slice(0, 500),
-    });
-    throw new Error(`InvokeAgent failed: ${resp.status} ${errorText}`);
+
+  let cleanedText = parts.join("");
+  const askUserTag = /<user[\w.\-]*askuser\b[^>]*question=\"([^\"]+)\"[^>]*\/?>(?:<\/user__askuser>)?/gi;
+  cleanedText = cleanedText.replace(askUserTag, (_, q) => q
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">"));
+  cleanedText = cleanedText.trim();
+
+  let usedFunctionResponseFallback = false;
+  if (!cleanedText && functionText) {
+    cleanedText = String(functionText || '').trim();
+    usedFunctionResponseFallback = true;
+  } else if (functionText) {
+    const short = cleanedText.length < 60;
+    const looksLikeHeading = /:\s*$/.test(cleanedText) || /options\s*:\s*$/i.test(cleanedText);
+    const hasListHints = /(^|\n)\s*-\s*THEN\b/i.test(cleanedText)
+      || /\b(LH|LX|OS|SN|EW|4Y|EN)\s*\d{2,5}\b/i.test(cleanedText)
+      || /[A-Z]{3}\s*->\s*[A-Z]{3}/.test(cleanedText)
+      || /(^|\n)\s*\d+[\)\.-]\s+/.test(cleanedText);
+    if (short || looksLikeHeading || !hasListHints) {
+      cleanedText = (cleanedText ? (cleanedText + "\n") : "") + String(functionText);
+      usedFunctionResponseFallback = true;
+    }
   }
-  const contentType = resp.headers.get("content-type") || "";
-  if (contentType.includes("eventstream")) {
-    return decodeAgentEventStream(rawBuffer);
-  }
-  const text = rawBuffer.toString("utf8");
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { raw: text };
-  }
+  const result = { text: cleanedText };
+  if (finalResponse) result.finalResponse = finalResponse;
+  if (usedFunctionResponseFallback) result.usedFunctionResponseFallback = true;
+  return result;
 }
 
 // ---- Amadeus adapter ----
@@ -1186,6 +1271,7 @@ const server = http.createServer(async (req, res) => {
         persona: validated.persona,
         variant: validated.variant,
         sessionid: validated.sessionId.slice(0, MAX_SESSION_SEGMENT),
+
         schemaversion: validated.schemaVersion,
       };
       try {
@@ -1271,12 +1357,28 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (req.method === "GET" && pathname === "/health") {
+    if ((req.method === "GET" || req.method === "HEAD") && pathname === "/health") {
       res.setHeader("Content-Type", "application/json");
+      if (req.method === "HEAD") { res.statusCode = 200; res.end(); return; }
       res.end(JSON.stringify({ ok: true, time: new Date().toISOString() }));
       return;
     }
+    if ((req.method === "GET" || req.method === "HEAD") && pathname === "/") {
+      if (req.method === "HEAD") { res.statusCode = 200; res.end(); return; }
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.end("Daisy proxy online\n");
+      return;
+    }
 
+    if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/ready') {
+      const ageMs = Date.now() - (readiness.lastUpdated || 0);
+      const body = { ok: !!readiness.ready, time: new Date().toISOString(), lastUpdated: readiness.lastUpdated ? new Date(readiness.lastUpdated).toISOString() : null, checks: readiness.checks, errors: readiness.errors, ageMs };
+      res.statusCode = readiness.ready ? 200 : 503;
+      res.setHeader('Content-Type', 'application/json');
+      if (req.method === 'HEAD') { res.end(); return; }
+      res.end(JSON.stringify(body));
+      return;
+    }
     res.statusCode = 404;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({ error: "not_found" }));
@@ -1307,6 +1409,9 @@ if (shouldStartServer) {
 }
 
 export { iataLookup, loadIata, interpretDatePhrase };
+
+
+
 
 
 
