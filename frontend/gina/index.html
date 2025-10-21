@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 
 <head>
@@ -90,7 +90,7 @@
         // Decode a few common HTML entities
         out = out.replace(/&nbsp;/gi, ' ')
                  .replace(/&amp;/gi, '&')
-                 .replace(/&euro;/gi, 'â‚¬')
+                 .replace(/&euro;/gi, '€')
                  .replace(/&(ndash|mdash);/gi, '-');
         // Normalize smart punctuation to ASCII
         out = out.replace(/[\u2018\u2019]/g, "'");
@@ -130,7 +130,7 @@
       }
       if (current) options.push(current);
       if (options.length === 0) {
-        const routeLine = lines.find(l => /\b[A-Z]{3}\b\s*(?:->|to|–|-|—)\s*\b[A-Z]{3}\b/.test(l))
+        const routeLine = lines.find(l => /\b[A-Z]{3}\b\s*(?:->|to|�|-|�)\s*\b[A-Z]{3}\b/.test(l))
                          || lines.find(l => l.trim().length > 0)
                          || rawText;
         const header = sanitizeAssistantText(routeLine || rawText).trim();
@@ -291,7 +291,7 @@
     const TRANSCRIPT_UPLOAD_ENABLED = CONFIG.transcriptUpload === true;
     const TRANSCRIPT_SCHEMA_VERSION = CONFIG.transcriptSchemaVersion || '2025-10-18';
     const MAX_COL = Number.isFinite(CONFIG.maxColumnWidth) ? CONFIG.maxColumnWidth : 250; // hard wrap width for logs
-    const HEADER_SUBTITLE = CONFIG.headerSubtitle || 'Agent Chat Â· UI Test';
+    const HEADER_SUBTITLE = CONFIG.headerSubtitle || 'Agent Chat · UI Test';
     const INITIAL_ASSISTANT_TEXT = CONFIG.initialAssistantText || 'Lufthansa Group Inspirational AI flight assistant. Nice to meet you!';
     function Header({ apiUrl, locationInfo, proxyOnline }) {
       const formattedTime = (() => {
@@ -461,13 +461,8 @@
             return null;
           }
         };
-        const applyLocation = (label, tz, inferred) => {
-          setLocationInfo(prev => ({
-            ...prev,
-            label,
-            tz: tz || prev.tz,
-            localTime: new Date(),
-            inferredOrigin: inferred || prev.inferredOrigin || null,
+        const applyLocation = (label, tz, inferred, lat, lon) => {
+          setLocationInfo(prev => ({ ...prev, label, tz: tz || prev.tz, localTime: new Date(), inferredOrigin: inferred || prev.inferredOrigin || null, lat: (Number.isFinite(lat) ? lat : prev?.lat), lon: (Number.isFinite(lon) ? lon : prev?.lon),
           }));
           if (inferred && typeof sessionStorage !== 'undefined') {
             try { sessionStorage.setItem('inferred_origin', inferred); } catch {}
@@ -483,7 +478,7 @@
             const label = [locality, country].filter(Boolean).join(', ') || 'Current location';
             let inferred = await inferIata({ lat, lon });
             if (!inferred && country) inferred = await inferIata({ term: country });
-            applyLocation(label, Intl.DateTimeFormat().resolvedOptions().timeZone, inferred);
+            applyLocation(label, Intl.DateTimeFormat().resolvedOptions().timeZone, inferred, lat, lon);
             return true;
           } catch {
             return false;
@@ -506,7 +501,7 @@
               if (city) inferred = await inferIata({ term: city });
               if (!inferred && country) inferred = await inferIata({ term: country });
             }
-            applyLocation(label, tz, inferred);
+            applyLocation(label, tz, inferred, lat, lon);
           } catch {
             applyLocation('Location unavailable', Intl.DateTimeFormat().resolvedOptions().timeZone, null);
           }
@@ -765,6 +760,10 @@
           if (labelText && !/detecting/i.test(labelText)) {
             payload.locationLabel = labelText;
           }
+          if (typeof locationInfo?.lat === 'number' && typeof locationInfo?.lon === 'number') {
+            payload.locationLat = locationInfo.lat;
+            payload.locationLon = locationInfo.lon;
+          }
           const res = await fetch(apiUrl, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
           });
@@ -864,6 +863,8 @@
  </body>
 
  </html>
+
+
 
 
 

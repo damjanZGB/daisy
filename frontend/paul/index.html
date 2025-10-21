@@ -487,13 +487,15 @@
             return null;
           }
         };
-        const applyLocation = (label, tz, inferred) => {
+        const applyLocation = (label, tz, inferred, lat, lon) => {
           setLocationInfo(prev => ({
             ...prev,
             label,
             tz: tz || prev.tz,
             localTime: new Date(),
             inferredOrigin: inferred || prev.inferredOrigin || null,
+            lat: (Number.isFinite(lat) ? lat : prev?.lat),
+            lon: (Number.isFinite(lon) ? lon : prev?.lon),
           }));
           if (inferred && typeof sessionStorage !== 'undefined') {
             try { sessionStorage.setItem('inferred_origin', inferred); } catch {}
@@ -509,7 +511,7 @@
             const label = [locality, country].filter(Boolean).join(', ') || 'Current location';
             let inferred = await inferIata({ lat, lon });
             if (!inferred && country) inferred = await inferIata({ term: country });
-            applyLocation(label, Intl.DateTimeFormat().resolvedOptions().timeZone, inferred);
+            applyLocation(label, Intl.DateTimeFormat().resolvedOptions().timeZone, inferred, lat, lon);
             return true;
           } catch {
             return false;
@@ -532,7 +534,7 @@
               if (city) inferred = await inferIata({ term: city });
               if (!inferred && country) inferred = await inferIata({ term: country });
             }
-            applyLocation(label, tz, inferred);
+            applyLocation(label, tz, inferred, lat, lon);
           } catch {
             applyLocation('Location unavailable', Intl.DateTimeFormat().resolvedOptions().timeZone, null);
           }
@@ -791,6 +793,10 @@
           if (labelText && !/detecting/i.test(labelText)) {
             payload.locationLabel = labelText;
           }
+          if (typeof locationInfo?.lat === 'number' && typeof locationInfo?.lon === 'number') {
+            payload.locationLat = locationInfo.lat;
+            payload.locationLon = locationInfo.lon;
+          }
           const res = await fetch(apiUrl, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
           });
@@ -890,6 +896,7 @@
  </body>
 
  </html>
+
 
 
 

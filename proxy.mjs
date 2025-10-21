@@ -1015,10 +1015,21 @@ const server = http.createServer(async (req, res) => {
       const sessionId = body.sessionId || `sess-${crypto.randomUUID()}`;
       const inputText = typeof body.inputText === "string" ? body.inputText : String(body.inputText ?? "");
       const defaultOriginRaw = typeof body.defaultOrigin === "string" ? body.defaultOrigin.trim() : "";
-      const defaultOrigin = defaultOriginRaw.toUpperCase();
+      let defaultOrigin = defaultOriginRaw.toUpperCase();
       const locationLabel = typeof body.locationLabel === "string" ? body.locationLabel.trim() : "";
+      const locationLat = Number(body.locationLat);
+      const locationLon = Number(body.locationLon);
       const promptAttributes = {};
       const sessionAttributes = {};
+      // Resolve default origin via coordinates if not provided by UI
+      try {
+        if (!defaultOrigin && Number.isFinite(locationLat) && Number.isFinite(locationLon)) {
+          const near = iataLookup({ lat: locationLat, lon: locationLon, limit: 1 });
+          if (Array.isArray(near) && near.length) {
+            defaultOrigin = (near[0].code || '').toUpperCase();
+          }
+        }
+      } catch (_) { /* ignore */ }
       if (defaultOrigin) {
         sessionAttributes.default_origin = defaultOrigin;
         promptAttributes.default_origin = defaultOrigin;
@@ -1045,6 +1056,7 @@ const server = http.createServer(async (req, res) => {
         const ctxLines = [];
         if (destCode) ctxLines.push(`SYSTEM CONTEXT: Interpreted destination is ${destCode}.`);
         if (dtGuess && dtGuess.success && dtGuess.isoDate) ctxLines.push(`SYSTEM CONTEXT: Interpreted departure date is ${dtGuess.isoDate}.`);
+        if (defaultOrigin) ctxLines.push(`SYSTEM CONTEXT: Inferred default departure is ${defaultOrigin}.`);
         if (ctxLines.length) {
           inputText = ctxLines.join('\n') + '\n\n' + inputText;
         }
