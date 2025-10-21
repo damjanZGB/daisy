@@ -105,6 +105,11 @@ const TOOL_LIST = [
     tool_description: "Parse natural-language date phrases into structured ISO dates.",
     tool_route: "/tools/antiPhaser",
   },
+  {
+    tool_name: "derDrucker",
+    tool_description: "Format flight offers and generate PDF tickets via the derDrucker microservice.",
+    tool_route: "/tools/derDrucker/wannaCandy",
+  },
 ];
 function give_me_tools() {
   return TOOL_LIST;

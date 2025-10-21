@@ -68,6 +68,18 @@ Need a lightweight phrase parser? Deploy `antiPhaser.mjs` (same render pattern) 
 
 `POST /tools/antiPhaser` expects `{ "text": "next Friday", "timezone": "Europe/Berlin" }` and returns ISO-formatted depart/return dates plus chrono metadata. A `GET` variant accepts `text`/`timezone` query parameters for quick inspection.
 
+### derDrucker microservice
+Use `derDrucker.mjs` when you need itinerary Markdown or PDF ticket snippets.
+
+| Variable | Purpose |
+|----------|---------|
+| `PORT` | Port to listen on (default `8790`). |
+| `ORIGIN` | Comma/space-separated allowed origins (supports wildcard `*`). |
+| `DEFAULT_TIMEZONE` | Optional fallback timezone for formatting (default `UTC`). |
+
+`POST /tools/derDrucker/wannaCandy` → `{ offers, max?, timezone? }` and returns Markdown sections highlighting direct/connecting options.
+`POST /tools/derDrucker/generateTickets` → `{ offer, pnr, timezone?, fileNamePrefix? }` and responds with base64-encoded PDF tickets per leg.
+
 
 ### Tool catalogue endpoint
 - `GET /tools/give_me_tools` returns a JSON list (`tools: [...]`) with `tool_name`, `tool_description`, and `tool_route` for every major proxy capability.
