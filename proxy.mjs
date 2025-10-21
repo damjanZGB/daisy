@@ -1041,25 +1041,10 @@ const server = http.createServer(async (req, res) => {
       if (locationLabel) {
         promptAttributes.default_origin_label = locationLabel;
       }
-      // Preflight enrichment of destination/date to reduce clarifying questions
+      // Preflight: only add origin context (date/destination are tool responsibilities)
+      // Preflight: only add origin context (date/destination are tool responsibilities)
       try {
-        const tzGuess = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const ref = new Date();
-        const toMatch = inputText.match(/\bto\s+([A-Za-z][A-Za-z\-\s']{2,})/i);
-        let destTerm = toMatch ? toMatch[1].trim() : '';
-        let destCode = '';
-        if (!destTerm) {
-          const m2 = inputText.match(/\b([A-Z][a-z]{2,})(?:[\s,]|$)/);
-          if (m2) destTerm = m2[1];
-        }
-        if (destTerm) {
-          const matches = iataLookup({ term: destTerm });
-          if (Array.isArray(matches) && matches.length) destCode = matches[0].code || '';
-        }
-        const dtGuess = interpretDatePhrase({ phrase: inputText, referenceDate: ref, timeZone: tzGuess });
         const ctxLines = [];
-        if (destCode) ctxLines.push(`SYSTEM CONTEXT: Interpreted destination is ${destCode}.`);
-        if (dtGuess && dtGuess.success && dtGuess.isoDate) ctxLines.push(`SYSTEM CONTEXT: Interpreted departure date is ${dtGuess.isoDate}.`);
         if (defaultOrigin) ctxLines.push(`SYSTEM CONTEXT: Inferred default departure is ${defaultOrigin}.`);
         if (ctxLines.length) {
           inputText = ctxLines.join('\n') + '\n\n' + inputText;
@@ -1067,6 +1052,8 @@ const server = http.createServer(async (req, res) => {
       } catch (e) {
         logger.warn(`[${requestId}] Preflight enrichment failed`, { message: e?.message || String(e) });
       }
+
+
 
       const data = await awsInvokeAgent({
         aliasId: AGENT_ALIAS_ID,
@@ -1323,6 +1310,8 @@ if (shouldStartServer) {
 }
 
 export { iataLookup, loadIata, interpretDatePhrase };
+
+
 
 
 

@@ -1641,12 +1641,17 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
     if api_path == "/tools/iata/lookup":
         term = body.get("term")
         if not term or (isinstance(term, str) and term.strip().lower() in {"nearest airport", "closest airport", "nearest", "closest", "nearest airport to my location", "closest airport to me"}):
-            # Fall back to contextual default origin label if traveler said 'nearest/closest airport'
+            # Prefer default_origin (IATA code) over any label when substituting 'nearest/closest'
             ctx = event.get("promptSessionAttributes") or event.get("sessionAttributes") or {}
-            label = ctx.get("default_origin_label") or ctx.get("default_origin")
-            if label:
-                _log("IATA lookup: substituting nearest/closest with context label", label=label)
-                term = label
+            code = str(ctx.get("default_origin") or "").strip().upper()
+            label = ctx.get("default_origin_label")
+            if code:
+                _log("IATA lookup: substituting nearest/closest with default_origin code", code=code)
+                term = code
+            elif label:
+                lab = str(label).strip()
+                _log("IATA lookup: substituting nearest/closest with context label", label=lab)
+                term = lab
         if not term:
             _log("OpenAPI validation error", reason="missing_term")
             return _wrap_openapi(
@@ -1654,6 +1659,9 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                 400,
                 {"error": "Provide 'term' to perform an IATA lookup."},
             )
+        # If the term is already a three-letter IATA code, return it directly
+        if isinstance(term, str) and re.fullmatch(r"[A-Z]{3}", term.strip().upper()):
+            return _wrap_openapi(event, 200, {"matches": [{"code": term.strip().upper()}]})
         try:
             matches = proxy_lookup_iata(term)
         except Exception as exc:
