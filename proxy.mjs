@@ -36,6 +36,24 @@ const ALLOW_ORIGINS = String(rawOrigin)
   .map(s => s.trim())
   .filter(Boolean);
 const ALLOW_ORIGIN_SET = new Set(ALLOW_ORIGINS);
+const ALLOW_ORIGIN_ENTRIES = ALLOW_ORIGINS.map(value => {
+  if (value === "*") return { value: "*", host: "*" };
+  let host = value;
+  try {
+    host = new URL(value).host;
+  } catch (_) {
+    host = value.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+  }
+  return { value, host };
+});
+function normalizeOriginHost(origin) {
+  if (!origin) return "";
+  try {
+    return new URL(origin).host;
+  } catch (_) {
+    return origin.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+  }
+}
 const MAX_BODY_SIZE = 1024 * 1024; // 1 MiB
 const TRANSCRIPT_BUCKET = (process.env.TRANSCRIPT_BUCKET || "").trim();
 const TRANSCRIPT_PREFIX = (process.env.TRANSCRIPT_PREFIX || "").trim();
