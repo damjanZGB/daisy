@@ -32,7 +32,7 @@ const AWS_ACCESS_KEY_ID = (process.env.AWS_ACCESS_KEY_ID || "").trim();
 const AWS_SECRET_ACCESS_KEY = (process.env.AWS_SECRET_ACCESS_KEY || "").trim();
 const rawOrigin = process.env.ORIGIN || "";
 const ALLOW_ORIGINS = String(rawOrigin)
-  .split(",")
+  .split(/[\s,]+/)
   .map(s => s.trim())
   .filter(Boolean);
 const ALLOW_ORIGIN_SET = new Set(ALLOW_ORIGINS);
