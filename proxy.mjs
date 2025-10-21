@@ -1,4 +1,4 @@
-// proxy.mjs — Render backend for Bedrock Agent + Amadeus adapter + IATA lookup
+// proxy.mjs -- Render backend for Bedrock Agent + Amadeus adapter + IATA lookup
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -1477,6 +1477,27 @@ const server = http.createServer(async (req, res) => {
         clearTimeout(t);
         json = await resp.json().catch(() => ({}));
         if (!resp.ok) {
+          const errors = Array.isArray(json?.errors) ? json.errors : [];
+          const hasNoResults = errors.some(err => Number(err?.code) === 1797 || /no response/i.test(String(err?.detail || "")));
+          if (resp.status === 404 && hasNoResults) {
+            const emptyBody = {
+              originLocationCode: origin,
+              destinationLocationCode: destination,
+              oneWay: !!oneWay,
+              currencyCode: currencyCode || (json?.meta?.currency || ""),
+              window: { from, to },
+              days: [],
+              top: [],
+              empty: true,
+              reason: "amadeus_no_results",
+              status: 404,
+            };
+            putInDatesCache(cacheKey, emptyBody);
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify(emptyBody));
+            logger.info(`[${requestId}] Amadeus dates returned no results`, { origin, destination, from, to });
+            return;
+          }
           res.statusCode = 502;
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ error: "amadeus_dates_error", status: resp.status, details: json }));
@@ -1608,6 +1629,7 @@ if (shouldStartServer) {
 }
 
 export { iataLookup, loadIata, interpretDatePhrase };
+
 
 
 
