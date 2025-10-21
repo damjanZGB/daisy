@@ -50,6 +50,7 @@
     .btn:hover { background:#111827; }
     .diagram { background:#0b1229; border:1px solid #1f2937; border-radius:12px; padding:12px; }
     #diag-data { margin-left:auto; margin-right:auto; max-width: 1000px; }
+    #diag-arch { margin-left:auto; margin-right:auto; max-width: 1000px; }
     .hint { font-size:12px; color:#9ca3af; }
     .ok { color: var(--ok); }
     .warn { color: var(--warn); }
@@ -204,7 +205,15 @@ flowchart TD
         <div class="grid">
           <div class="card"><h3>Agent (Bedrock)</h3><p>
             Hosts instructions and routes calls to action groups. Ensures tool‑first behavior and consistent presentation (THEN lines, sections, flight number format).
-          </p></div>
+          </p>          <div class="card"><h3>Models (LLM)</h3><p>
+            The foundation model used by the Agent is configured in AWS Bedrock per agent <em>version</em> and <em>alias</em>. This repo does not hard-code a model � check Bedrock for the authoritative source.
+          </p>
+          <p class="meta">Fetch model config via CLI:</p>
+          <pre><code>aws bedrock-agent list-agent-aliases --agent-id JDLTXAKYJY --region us-west-2
+aws bedrock-agent list-agent-versions --agent-id JDLTXAKYJY --region us-west-2
+aws bedrock-agent get-agent --agent-id JDLTXAKYJY --agent-version &lt;97|98|99&gt; --region us-west-2</code></pre>
+          <p class="hint">Record the chosen model per alias in docs (handoff.md). Avoid calling Bedrock directly from the browser/UI.</p>
+          </div></div>
           <div class="card"><h3>Lambda: daisy_in_action</h3><p>
             Executes function‑details and OpenAPI actions: resolves IATA, parses time phrases, calls Amadeus via the proxy, and returns simplified offers plus human‑readable <em>message</em> text.
           </p></div>
@@ -471,4 +480,6 @@ flowchart LR
   </div>
 </body>
 </html>
+
+
 

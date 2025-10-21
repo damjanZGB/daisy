@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Daisy Briefing — Architecture, Versions, Replay</title>
+    <style>
+        body {
+            margin: 0;
+            background: #0f172a;
+            color: #e5e7eb;
+            font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: 100vh
+        }
+
+        .nav {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow: auto;
+            padding: 18px;
+            background: #0b1229;
+            border-right: 1px solid #1f2937
+        }
+
+        .nav h2 {
+            font-size: 14px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: #9ca3af;
+            margin: 10px 0
+        }
+
+        .nav a {
+            display: block;
+            padding: 6px 8px;
+            border-radius: 8px;
+            color: #e5e7eb;
+            text-decoration: none
+        }
+
+        .nav a:hover {
+            background: #1f2937
+        }
+
+        .main {
+            padding: 26px
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 26px
+        }
+
+        h2 {
+            margin: 24px 0 8px;
+            font-size: 20px
+        }
+
+        p {
+            line-height: 1.6
+        }
+
+        .diagram {
+            background: #0b1229;
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            padding: 12px;
+            margin: 10px auto;
+            max-width: 1000px
+        }
+
+        .card {
+            background: #0b1229cc;
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            padding: 14px;
+            margin: 10px 0
+        }
+
+        pre {
+            background: #0b1229;
+            border: 1px solid #1f2937;
+            border-radius: 8px;
+            padding: 10px;
+            overflow: auto;
+            color: #e5e7eb
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose' })</script>
+</head>
+
+<body>
+    <div class="layout">
+        <nav class="nav">
+            <h2>Briefing</h2> <a href="#layers">Layers</a> <a href="#agent">Agent & Models</a> <a
+                href="#replay">Replay</a> <a href="#cli">CLI</a>
+        </nav>
+        <main class="main">
+            <section id="layers">
+                <h1>Layered Architecture</h1>
+                <div class="diagram mermaid">
+                flowchart TB
+    U[Traveler]:::u --> UI[Frontends]:::ui
+    UI --> PX[Proxy]:::px
+    PX --> AG[Bedrock Agent Runtime]:::b
+    AG --> L[Action Group Lambda]:::l
+    L --> T1[IATA]:::t
+    L --> T2[Time Parser]:::t
+    L --> T3[Amadeus]:::t
+
+    classDef u fill:#34d399,stroke:#065f46,color:#111
+    classDef ui fill:#0ea5e9,stroke:#075985,color:#111
+    classDef px fill:#fbbf24,stroke:#92400e,color:#111
+    classDef b fill:#a78bfa,stroke:#5b21b6,color:#111
+    classDef l fill:#f472b6,stroke:#9d174d,color:#111
+    classDef t fill:#93c5fd,stroke:#1d4ed8,color:#111
+</div>
+                <div class="card">
+                    <p>The proxy is thin (transport + minimal origin context). The Agent (Bedrock) orchestrates the
+                        foundation model and action groups. Deterministic facts (IATA/time/pricing) come from
+                        tools/Lambda — per AWS Bedrock guidance.</p>
+                </div>
+            </section>
+            <section id="agent">
+                <h2>Agent, Versions, Aliases & Models</h2>
+                <div class="card">
+                    <p>The foundation model used by the Agent is configured in AWS Bedrock per <em>version</em>. Aliases
+                        (e.g., Paul/Bianca/Gina) point to specific versions. This repo does not hard‑code a model; fetch
+                        it from Bedrock to avoid drift.</p>
+                </div>
+                <div class="card">
+                    <p><strong>Why versions:</strong> versions snapshot instructions, tools and model selection; aliases
+                        enable safe promotion/rollback — a common Bedrock pattern.</p>
+                </div>
+            </section>
+
+            <section id="replay">
+                <h2>Replay & Continuous Improvement</h2>
+                <div class="diagram mermaid">
+                flowchart LR
+                    subgraph Capture
+                    P[Proxy payload]:::c --> S3[S3 Debug]:::s
+                    R[Proxy response]:::c --> S3
+                    end
+                    subgraph Replay
+                    RS[replay_sessions.mjs]:::r
+                    EX[extract_proxy_logs.py]:::r
+                    end
+                    S3 -.-> RS
+                    CWL[CloudWatch Logs]:::o --> EX
+                    RS --> SUM[Replay results]:::o
+                    EX --> SUM
+                    classDef c fill:#fde68a,stroke:#b45309,color:#111
+                    classDef s fill:#99f6e4,stroke:#0f766e,color:#111
+                    classDef r fill:#c4b5fd,stroke:#6d28d9,color:#111
+                    classDef o fill:#9ca3af,stroke:#374151,color:#111</div>
+                <div class="card">
+                    <p>Replay does not train the model directly. It reveals gaps (formatting, tool usage, placeholders)
+                        to refine instructions, tool orchestration and versions, then promote via aliases.</p>
+                </div>
+            </section>
+
+            <section id="cli">
+                <h2>AWS CLI (sanitized)</h2>
+                <pre>aws bedrock-agent list-agent-aliases --agent-id &lt;AGENT_ID&gt; --region us-west-2
+aws bedrock-agent list-agent-versions --agent-id <AGENT_ID> --region us-west-2
+aws bedrock-agent get-agent --agent-id <AGENT_ID> --agent-version <VER> --region us-west-2
+aws logs tail "/aws/lambda/daisy_in_action-..." --since 15m --follow --region us-west-2</pre>
+                <div class="card">Do not expose ARNs, access keys, or secrets in pages. Use IAM roles and environment
+                    variables.</div>
+            </section>
+        </main>
+
+    </div>
+</body>
+
+</html>
