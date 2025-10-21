@@ -817,7 +817,6 @@
             }
           }
           const payload = { inputText: payloadText, sessionId };
-          if (originCode) payload.defaultOrigin = originCode;
           const labelText = locationInfo?.label;
           if (labelText && !/detecting/i.test(labelText)) {
             payload.locationLabel = labelText;
