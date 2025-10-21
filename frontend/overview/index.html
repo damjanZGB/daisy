@@ -146,77 +146,54 @@
         <h2>Architecture</h2>
         <div class="toolbar"><button class="btn" data-copy="diag-arch" onclick="copy('diag-arch')">Copy diagram</button></div>
         <div class="diagram mermaid" id="diag-arch">
-%%{init: {"theme": "neutral", "flowchart": {"htmlLabels": true, "useMaxWidth": true}} }%%
-flowchart TB
-    %% --- Nodes ---
-    subgraph User["User"]
-        U["Traveler"]
-    end
+%%{init: {"theme": "neutral","themeVariables": {"primaryColor": "#FFE066","secondaryColor":"#F3A712"},"flowchart": {"curve":"monotoneY","fontFamily":"Inter,Arial"}} }%%
+flowchart TD
+  %% USER
+  User((Traveler))
+  FE(["Frontends<br>paul/ · bianca/ · gina/ · origin/"])
+  Proxy(["Node Proxy<br>:8787"])
+  AG((Bedrock Agent))
+  Orchestrator(["Agent Orchestrator"])
+  Lambda(["Action Lambda<br>daisy_in_action"])
+  Reco([Destination<br>Recommender])
+  Amadeus[(Amadeus<br>Flight API)]
+  subgraph Obs["Observability"]
+    S3[(S3<br>debug-tool-io)]
+    CW([CloudWatch Logs])
+  end
 
-    subgraph UI["Frontends"]
-        F1["paul/index.html"]
-        F2["bianca/index.html"]
-        F3["gina/index.html"]
-        F4["origin/index.html"]
-    end
+  %% FLOW
+  User -- Chat --> FE
+  FE -- JSON --> Proxy
+  Proxy -- InvokeAgent --> Orchestrator
+  Orchestrator -- chooses --> AG
+  Orchestrator -- "Fn Details" --> Lambda
+  Lambda -- IATA --> Proxy
+  Lambda -- Time --> Proxy
+  Lambda -- Pricing --> Proxy
+  Lambda -- Destination --> Reco
+  Reco -- "Flight offers" --> Amadeus
+  Amadeus -- offers --> Reco
+  Lambda -- "Fn Response" --> Orchestrator
+  Orchestrator -.-> Proxy
+  Proxy -- "Final Text" --> FE
 
-    subgraph Proxy["Node Proxy :8787"]
-        P1["POST /invoke<br/>(Gateway to Bedrock)"]
-        P2["POST /tools/amadeus/search/"]
-        P3["GET /tools/iata/lookup/"]
-        P4["POST /tools/datetime/interpret/"]
-        P5["POST /log/transcript/"]
-    end
+  %% LOGGING
+  Lambda -. Log .-> S3
+  Lambda -. Log .-> CW
+  Proxy -.-> CW
 
-    subgraph Bedrock["Bedrock Agent Runtime"]
-        AID["Agent: JDLTXAKYJY<br/>Aliases: Bianca/Paul/Gina"]
-        AG["Agent Orchestrator"]
-    end
+  %% STYLE
+  classDef portal fill:#fcf5c7,stroke:#8a7900,stroke-width:2px;
+  classDef lambda fill:#e3f7e3,stroke:#2b5c1a,stroke-width:2px;
+  classDef vendor fill:#e9efc0,stroke:#005f73,stroke-width:2px;
+  classDef core fill:#e9e9fc,font-weight:bold;
+  class AG,Proxy,Orchestrator core;
+  class Amadeus vendor;
+  class FE portal;
+  class Lambda,Reco lambda;
 
-    subgraph Lambda["Action Group Lambda"]
-        L1["daisy_in_action-0k2c0<br/>Python 3.12"]
-        L2["Destination Recommender"]
-    end
 
-    subgraph Vendors["External"]
-        AMA[(Amadeus Flight Offers v2.8/2.9)]
-    end
-
-    subgraph Logs["Observability"]
-        CW[(CloudWatch Logs)]
-        S3[(S3 debug-tool-io/)]
-    end
-
-    %% --- Edges ---
-    U -- "Chat" --> F1
-    U -- "Chat" --> F2
-    U -- "Chat" --> F3
-    U -- "Chat" --> F4
-
-    F1 -- "JSON" --> P1
-    F2 -- "JSON" --> P1
-    F3 -- "JSON" --> P1
-    F4 -- "JSON" --> P1
-
-    P1 -- "InvokeAgent (stream)" --> AG
-    AG -- "function-details" --> L1
-    L1 -- "IATA" --> P3
-    L1 -- "Time" --> P4
-    L1 -- "Pricing" --> P2
-    P2 -- "GET offers" --> AMA
-    AMA --> P2
-    L1 -- "functionResponse TEXT" --> AG
-    AG -.-> P1
-
-    P1 -- "text (w/ fallback)" --> F1
-    P1 -- "text (w/ fallback)" --> F2
-    P1 -- "text (w/ fallback)" --> F3
-    P1 -- "text (w/ fallback)" --> F4
-
-    L1 --> S3
-    L1 --> CW
-    P3 --> CW
-    P4 --> CW
 
         </div>
         <p class="hint">The proxy assembles streamed text from Bedrock and falls back to Lambda’s functionResponse TEXT when Bedrock streams only a heading.</p>

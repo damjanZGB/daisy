@@ -475,11 +475,15 @@ function decodeAgentEventStream(buffer) {
     cleanedText = responseTextFromFunction;
     usedFunctionResponseFallback = true;
   } else if (cleanedText && responseTextFromFunction) {
-    // Simple rule: if the streamed text is very short or clearly a prompt heading, use the function response text instead
+    // Supplement heading-only streams with functionResponse content
     const short = cleanedText.length < 60;
     const looksLikeHeading = /:\s*$/.test(cleanedText) || /options\s*:\s*$/i.test(cleanedText);
-    if ((short || looksLikeHeading)) {
-      cleanedText = responseTextFromFunction;
+    const hasListHints = /(^|\\n)\\s*-\\s*THEN\\b/i.test(cleanedText)
+      || /\\b(LH|LX|OS|SN|EW|4Y|EN)\\s*\\d{2,5}\\b/i.test(cleanedText)
+      || /[A-Z]{3}\\s*->\\s*[A-Z]{3}/.test(cleanedText)
+      || /(^|\\n)\\s*\\d+[\\)\\.-]\\s+/.test(cleanedText);
+    if (short || looksLikeHeading || !hasListHints) {
+      cleanedText = (cleanedText ? (cleanedText + "\\n") : "") + responseTextFromFunction;
       usedFunctionResponseFallback = true;
     }
   }
@@ -1319,4 +1323,6 @@ if (shouldStartServer) {
 }
 
 export { iataLookup, loadIata, interpretDatePhrase };
+
+
 
