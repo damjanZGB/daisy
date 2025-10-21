@@ -167,7 +167,19 @@ function enforceCors(req, res) {
     setCorsHeaders(res);
     return true;
   }
-  if (ALLOW_ORIGIN_SET.has(origin)) {
+  if (ALLOW_ORIGIN_SET.has("*")) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    setCorsHeaders(res);
+    return true;
+  }
+  const originHost = normalizeOriginHost(origin);
+  const match = ALLOW_ORIGIN_ENTRIES.find(entry => {
+    if (entry.value === "*") return true;
+    if (entry.value === origin) return true;
+    if (entry.host && entry.host === originHost) return true;
+    return false;
+  });
+  if (match) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     setCorsHeaders(res);
     return true;
