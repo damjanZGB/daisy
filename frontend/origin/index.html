@@ -421,6 +421,12 @@
         tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
         localTime: new Date(),
         inferredOrigin: (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('inferred_origin')) || null,
+        lat: null,
+        lon: null,
+        city: '',
+        country: '',
+        method: 'PENDING',
+        airport: null,
       });
       const [proxyOnline, setProxyOnline] = useState(true);
       const locationHintSentRef = useRef(null);
@@ -482,7 +488,14 @@
             setProxyOnline(true);
             const data = await res.json();
             const match = (data.matches || [])[0];
-            return match?.code || null;
+            if (!match) return null;
+            return {
+              code: match.code || null,
+              name: match.name || match.airportName || match.airport || match.label || null,
+              city: match.city || match.municipality || null,
+              country: match.country || match.countryName || match.country_code || null,
+              raw: match,
+            };
           } catch {
             setProxyOnline(false);
             return null;
@@ -509,17 +522,39 @@
           }
           return null;
         };
-        const applyLocation = (label, tz, inferred, lat, lon) => {
-          setLocationInfo(prev => ({
-            ...prev,
-            label,
-            tz: tz || prev.tz,
-            localTime: new Date(),
-            inferredOrigin: inferred || prev.inferredOrigin || null,
-            lat: (Number.isFinite(lat) ? lat : prev?.lat),
-            lon: (Number.isFinite(lon) ? lon : prev?.lon),
-          }));
-          if (inferred && typeof sessionStorage !== 'undefined') {
+        const applyLocation = (label, tz, inferred, lat, lon, meta = {}) => {
+          const inferredObj = inferred && typeof inferred === 'object'
+            ? inferred
+            : (typeof inferred === 'string' && inferred.trim()
+              ? { code: inferred.trim() }
+              : null);
+          setLocationInfo(prev => {
+            const resolvedAirport = inferredObj || prev.airport || null;
+            const next = {
+              ...prev,
+              label,
+              tz: tz || prev.tz,
+              localTime: new Date(),
+              inferredOrigin: resolvedAirport?.code || prev.inferredOrigin || null,
+              lat: Number.isFinite(lat) ? lat : (typeof prev.lat === 'number' ? prev.lat : null),
+              lon: Number.isFinite(lon) ? lon : (typeof prev.lon === 'number' ? prev.lon : null),
+              city: meta.city ?? resolvedAirport?.city ?? prev.city ?? '',
+              country: meta.country ?? resolvedAirport?.country ?? prev.country ?? '',
+              method: meta.method ?? prev.method ?? 'UNKNOWN',
+              airport: resolvedAirport
+                ? {
+                    code: resolvedAirport.code || prev.airport?.code || null,
+                    name: resolvedAirport.name || prev.airport?.name || null,
+                    city: resolvedAirport.city || prev.airport?.city || null,
+                    country: resolvedAirport.country || prev.airport?.country || null,
+                  }
+                : null,
+            };
+            return next;
+          });
+          if (inferredObj?.code && typeof sessionStorage !== 'undefined') {
+            try { sessionStorage.setItem('inferred_origin', inferredObj.code); } catch {}
+          } else if (typeof inferred === 'string' && inferred && typeof sessionStorage !== 'undefined') {
             try { sessionStorage.setItem('inferred_origin', inferred); } catch {}
           }
         };
@@ -535,7 +570,18 @@
             if (Number.isFinite(lat) && Number.isFinite(lon)) {
               inferred = await inferIata({ lat, lon });
             }
-            applyLocation(label, Intl.DateTimeFormat().resolvedOptions().timeZone, inferred, lat, lon);
+            applyLocation(
+              label,
+              Intl.DateTimeFormat().resolvedOptions().timeZone,
+              inferred,
+              lat,
+              lon,
+              {
+                method: 'navigator.geolocation.getCurrentPosition',
+                city: locality || '',
+                country: country || '',
+              }
+            );
             return true;
           } catch {
             return false;
@@ -564,9 +610,21 @@
             if (Number.isFinite(lat) && Number.isFinite(lon)) {
               inferred = await inferIata({ lat, lon });
             }
-            applyLocation(label, tz, inferred, lat, lon);
+            applyLocation(
+              label,
+              tz,
+              inferred,
+              lat,
+              lon,
+              {
+                method: 'https://ipapi.co',
+                city: city || '',
+                country: country || '',
+              }
+            );
           } catch {
-            applyLocation('Location unavailable', Intl.DateTimeFormat().resolvedOptions().timeZone, null);
+            setLocationInfo(prev => ({ ...prev, method: 'FAILED' }));
+            applyLocation('Location unavailable', Intl.DateTimeFormat().resolvedOptions().timeZone, null, null, null, { method: 'FAILED' });
           }
         };
         const resolveLocation = async () => {
@@ -577,7 +635,11 @@
                   const handled = await updateFromCoords(pos.coords.latitude, pos.coords.longitude);
                   resolve(handled);
                 },
-                async () => {
+                async (err) => {
+                  setLocationInfo(prev => ({
+                    ...prev,
+                    method: err && err.code === 1 ? 'DENIED' : 'FAILED',
+                  }));
                   resolve(false);
                 },
                 { enableHighAccuracy: false, timeout: 5000, maximumAge: 600000 }
@@ -690,6 +752,14 @@
       };
       const buildHeader = () => [
         `FLIGHT: ${flightNo.replace(' ', '')}`,
+        `LAT: ${Number.isFinite(locationInfo?.lat) ? locationInfo.lat.toFixed(6) : 'N/A'}, LON: ${Number.isFinite(locationInfo?.lon) ? locationInfo.lon.toFixed(6) : 'N/A'}`,
+        `CITY: ${locationInfo?.city || 'N/A'}, COUNTRY: ${locationInfo?.country || 'N/A'}`,
+        `AIR: ${
+          locationInfo?.airport?.code
+            ? `${locationInfo.airport.code}${locationInfo.airport.name ? ', ' + locationInfo.airport.name : ''}`
+            : 'N/A'
+        }`,
+        `METHOD: ${locationInfo?.method || 'UNKNOWN'}`,
         `SESSION: ${sessionId}`,
         `STARTED: ${startedAt.toISOString()}`,
         '---'
