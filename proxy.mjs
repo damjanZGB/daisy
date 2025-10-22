@@ -1367,7 +1367,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       const sessionId = body.sessionId || `sess-${crypto.randomUUID()}`;
-      const inputText = typeof body.inputText === "string" ? body.inputText : String(body.inputText ?? "");
+      let inputText = typeof body.inputText === "string" ? body.inputText : String(body.inputText ?? "");
       const defaultOriginRaw = typeof body.defaultOrigin === "string" ? body.defaultOrigin.trim() : "";
       let defaultOrigin = defaultOriginRaw.toUpperCase();
       const locationLabel = typeof body.locationLabel === "string" ? body.locationLabel.trim() : "";
