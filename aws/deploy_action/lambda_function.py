@@ -901,9 +901,12 @@ def proxy_lookup_iata(term: str, limit: int = 20) -> List[Dict[str, Any]]:
         response = _proxy_get(
             "/tools/iata/lookup", {"term": text, "limit": str(limit)}
         )
-    except Exception as exc:  # pragma: no cover - surface proxy error
+    except (_urlerr.HTTPError, _urlerr.URLError) as exc:  # pragma: no cover - surface proxy error
         _log("IATA lookup failed", term=text, error=str(exc))
         raise RuntimeError(f"IATA lookup failed: {exc}") from exc
+    except Exception as exc:  # pragma: no cover - unexpected error
+        _log("IATA lookup unexpected error", term=text, error=str(exc))
+        raise RuntimeError(f"IATA lookup unexpected error: {exc}") from exc
     matches = response.get("matches")
     if isinstance(matches, list):
         _log("IATA lookup success", term=text, matches=len(matches))
@@ -1543,6 +1546,82 @@ def search_best_itineraries(
     return options
 
 
+def _build_recommendation_message(direct_opts: List[Dict[str, Any]], conn_opts: List[Dict[str, Any]], take_direct: int, take_conn: int, currency: str) -> List[str]:
+    """Build recommendation message lines for flight options."""
+    def _fmt_price(val: Any, curr: Optional[str]) -> str:
+        try:
+            return f"{float(val):.0f} {curr or ''}".strip()
+        except Exception:
+            return str(val)
+    
+    def _hhmm(ts: Optional[str]) -> str:
+        try:
+            if not ts:
+                return "?"
+            t = ts.replace("T", " ").replace("Z", "").split(" ")[1]
+            return t[:5]
+        except Exception:
+            return "?"
+    
+    lines: List[str] = []
+    
+    if take_direct:
+        lines.append("Direct Flights")
+        for idx, opt in enumerate(direct_opts[:take_direct], start=1):
+            offer = opt.get("offer") or {}
+            price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
+            dep = offer.get("departureAirport") or "?"
+            arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
+            dur = offer.get("duration") or "?"
+            label = opt.get("label") or "Option"
+            carriers = offer.get("carriers") or []
+            carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
+            header = f"{idx}) {label} - {dep} -> {arr} | {opt.get('date')} | nonstop | {dur} | **{price}**"
+            lines.append(header)
+            if carriers_txt:
+                lines.append(f"    - Carriers: {carriers_txt}")
+            if RECOMMENDER_VERBOSE and isinstance(offer.get("segments"), list) and offer["segments"]:
+                for s in offer["segments"]:
+                    c = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
+                    fn = s.get("flightNumber") or ""
+                    s_dep = s.get("from") or "?"
+                    s_arr = s.get("to") or "?"
+                    s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
+                    s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
+                    lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} -> {s_arr} {s_at}")
+    
+    if take_conn:
+        if take_direct:
+            lines.append("")
+        lines.append("Connecting Flights")
+        for idx, opt in enumerate(conn_opts[:take_conn], start=1):
+            offer = opt.get("offer") or {}
+            price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
+            dep = offer.get("departureAirport") or "?"
+            arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
+            dur = offer.get("duration") or "?"
+            label = opt.get("label") or "Option"
+            stops = opt.get("stops")
+            stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+            carriers = offer.get("carriers") or []
+            carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
+            header = f"{idx}) {label} - {dep} -> {arr} | {opt.get('date')} | {stops_txt} | {dur} | **{price}**"
+            lines.append(header)
+            if carriers_txt:
+                lines.append(f"    - Carriers: {carriers_txt}")
+            if RECOMMENDER_VERBOSE and isinstance(offer.get("segments"), list) and offer["segments"]:
+                for s in offer["segments"][:3]:
+                    c = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
+                    fn = s.get("flightNumber") or ""
+                    s_dep = s.get("from") or "?"
+                    s_arr = s.get("to") or "?"
+                    s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
+                    s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
+                    lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} -> {s_arr} {s_at}")
+    
+    return lines
+
+
 # ------------------------ Response wrappers ------------------------
 
 
@@ -2170,100 +2249,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 take_direct = min(len(direct_opts), max_total)
                 take_conn = min(len(conn_opts), max_total - take_direct)
                 payload["options"] = (direct_opts[:take_direct] + conn_opts[:take_conn])
-                # Build a concise, sectioned message so the agent surfaces concrete options.
-                def _fmt_price(val: Any, curr: Optional[str]) -> str:
-                    try:
-                        return f"{float(val):.0f} {curr or ''}".strip()
-                    except Exception:
-                        return str(val)
-                lines: List[str] = []
-                def _hhmm(ts: Optional[str]) -> str:
-                    try:
-                        if not ts:
-                            return "?"
-                        # Accept 'YYYY-MM-DDTHH:MM' or 'YYYY-MM-DD HH:MM'
-                        t = ts.replace("T", " ").replace("Z", "").split(" ")[1]
-                        return t[:5]
-                    except Exception:
-                        return "?"
-                if take_direct:
-                    lines.append("Direct Flights")
-                    for idx, opt in enumerate(direct_opts[:take_direct], start=1):
-                        offer = opt.get("offer") or {}
-                        price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
-                        dep = offer.get("departureAirport") or "?"
-                        arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
-                        dur = offer.get("duration") or "?"
-                        label = opt.get("label") or "Option"
-                        carriers = offer.get("carriers") or []
-                        carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
-                        header = f"{idx}) {label} - {dep} -> {arr} | {opt.get('date')} | nonstop | {dur} | **{price}**"
-                        lines.append(header)
-                        if carriers_txt:
-                            lines.append(f"    - Carriers: {carriers_txt}")
-                        if RECOMMENDER_VERBOSE and isinstance(offer.get("segments"), list) and offer["segments"]:
-                            for s in offer["segments"][: (len(offer["segments"]) if True else 1)]:
-                                c = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
-                                fn = s.get("flightNumber") or ""
-                                s_dep = s.get("from") or "?"
-                                s_arr = s.get("to") or "?"
-                                s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
-                                s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
-                                lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} -> {s_arr} {s_at}")
-                if take_conn:
-                    lines.append("")
-                    lines.append("Connecting Flights")
-                    for idx, opt in enumerate(conn_opts[:take_conn], start=1):
-                        offer = opt.get("offer") or {}
-                        price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
-                        dep = offer.get("departureAirport") or "?"
-                        arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
-                        dur = offer.get("duration") or "?"
-                        label = opt.get("label") or "Option"
-                        stops = opt.get("stops")
-                        stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
-                        carriers = offer.get("carriers") or []
-                        carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
-                        # Header line with bold price
-                        header = f"{idx}) {label} - {dep} -> {arr} | {opt.get('date')} | {stops_txt} | {dur} | **{price}**"
-                        # Rebuild header to include first segment carrier/flight and departure HH:MM when available
-                        try:
-                            segs = offer.get("segments")
-                            seg0 = segs[0] if isinstance(segs, list) and segs else None
-                            c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
-                            fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
-                            dt0 = _hhmm((seg0.get("departureTime") if isinstance(seg0, dict) else None) or offer.get("departureTime") or "")
-                            c0fn = f"{c0}{fn0}".strip() if c0 or fn0 else (carriers[0] if isinstance(carriers, list) and carriers else "")
-                            header_parts = [
-                                f"{idx}) {label} - {dep} {dt0}".strip(),
-                                "->",
-                                f"{arr}",
-                                "|",
-                                f"{opt.get('date')}",
-                                "|",
-                                f"{stops_txt}",
-                                "|",
-                                f"{dur}",
-                            ]
-                            if c0fn:
-                                header_parts.extend(["|", c0fn])
-                            header_parts.extend(["|", f"**{price}**"])
-                            header = " ".join(str(p) for p in header_parts if str(p))
-                        except Exception:
-                            pass
-                        lines.append(header)
-                        if carriers_txt:
-                            lines.append(f"    - Carriers: {carriers_txt}")
-                        if RECOMMENDER_VERBOSE and isinstance(offer.get("segments"), list) and offer["segments"]:
-                            # Show up to 3 segments as THEN lines
-                            for s in offer["segments"][:3]:
-                                c = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
-                                fn = s.get("flightNumber") or ""
-                                s_dep = s.get("from") or "?"
-                                s_arr = s.get("to") or "?"
-                                s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
-                                s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
-                                lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} -> {s_arr} {s_at}")
+                lines = _build_recommendation_message(direct_opts, conn_opts, take_direct, take_conn, currency)
                     offer = opt.get("offer") or {}
                     price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
                     dep = offer.get("departureAirport") or "?"
