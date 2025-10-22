@@ -278,6 +278,9 @@ async function handleUpload(req, res) {
     return;
   }
 
+  const pathModeRaw = String(payload?.pathMode || "").trim().toLowerCase();
+  const absolutePathMode = pathModeRaw === "absolute" || pathModeRaw === "abs";
+
   const pathSegments = sanitizePath(payload?.path);
   if (pathSegments.length === 0) {
     respond(res, 400, { error: "path_required" });
@@ -314,10 +317,14 @@ async function handleUpload(req, res) {
 
   const segments = [];
   if (S3_PREFIX) segments.push(S3_PREFIX);
-  segments.push(typeIndicator);
-  segments.push(...pathSegments);
-  segments.push(senderSlug);
-  segments.push(isoDate);
+  if (absolutePathMode) {
+    segments.push(...pathSegments);
+  } else {
+    segments.push(typeIndicator);
+    segments.push(...pathSegments);
+    segments.push(senderSlug);
+    segments.push(isoDate);
+  }
   const key = `${segments.join("/")}/${fileName}`;
 
   try {
@@ -406,5 +413,4 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   logger.info(`s3escalator listening on :${PORT}`, { bucket: S3_BUCKET, prefix: S3_PREFIX });
 });
-
 

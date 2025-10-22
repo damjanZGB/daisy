@@ -180,7 +180,7 @@ function createZipArchive(string $zipPath, array $sourceFiles): void
   $zip->close();
 }
 
-function uploadZipThroughTool(array $toolUrls, string $authToken, string $shellPretty, string $zipPath, string $pathFragment, string $fileName): array
+function uploadZipThroughTool(array $toolUrls, string $authToken, string $shellPretty, string $zipPath, string $pathFragment, string $fileName, bool $absolutePath = false): array
 {
   $contents = file_get_contents($zipPath);
   if ($contents === false) {
@@ -195,6 +195,9 @@ function uploadZipThroughTool(array $toolUrls, string $authToken, string $shellP
     'contentType' => 'application/zip',
     'fileBase64' => base64_encode($contents),
   ];
+  if ($absolutePath) {
+    $payload['pathMode'] = 'absolute';
+  }
   $json = json_encode($payload);
   if ($json === false) {
     respond(500, ['error' => 'payload_encoding_failed']);
@@ -256,8 +259,7 @@ function handleSnitchAction(): void
   }
 
   $now = new DateTimeImmutable('now');
-  $year = $now->format('Y');
-  $month = $now->format('m');
+  $dateFolder = $now->format('Y-m-d');
   $zipFileName = sprintf('%s_TRANSCRIPT_%s.zip', $shellUpper, $now->format('d-m-Y-H-i'));
   $zipPath = $logsDir . '/' . $zipFileName;
 
@@ -270,8 +272,16 @@ function handleSnitchAction(): void
   }
   $authToken = resolveSnitchToken($config);
 
-  $pathFragment = sprintf('dAisys-diary/transcripts/%s/%s/%s', $shellPretty, $year, $month);
-  $uploadResponse = uploadZipThroughTool($toolUrls, $authToken ?? '', $shellPretty, $zipPath, $pathFragment, $zipFileName);
+  $pathFragment = sprintf('transcripts/%s/%s', strtolower($shellPretty), $dateFolder);
+  $uploadResponse = uploadZipThroughTool(
+    $toolUrls,
+    $authToken ?? '',
+    $shellPretty,
+    $zipPath,
+    $pathFragment,
+    $zipFileName,
+    true
+  );
 
   foreach ($logFiles as $file) {
     @unlink($file);
