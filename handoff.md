@@ -120,6 +120,7 @@ CLI Snippets
 Open Items (handoff)
 - DONE: Implement proxy fallback to surface TEXT from functionResponse when streamed text is empty/heading-only; removed frontend fallback.
 - DONE: Extend replay tooling to count tool calls from CloudWatch and flag placeholder patterns.
+- TODO: Wire the new developer-mode menu (stress test, replay, debug, instructions) once proxy/CLI scaffolding lands and teach the agent to call `/tools/give_me_tools` for self-discovery before invoking a tool.
 
 
 Proxy Best Practices (implemented)

@@ -256,6 +256,169 @@ paths:
         "502":
           description: Upstream error
 
+  /tools/s3escalator:
+    description: Upload artifacts (logs, transcripts, alerts) through the proxy escalator service.
+    post:
+      operationId: uploadEscalator
+      summary: Upload a debug or transcript artifact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EscalatorUploadRequest"
+      responses:
+        "200":
+          description: Upload completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EscalatorUploadResponse"
+        "400":
+          description: Missing required fields or file payload.
+        "502":
+          description: Escalator service error.
+
+  /tools/antiPhaser:
+    description: Dedicated microservice for parsing natural-language date phrases using chrono-node/luxon.
+    get:
+      operationId: antiPhaserGet
+      summary: Interpret a date phrase (GET)
+      parameters:
+        - in: query
+          name: phrase
+          required: true
+          schema:
+            type: string
+          description: Phrase to interpret, e.g. `next Friday at 2pm`.
+        - in: query
+          name: timezone
+          required: false
+          schema:
+            type: string
+          description: IANA timezone (default UTC).
+        - in: query
+          name: referenceDate
+          required: false
+          schema:
+            type: string
+          description: ISO date to anchor relative phrases (defaults to current day).
+      responses:
+        "200":
+          description: Parsed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AntiPhaserResponse"
+        "400":
+          description: Invalid or missing phrase.
+        "502":
+          description: antiPhaser service error.
+    post:
+      operationId: antiPhaserPost
+      summary: Interpret a date phrase (POST)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AntiPhaserRequest"
+      responses:
+        "200":
+          description: Parsed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AntiPhaserResponse"
+        "400":
+          description: Invalid or missing phrase.
+        "502":
+          description: antiPhaser service error.
+
+  /tools/derDrucker/wannaCandy:
+    description: Format LH-Group itinerary offers into Markdown via the derDrucker service.
+    post:
+      operationId: derDruckerWannaCandy
+      summary: Format offers into Markdown
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DerDruckerMarkdownRequest"
+      responses:
+        "200":
+          description: Markdown generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DerDruckerMarkdownResponse"
+        "400":
+          description: Input payload invalid.
+        "502":
+          description: derDrucker service error.
+
+  /tools/derDrucker/generateTickets:
+    description: Produce base64-encoded PDF boarding passes via derDrucker.
+    post:
+      operationId: derDruckerGenerateTickets
+      summary: Generate PDF tickets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DerDruckerTicketRequest"
+      responses:
+        "200":
+          description: PDF tickets generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DerDruckerTicketResponse"
+        "400":
+          description: Input payload invalid.
+        "502":
+          description: derDrucker service error.
+
+  /tools/give_me_tools:
+    description: Inspect the proxy's tool catalog at runtime.
+    get:
+      operationId: giveMeTools
+      summary: Enumerate available proxy tools
+      responses:
+        "200":
+          description: Tool catalog retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolCatalogResponse"
+        "502":
+          description: Proxy error when fetching tool list.
+
+  /tools/datetime/interpret:
+    description: In-proxy interpretation fallback that mirrors TimePhraseParser.
+    post:
+      operationId: proxyDatetimeInterpret
+      summary: Interpret a natural-language date/time phrase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DatetimeInterpretRequest"
+      responses:
+        "200":
+          description: Phrase interpreted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatetimeInterpretResponse"
+        "400":
+          description: Missing phrase or unable to interpret.
+        "502":
+          description: Internal interpreter error.
+
 components:
   schemas:
     Offer:
@@ -296,4 +459,156 @@ components:
         arrivalTime:
           type: string
         aircraft:
+          type: string
+    AntiPhaserRequest:
+      type: object
+      required:
+        - phrase
+      properties:
+        phrase:
+          type: string
+          description: Natural-language travel date phrase (e.g., "next Friday at 18:00").
+        timezone:
+          type: string
+          description: IANA timezone (default UTC).
+        referenceDate:
+          type: string
+          description: ISO date used as the anchor for relative phrases.
+    AntiPhaserResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        isoDate:
+          type: string
+          description: Parsed ISO date (YYYY-MM-DD).
+        time:
+          type: string
+          description: Parsed time component (HH:MM) when present.
+        confidence:
+          type: number
+          format: float
+        explanation:
+          type: string
+        phrase:
+          type: string
+        timezone:
+          type: string
+    EscalatorUploadRequest:
+      type: object
+      required:
+        - type
+        - path
+        - sender
+      properties:
+        type:
+          type: string
+          description: Classification of the payload (for example `transcript`, `log`, `alert`).
+        path:
+          type: string
+          description: Folder prefix relative to the escalator root.
+        sender:
+          type: string
+          description: Identifier of the caller (alias, session, or tool).
+        fileName:
+          type: string
+          description: Optional explicit file name to use.
+        fileEncoding:
+          type: string
+          description: Encoding for `file` (for example `utf8` or `base64`).
+        contentType:
+          type: string
+          description: MIME type to apply to the stored object.
+        file:
+          type: string
+          description: Raw payload (use when `fileEncoding` is `utf8`).
+        fileBase64:
+          type: string
+          description: Base64 encoded payload (use for binary data).
+        fileData:
+          type: string
+          description: Alias for `fileBase64`.
+    EscalatorUploadResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        key:
+          type: string
+          description: Fully qualified S3 key that received the payload.
+        bytes:
+          type: integer
+        message:
+          type: string
+    DerDruckerMarkdownRequest:
+      type: object
+      description: Offer bundle produced by `recommend_destinations` or `search_flights`.
+      additionalProperties: true
+    DerDruckerMarkdownResponse:
+      type: object
+      properties:
+        markdown:
+          type: string
+          description: Generated Markdown content.
+        summary:
+          type: string
+        message:
+          type: string
+    DerDruckerTicketRequest:
+      type: object
+      description: Ticket generation payload (passenger, legs, template identifiers).
+      additionalProperties: true
+    DerDruckerTicketResponse:
+      type: object
+      properties:
+        pdf:
+          type: string
+          description: Base64 encoded PDF ticket bundle.
+        meta:
+          type: object
+        message:
+          type: string
+    ToolCatalogResponse:
+      type: object
+      properties:
+        tools:
+          type: array
+          items:
+            type: object
+            properties:
+              tool_name:
+                type: string
+              tool_description:
+                type: string
+              tool_route:
+                type: string
+        message:
+          type: string
+    DatetimeInterpretRequest:
+      type: object
+      required:
+        - phrase
+      properties:
+        phrase:
+          type: string
+          description: Natural-language phrase to interpret.
+        referenceDate:
+          type: string
+          description: ISO date used as reference for relative phrases.
+        timeZone:
+          type: string
+          description: IANA timezone.
+    DatetimeInterpretResponse:
+      type: object
+      properties:
+        phrase:
+          type: string
+        isoDate:
+          type: string
+        confidence:
+          type: number
+          format: float
+        explanation:
+          type: string
+        timeZone:
           type: string

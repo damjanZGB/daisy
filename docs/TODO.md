@@ -6,6 +6,8 @@
 - [ ] Coordinate with the Bedrock team to plan persona/memory updates once Lambda stability is verified.
 - [ ] (Continuous) After each deployment, run the automated stress suite and only promote when all scenarios pass and confidence is at least 95%; revert immediately on regression.
 - [ ] Backfill coordinates for airports missing from the OpenFlights dataset (~3.1k entries) so geolocation fallback covers every served city.
+- [ ] Wire "developer options" discovery flow so the agent can call `/tools/give_me_tools`, pick the right tool, and expose the developer menu items when enabled.
+- [ ] Implement developer-mode tool actions (stress test, replay, debug, improve instructions) once the proxy-side scaffolding is complete.
 
 ## NLP Feedback Loop Project
 - [x] Define structured logging for chat transcripts (store in S3/location suitable for replay).

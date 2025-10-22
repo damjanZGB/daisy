@@ -1689,9 +1689,11 @@ def _wrap_function(
 
 def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
     # NEW: detect IATA lookup path first
-    api_path = (event.get("apiPath") or "").strip().lower()
-    _log("Handling OpenAPI event", api_path=api_path or "<none>")
-    if api_path == "/iata/lookup":
+    api_path_raw = (event.get("apiPath") or "").strip()
+    api_path_lower = api_path_raw.lower()
+    http_method = (event.get("httpMethod") or "POST").upper()
+    _log("Handling OpenAPI event", api_path=api_path_lower or "<none>", method=http_method)
+    if api_path_lower == "/iata/lookup":
         props = (
             event.get("requestBody", {})
             .get("content", {})
@@ -1730,8 +1732,8 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         .get("properties", [])
     )
     body = _props_to_dict(props)
+    params = event.get("parameters")
     if not body:
-        params = event.get("parameters")
         _log("OpenAPI request body empty, using parameters", param_type=type(params).__name__)
         if isinstance(params, list) and params:
             sample = []
@@ -1742,13 +1744,143 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                 _log("OpenAPI parameters sample", sample=sample)
         body = _props_to_dict(params if isinstance(params, list) else [])
     _log("OpenAPI request body parsed", keys=list(body.keys()))
+    params_map = _props_to_dict(params if isinstance(params, list) else [])
+
+    if api_path_lower == "/tools/s3escalator":
+        allowed_keys = {
+            "type",
+            "path",
+            "sender",
+            "fileName",
+            "fileEncoding",
+            "contentType",
+            "file",
+            "fileBase64",
+            "fileData",
+        }
+        payload: Dict[str, Any] = {}
+        for key in allowed_keys:
+            val = body.get(key)
+            if val is None:
+                val = params_map.get(key)
+            if val is not None:
+                payload[key] = val
+        required_missing = [k for k in ("type", "path", "sender") if not str(payload.get(k) or "").strip()]
+        if required_missing:
+            _log("Escalator upload missing required fields", missing=required_missing)
+            return _wrap_openapi(
+                event,
+                400,
+                {"error": f"Missing required fields: {', '.join(required_missing)}"},
+            )
+        if not any(payload.get(k) for k in ("file", "fileBase64", "fileData")):
+            return _wrap_openapi(
+                event,
+                400,
+                {"error": "Provide a UTF-8 `file` or Base64 payload (`fileBase64`/`fileData`)."},
+            )
+        try:
+            result = _proxy_post("/tools/s3escalator", payload, timeout=15.0)
+        except Exception as exc:
+            _log("Escalator upload failed", error=str(exc))
+            return _wrap_openapi(event, 502, {"error": f"Upload failed: {exc}"})
+        key = result.get("key")
+        msg = result.get("message")
+        if not msg and key:
+            msg = f"Uploaded payload to {key}."
+        if not msg:
+            msg = "Upload completed successfully."
+        return _wrap_openapi(event, 200, {"message": msg, "result": result})
+
+    if api_path_lower == "/tools/give_me_tools":
+        try:
+            result = _proxy_get("/tools/give_me_tools", {}, timeout=4.0)
+        except Exception as exc:
+            _log("give_me_tools fetch failed", error=str(exc))
+            return _wrap_openapi(event, 502, {"error": f"Unable to retrieve tool catalog: {exc}"})
+        tools = result.get("tools") if isinstance(result, dict) else None
+        count = len(tools) if isinstance(tools, list) else 0
+        message = f"Proxy reports {count} tool(s)." if tools is not None else "Tool catalog retrieved."
+        return _wrap_openapi(event, 200, {"message": message, "result": result})
+
+    if api_path_lower == "/tools/antiphaser":
+        source = params_map if http_method == "GET" else body
+        phrase = str(source.get("phrase") or source.get("text") or "").strip()
+        if not phrase:
+            return _wrap_openapi(event, 400, {"error": "Provide 'phrase' to interpret."})
+        timezone = (source.get("timezone") or source.get("timeZone") or "").strip()
+        reference = (source.get("referenceDate") or source.get("reference") or "").strip()
+        payload = {"phrase": phrase}
+        if timezone:
+            payload["timezone"] = timezone
+        if reference:
+            payload["referenceDate"] = reference
+        try:
+            if http_method == "GET":
+                query = {k: v for k, v in payload.items() if v}
+                result = _proxy_get("/tools/antiPhaser", query, timeout=6.0)
+            else:
+                result = _proxy_post("/tools/antiPhaser", payload, timeout=6.0)
+        except Exception as exc:
+            _log("antiPhaser request failed", error=str(exc))
+            return _wrap_openapi(event, 502, {"error": f"antiPhaser failed: {exc}"})
+        iso = result.get("isoDate") or result.get("date")
+        message = f"Phrase '{phrase}' parsed to {iso}." if iso else f"Phrase '{phrase}' processed."
+        return _wrap_openapi(event, 200, {"message": message, "result": result})
+
+    if api_path_lower == "/tools/derdrucker/wannacandy":
+        if not body:
+            return _wrap_openapi(event, 400, {"error": "Provide offer payload to format."})
+        try:
+            result = _proxy_post("/tools/derDrucker/wannaCandy", body, timeout=12.0)
+        except Exception as exc:
+            _log("derDrucker wannaCandy failed", error=str(exc))
+            return _wrap_openapi(event, 502, {"error": f"Markdown generation failed: {exc}"})
+        message = result.get("summary") or result.get("message") or "Itinerary Markdown ready."
+        return _wrap_openapi(event, 200, {"message": message, "result": result})
+
+    if api_path_lower == "/tools/derdrucker/generatetickets":
+        if not body:
+            return _wrap_openapi(event, 400, {"error": "Provide ticket generation payload."})
+        try:
+            result = _proxy_post("/tools/derDrucker/generateTickets", body, timeout=20.0)
+        except Exception as exc:
+            _log("derDrucker generateTickets failed", error=str(exc))
+            return _wrap_openapi(event, 502, {"error": f"Ticket generation failed: {exc}"})
+        message = result.get("message") or "PDF tickets generated."
+        return _wrap_openapi(event, 200, {"message": message, "result": result})
+
+    if api_path_lower == "/tools/datetime/interpret":
+        phrase = str(body.get("phrase") or params_map.get("phrase") or "").strip()
+        if not phrase:
+            return _wrap_openapi(event, 400, {"error": "Provide 'phrase' to interpret."})
+        payload = {"phrase": phrase}
+        reference = body.get("referenceDate") or params_map.get("referenceDate")
+        timezone = (
+            body.get("timeZone")
+            or body.get("timezone")
+            or params_map.get("timeZone")
+            or params_map.get("timezone")
+        )
+        if reference:
+            payload["referenceDate"] = reference
+        if timezone:
+            payload["timeZone"] = timezone
+        try:
+            result = _proxy_post("/tools/datetime/interpret", payload, timeout=6.0)
+        except Exception as exc:
+            _log("proxy datetime interpret failed", error=str(exc))
+            return _wrap_openapi(event, 502, {"error": f"Datetime interpretation failed: {exc}"})
+        iso = result.get("isoDate")
+        message = f"Phrase '{phrase}' interpreted as {iso}." if iso else f"Phrase '{phrase}' interpreted."
+        return _wrap_openapi(event, 200, {"message": message, "result": result})
+
     normalized = _normalize_flight_request_fields(body)
     had_origin_before_context = bool((normalized or {}).get("origin"))
     normalized = _apply_contextual_defaults(normalized, event)
     if normalized:
         _log("OpenAPI normalized flight fields", normalized=normalized)
-    api_path = (event.get("apiPath") or "").strip()
-    if api_path == "/tools/iata/lookup":
+    if api_path_lower == "/tools/iata/lookup":
         term = body.get("term")
         if not term or (isinstance(term, str) and term.strip().lower() in {"nearest airport", "closest airport", "nearest", "closest", "nearest airport to my location", "closest airport to me"}):
             # Prefer default_origin (IATA code) over any label when substituting 'nearest/closest'
@@ -1776,7 +1908,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         _log("OpenAPI proxy IATA lookup success", term=term, matches=len(matches))
         return _wrap_openapi(event, 200, {"matches": matches})
 
-    if api_path == "/tools/amadeus/dates":
+    if api_path_lower == "/tools/amadeus/dates":
         origin = (
             body.get("origin")
             or body.get("originLocationCode")
@@ -1893,10 +2025,10 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             })
         out = resp if isinstance(resp, dict) else {"raw": resp}
         if isinstance(out, dict):
-            out["priced"] = priced
+                out["priced"] = priced
         return _wrap_openapi(event, 200, out)
 
-    if api_path == "/tools/amadeus/flex":
+    if api_path_lower == "/tools/amadeus/flex":
         origin = (
             body.get("origin")
             or body.get("originLocationCode")
@@ -2023,16 +2155,6 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             "provider": "Amadeus Flight Cheapest Date + Flight Offers Search v2 (LH-only)",
         })
 
-    if api_path == "/tools/datetime/interpret":
-        _log(
-            "Datetime interpret endpoint deprecated",
-            note="Use bedrock-time-tools action group instead.",
-        )
-        return _wrap_openapi(
-            event,
-            410,
-            {"error": "Datetime parsing is handled by the TimePhraseParser action group Lambda."},
-        )
     raw_origin = normalized.get("origin")
     raw_destination = normalized.get("destination")
     origin, origin_suggestions = _resolve_iata_code(raw_origin)
