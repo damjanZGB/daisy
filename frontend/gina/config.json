@@ -1,7 +1,8 @@
 {
-  "apiUrl": "https://gina-daisy.onrender.com/invoke",
-  "variant": "gina",
-  "headerSubtitle": "Agent Chat \u00b7 UI Test",
+  "apiUrl": "https://origin-daisy.onrender.com/invoke",
+  "variant": "origin",
+  "headerSubtitle": "Agent Chat · UI Test",
   "initialAssistantText": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
-  "snitchUploaderUrl": "https://gina-daisy.onrender.com/tools/s3escalator"
+  "snitchUploaderUrl": "https://s3escalator-daisy.onrender.com/tools/s3escalator",
+  "snitchUploaderToken": "s3escalator"
 }

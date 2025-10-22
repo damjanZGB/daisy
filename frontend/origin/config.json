@@ -1,7 +1,7 @@
 {
   "apiUrl": "https://origin-daisy.onrender.com/invoke",
   "variant": "origin",
-  "headerSubtitle": "Agent Chat \u00b7 UI Test",
+  "headerSubtitle": "Agent Chat · UI Test",
   "initialAssistantText": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
   "snitchUploaderUrl": "https://origin-daisy.onrender.com/tools/s3escalator"
 }
