@@ -55,6 +55,20 @@ function normalizeOriginHost(origin) {
     return origin.replace(/^https?:\/\//i, "").replace(/\/$/, "");
   }
 }
+function normalizeMicroserviceBase(raw) {
+  const trimmed = String(raw || "").trim();
+  if (!trimmed) return "";
+  try {
+    const urlObj = new URL(trimmed);
+    const origin = urlObj.origin;
+    const pathname = urlObj.pathname && urlObj.pathname !== "/"
+      ? urlObj.pathname.replace(/\/+$/, "")
+      : "";
+    return `${origin}${pathname}`;
+  } catch (_) {
+    return "";
+  }
+}
 const MAX_BODY_SIZE = 1024 * 1024; // 1 MiB
 const TRANSCRIPT_BUCKET = (process.env.TRANSCRIPT_BUCKET || "").trim();
 const TRANSCRIPT_PREFIX = (process.env.TRANSCRIPT_PREFIX || "").trim();
@@ -64,6 +78,13 @@ const TRANSCRIPT_UPLOADER_TOKEN = (process.env.TRANSCRIPT_UPLOADER_TOKEN || "").
 const transcriptS3Client = TRANSCRIPT_BUCKET
   ? new S3Client({ region: REGION, maxAttempts: 3 })
   : null;
+const MICROSERVICE_TIMEOUT_MS = (() => {
+  const raw = Number(process.env.MICROSERVICE_TIMEOUT_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 15000;
+})();
+const ANTI_PHASER_BASE_URL = normalizeMicroserviceBase(process.env.ANTI_PHASER_URL || process.env.ANTIPHASER_URL || "");
+const S3_ESCALATOR_BASE_URL = normalizeMicroserviceBase(process.env.S3_ESCALATOR_URL || process.env.TRANSCRIPT_UPLOADER_URL || "");
+const DER_DRUCKER_BASE_URL = normalizeMicroserviceBase(process.env.DER_DRUCKER_URL || "");
 const TOOL_LIST = [
   {
     tool_name: "give_me_tools",
@@ -282,6 +303,128 @@ async function readBody(req) {
       reject(error);
     });
   });
+}
+
+function buildMicroserviceUrl(base, path, search = "") {
+  if (!base) return "";
+  const normalizedBase = base.replace(/\/+$/, "");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${normalizedBase}${normalizedPath}${search || ""}`;
+}
+
+function createForwardHeaders(sourceHeaders, includeBody) {
+  const headers = {};
+  const lowerKeys = new Set();
+  for (const [key, value] of Object.entries(sourceHeaders || {})) {
+    if (value === undefined || value === null) continue;
+    const lower = key.toLowerCase();
+    if (["host", "connection", "content-length", "accept-encoding"].includes(lower)) continue;
+    if (lower.startsWith("sec-")) continue;
+    if (lower === "origin" || lower === "referer") continue;
+    const stringValue = Array.isArray(value) ? value.join(", ") : String(value);
+    if (!stringValue) continue;
+    headers[key] = stringValue;
+    lowerKeys.add(lower);
+  }
+  if (!lowerKeys.has("accept")) {
+    headers["Accept"] = "application/json";
+    lowerKeys.add("accept");
+  }
+  if (includeBody && !lowerKeys.has("content-type")) {
+    headers["Content-Type"] = "application/json";
+  }
+  return headers;
+}
+
+async function proxyMicroserviceRequest({
+  req,
+  res,
+  requestId,
+  baseUrl,
+  pathname,
+  search,
+  microName,
+}) {
+  if (!baseUrl) {
+    res.statusCode = 503;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ error: "microservice_unavailable", service: microName }));
+    logger.warn(`[${requestId}] ${microName} base URL not configured`);
+    return;
+  }
+  const targetUrl = buildMicroserviceUrl(baseUrl, pathname, search);
+  if (!targetUrl) {
+    res.statusCode = 503;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ error: "microservice_unavailable", service: microName }));
+    logger.warn(`[${requestId}] ${microName} target URL could not be derived`, { baseUrl, pathname, search });
+    return;
+  }
+
+  const method = (req.method || "GET").toUpperCase();
+  const allowBody = method !== "GET" && method !== "HEAD";
+  let bodyText = null;
+  if (allowBody) {
+    let bodyObj;
+    try {
+      bodyObj = await readBody(req);
+    } catch (error) {
+      const status = error.message === "Payload too large" ? 413 : 400;
+      res.statusCode = status;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ error: error.message || "invalid_body" }));
+      logger.warn(`[${requestId}] ${microName} body parse failed`, { message: error.message });
+      return;
+    }
+    bodyText = JSON.stringify(bodyObj);
+  }
+
+  const headers = createForwardHeaders(req.headers, !!bodyText);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), MICROSERVICE_TIMEOUT_MS);
+
+  let upstream;
+  try {
+    upstream = await fetch(targetUrl, {
+      method,
+      headers,
+      body: allowBody ? bodyText : undefined,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    clearTimeout(timer);
+    const status = error && error.name === "AbortError" ? 504 : 502;
+    res.statusCode = status;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ error: "microservice_unreachable", service: microName }));
+    logger.error(`[${requestId}] ${microName} proxy error`, { message: error?.message || String(error), url: targetUrl });
+    return;
+  } finally {
+    clearTimeout(timer);
+  }
+
+  const responseContentType = upstream.headers.get("content-type") || "application/json";
+  res.statusCode = upstream.status;
+  if (method === "HEAD") {
+    res.setHeader("Content-Type", responseContentType);
+    res.end();
+    logger[upstream.ok ? "info" : "warn"](`[${requestId}] ${microName} proxy ${upstream.ok ? "succeeded" : "failed"}`, {
+      status: upstream.status,
+    });
+    return;
+  }
+  const responseBody = await upstream.text();
+  res.setHeader("Content-Type", responseContentType);
+  res.end(responseBody);
+  if (upstream.ok) {
+    logger.info(`[${requestId}] ${microName} proxy succeeded`, { status: upstream.status });
+  } else {
+    let detail = responseBody;
+    if (detail && detail.length > 400) {
+      detail = `${detail.slice(0, 400)}…`;
+    }
+    logger.warn(`[${requestId}] ${microName} proxy failed`, { status: upstream.status, detail });
+  }
 }
 
 const SLUG_PATTERN = /[^a-z0-9-]+/g;
@@ -1353,6 +1496,58 @@ const server = http.createServer(async (req, res) => {
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify(normalized));
       logger.info(`[${requestId}] Amadeus search succeeded`);
+      return;
+    }
+
+    if ((req.method === "GET" || req.method === "POST" || req.method === "HEAD") && pathname === "/tools/antiPhaser") {
+      await proxyMicroserviceRequest({
+        req,
+        res,
+        requestId,
+        baseUrl: ANTI_PHASER_BASE_URL,
+        pathname,
+        search: parsedUrl.search,
+        microName: "antiPhaser",
+      });
+      return;
+    }
+
+    if (req.method === "POST" && pathname === "/tools/s3escalator") {
+      await proxyMicroserviceRequest({
+        req,
+        res,
+        requestId,
+        baseUrl: S3_ESCALATOR_BASE_URL,
+        pathname,
+        search: parsedUrl.search,
+        microName: "s3escalator",
+      });
+      return;
+    }
+
+    if (req.method === "POST" && pathname === "/tools/derDrucker/wannaCandy") {
+      await proxyMicroserviceRequest({
+        req,
+        res,
+        requestId,
+        baseUrl: DER_DRUCKER_BASE_URL,
+        pathname,
+        search: parsedUrl.search,
+        microName: "derDrucker",
+      });
+      return;
+    }
+
+    if (req.method === "POST" && pathname === "/tools/derDrucker/generateTickets") {
+      await proxyMicroserviceRequest({
+        req,
+        res,
+        requestId,
+        baseUrl: DER_DRUCKER_BASE_URL,
+        pathname,
+        search: parsedUrl.search,
+        microName: "derDrucker",
+      });
       return;
     }
 

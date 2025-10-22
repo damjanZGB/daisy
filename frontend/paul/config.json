@@ -1,6 +1,7 @@
 {
   "apiUrl": "https://paul-daisy.onrender.com/invoke",
   "variant": "paul",
-  "headerSubtitle": "Agent Chat · UI Test",
-  "initialAssistantText": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!"
+  "headerSubtitle": "Agent Chat \u00b7 UI Test",
+  "initialAssistantText": "Lufthansa Group Inspirational AI flight assistant. Nice to meet you!",
+  "snitchUploaderUrl": "https://paul-daisy.onrender.com/tools/s3escalator"
 }
