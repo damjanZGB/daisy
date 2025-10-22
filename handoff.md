@@ -121,6 +121,7 @@ Open Items (handoff)
 - DONE: Implement proxy fallback to surface TEXT from functionResponse when streamed text is empty/heading-only; removed frontend fallback.
 - DONE: Extend replay tooling to count tool calls from CloudWatch and flag placeholder patterns.
 - TODO: Wire the new developer-mode menu (stress test, replay, debug, instructions) once proxy/CLI scaffolding lands and teach the agent to call `/tools/give_me_tools` for self-discovery before invoking a tool.
+- TODO: Bedrock currently rejects any update to the `daisy_in_action` OpenAPI schema (`ValidationException: Failed to create OpenAPI 3 model...`) even when resubmitting the previously accepted contract. Open a support ticket or re-export the schema directly from the console before trying again.
 
 
 Proxy Best Practices (implemented)
