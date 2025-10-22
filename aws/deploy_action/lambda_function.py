@@ -2250,61 +2250,63 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 take_conn = min(len(conn_opts), max_total - take_direct)
                 payload["options"] = (direct_opts[:take_direct] + conn_opts[:take_conn])
                 lines = _build_recommendation_message(direct_opts, conn_opts, take_direct, take_conn, currency)
-                    offer = opt.get("offer") or {}
-                    price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
-                    dep = offer.get("departureAirport") or "?"
-                    arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
-                    dep_time = offer.get("departureTime") or "?"
-                    dur = offer.get("duration") or "?"
-                    label = opt.get("label") or "Option"
-                    pitch = opt.get("pitch") or ""
-                    stops = opt.get("stops")
-                    stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
-                    carriers = offer.get("carriers") or []
-                    carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
-                    # Header line with bold price
-                    header = f"{idx}) {label} - {dep} -> {arr} | {opt.get('date')} | {stops_txt} | {dur} | **{price}**"
-                    # Rebuild header to include first carrier/flight and departure HH:MM when available
-                    try:
-                        segs = offer.get("segments")
-                        seg0 = segs[0] if isinstance(segs, list) and segs else None
-                        c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
-                        fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
-                        # dep_time may be full ISO; convert to HH:MM
-                        dt0 = _hhmm((seg0.get("departureTime") if isinstance(seg0, dict) else None) or dep_time)
-                        c0fn = f"{c0}{fn0}".strip() if c0 or fn0 else (carriers[0] if isinstance(carriers, list) and carriers else "")
-                        header_parts = [
-                            f"{idx}) {label} - {dep} {dt0}".strip(),
-                            "->",
-                            f"{arr}",
-                            "|",
-                            f"{opt.get('date')}",
-                            "|",
-                            f"{stops_txt}",
-                            "|",
-                            f"{dur}",
-                        ]
-                        if c0fn:
-                            header_parts.extend(["|", c0fn])
-                        header_parts.extend(["|", f"**{price}**"])
-                        header = " ".join(str(p) for p in header_parts if str(p))
-                    except Exception:
-                        pass
-                    lines.append(header)
-                    if carriers_txt:
-                        lines.append(f"    - Carriers: {carriers_txt}")
-                    if RECOMMENDER_VERBOSE and isinstance(offer.get("segments"), list) and offer["segments"]:
-                        # Show up to 3 segments as THEN lines
-                        for s in offer["segments"][:3]:
-                            c = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
-                            fn = s.get("flightNumber") or ""
-                            s_dep = s.get("from") or "?"
-                            s_arr = s.get("to") or "?"
-                            s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
-                            s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
-                            lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} -> {s_arr} {s_at}")
-                    if pitch:
-                        lines.append(f"    - {pitch}")
+                if lines:
+                    for idx, opt in enumerate(options, start=1):
+                        offer = opt.get("offer") or {}
+                        price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
+                        dep = offer.get("departureAirport") or "?"
+                        arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
+                        dep_time = offer.get("departureTime") or "?"
+                        dur = offer.get("duration") or "?"
+                        label = opt.get("label") or "Option"
+                        pitch = opt.get("pitch") or ""
+                        stops = opt.get("stops")
+                        stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                        carriers = offer.get("carriers") or []
+                        carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
+                        # Header line with bold price
+                        header = f"{idx}) {label} - {dep} -> {arr} | {opt.get('date')} | {stops_txt} | {dur} | **{price}**"
+                        # Rebuild header to include first carrier/flight and departure HH:MM when available
+                        try:
+                            segs = offer.get("segments")
+                            seg0 = segs[0] if isinstance(segs, list) and segs else None
+                            c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                            fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                            # dep_time may be full ISO; convert to HH:MM
+                            dt0 = _hhmm((seg0.get("departureTime") if isinstance(seg0, dict) else None) or dep_time)
+                            c0fn = f"{c0}{fn0}".strip() if c0 or fn0 else (carriers[0] if isinstance(carriers, list) and carriers else "")
+                            header_parts = [
+                                f"{idx}) {label} - {dep} {dt0}".strip(),
+                                "->",
+                                f"{arr}",
+                                "|",
+                                f"{opt.get('date')}",
+                                "|",
+                                f"{stops_txt}",
+                                "|",
+                                f"{dur}",
+                            ]
+                            if c0fn:
+                                header_parts.extend(["|", c0fn])
+                            header_parts.extend(["|", f"**{price}**"])
+                            header = " ".join(str(p) for p in header_parts if str(p))
+                        except Exception:
+                            pass
+                        lines.append(header)
+                        if carriers_txt:
+                            lines.append(f"    - Carriers: {carriers_txt}")
+                        if RECOMMENDER_VERBOSE and isinstance(offer.get("segments"), list) and offer["segments"]:
+                            # Show up to 3 segments as THEN lines
+                            for s in offer["segments"][:3]:
+                                c = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
+                                fn = s.get("flightNumber") or ""
+                                s_dep = s.get("from") or "?"
+                                s_arr = s.get("to") or "?"
+                                s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
+                                s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
+                                lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} -> {s_arr} {s_at}")
+                        if pitch:
+                            lines.append(f"    - {pitch}")
                 if lines:
                     closing = "Shall I hold Option 1 for 15 minutes or adjust dates?"
                     m = "\n".join(lines + ["", closing])
