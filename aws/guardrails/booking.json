@@ -1,8 +1,8 @@
 {
   "name": "daisy-travel-guardrail",
   "description": "Travel assistant guardrail: blocks abuse, masks PII (incl. PNR/e-ticket), filters profanity, and prevents ungrounded responses.",
-  "blockedInputMessaging": "I can’t process that request as provided.",
-  "blockedOutputsMessaging": "I can’t share that content. I can still help with flights, dates, and fares.",
+  "blockedInputMessaging": "I can\u00e2\u20ac\u2122t process that request as provided.",
+  "blockedOutputsMessaging": "I can\u00e2\u20ac\u2122t share that content. I can still help with flights, dates, and fares.",
   "contentPolicyConfig": {
     "filtersConfig": [
       {
@@ -13,8 +13,12 @@
         "outputAction": "BLOCK",
         "inputEnabled": true,
         "outputEnabled": true,
-        "inputModalities": ["TEXT"],
-        "outputModalities": ["TEXT"]
+        "inputModalities": [
+          "TEXT"
+        ],
+        "outputModalities": [
+          "TEXT"
+        ]
       },
       {
         "type": "INSULTS",
@@ -24,8 +28,12 @@
         "outputAction": "BLOCK",
         "inputEnabled": true,
         "outputEnabled": true,
-        "inputModalities": ["TEXT"],
-        "outputModalities": ["TEXT"]
+        "inputModalities": [
+          "TEXT"
+        ],
+        "outputModalities": [
+          "TEXT"
+        ]
       },
       {
         "type": "SEXUAL",
@@ -35,8 +43,12 @@
         "outputAction": "BLOCK",
         "inputEnabled": true,
         "outputEnabled": true,
-        "inputModalities": ["TEXT"],
-        "outputModalities": ["TEXT"]
+        "inputModalities": [
+          "TEXT"
+        ],
+        "outputModalities": [
+          "TEXT"
+        ]
       },
       {
         "type": "VIOLENCE",
@@ -46,8 +58,12 @@
         "outputAction": "BLOCK",
         "inputEnabled": true,
         "outputEnabled": true,
-        "inputModalities": ["TEXT"],
-        "outputModalities": ["TEXT"]
+        "inputModalities": [
+          "TEXT"
+        ],
+        "outputModalities": [
+          "TEXT"
+        ]
       },
       {
         "type": "MISCONDUCT",
@@ -57,28 +73,38 @@
         "outputAction": "BLOCK",
         "inputEnabled": true,
         "outputEnabled": true,
-        "inputModalities": ["TEXT"],
-        "outputModalities": ["TEXT"]
+        "inputModalities": [
+          "TEXT"
+        ],
+        "outputModalities": [
+          "TEXT"
+        ]
       },
       {
         "type": "PROMPT_ATTACK",
         "inputStrength": "MEDIUM",
-        "outputStrength": "MEDIUM",
+        "outputStrength": "NONE",
         "inputAction": "BLOCK",
         "outputAction": "BLOCK",
         "inputEnabled": true,
         "outputEnabled": true,
-        "inputModalities": ["TEXT"],
-        "outputModalities": ["TEXT"]
+        "inputModalities": [
+          "TEXT"
+        ],
+        "outputModalities": [
+          "TEXT"
+        ]
       }
     ],
-    "tierConfig": { "tierName": "CLASSIC" }
+    "tierConfig": {
+      "tierName": "CLASSIC"
+    }
   },
   "contextualGroundingPolicyConfig": {
     "filtersConfig": [
       {
         "type": "RELEVANCE",
-        "threshold": 0.70,
+        "threshold": 0.7,
         "action": "BLOCK",
         "enabled": true
       },
@@ -92,23 +118,83 @@
   },
   "sensitiveInformationPolicyConfig": {
     "piiEntitiesConfig": [
-      { "type": "NAME", "action": "ANONYMIZE", "inputEnabled": true, "outputEnabled": true },
-      { "type": "EMAIL", "action": "ANONYMIZE", "inputEnabled": true, "outputEnabled": true },
-      { "type": "PHONE", "action": "ANONYMIZE", "inputEnabled": true, "outputEnabled": true },
-      { "type": "ADDRESS", "action": "ANONYMIZE", "inputEnabled": true, "outputEnabled": true },
-      { "type": "US_PASSPORT_NUMBER", "action": "ANONYMIZE", "inputEnabled": true, "outputEnabled": true },
-      { "type": "DRIVER_ID", "action": "ANONYMIZE", "inputEnabled": true, "outputEnabled": true },
-      { "type": "CREDIT_DEBIT_CARD_NUMBER", "action": "BLOCK", "inputEnabled": true, "outputEnabled": true },
-      { "type": "INTERNATIONAL_BANK_ACCOUNT_NUMBER", "action": "BLOCK", "inputEnabled": true, "outputEnabled": true },
-      { "type": "SWIFT_CODE", "action": "BLOCK", "inputEnabled": true, "outputEnabled": true },
-      { "type": "IP_ADDRESS", "action": "ANONYMIZE", "inputEnabled": true, "outputEnabled": true },
-      { "type": "AWS_ACCESS_KEY", "action": "BLOCK", "inputEnabled": true, "outputEnabled": true },
-      { "type": "AWS_SECRET_KEY", "action": "BLOCK", "inputEnabled": true, "outputEnabled": true }
+      {
+        "type": "NAME",
+        "action": "ANONYMIZE",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "EMAIL",
+        "action": "ANONYMIZE",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "PHONE",
+        "action": "ANONYMIZE",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "ADDRESS",
+        "action": "ANONYMIZE",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "US_PASSPORT_NUMBER",
+        "action": "ANONYMIZE",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "DRIVER_ID",
+        "action": "ANONYMIZE",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "CREDIT_DEBIT_CARD_NUMBER",
+        "action": "BLOCK",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "INTERNATIONAL_BANK_ACCOUNT_NUMBER",
+        "action": "BLOCK",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "SWIFT_CODE",
+        "action": "BLOCK",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "IP_ADDRESS",
+        "action": "ANONYMIZE",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "AWS_ACCESS_KEY",
+        "action": "BLOCK",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "AWS_SECRET_KEY",
+        "action": "BLOCK",
+        "inputEnabled": true,
+        "outputEnabled": true
+      }
     ],
     "regexesConfig": [
       {
         "name": "PNR",
-        "description": "Airline record locator (PNR) – 6 alphanumeric characters",
+        "description": "Airline record locator (PNR) \u00e2\u20ac\u201c 6 alphanumeric characters",
         "pattern": "\\b[A-Z0-9]{6}\\b",
         "action": "ANONYMIZE",
         "inputEnabled": true,
@@ -130,7 +216,10 @@
         "name": "InvestmentAdvice",
         "definition": "Financial investment recommendations or portfolio advice unrelated to travel bookings.",
         "type": "DENY",
-        "examples": ["Which stock should I buy?", "Invest my savings"],
+        "examples": [
+          "Which stock should I buy?",
+          "Invest my savings"
+        ],
         "inputAction": "BLOCK",
         "outputAction": "BLOCK",
         "inputEnabled": true,
@@ -140,7 +229,10 @@
         "name": "LegalAdvice",
         "definition": "Formal legal advice or interpretation of laws unrelated to travel policies.",
         "type": "DENY",
-        "examples": ["Write a legal contract", "Advise me on a lawsuit"],
+        "examples": [
+          "Write a legal contract",
+          "Advise me on a lawsuit"
+        ],
         "inputAction": "BLOCK",
         "outputAction": "BLOCK",
         "inputEnabled": true,
@@ -150,7 +242,10 @@
         "name": "MedicalAdvice",
         "definition": "Diagnosis or treatment recommendations unrelated to general travel health info.",
         "type": "DENY",
-        "examples": ["Prescribe medication", "Treat my condition"],
+        "examples": [
+          "Prescribe medication",
+          "Treat my condition"
+        ],
         "inputAction": "BLOCK",
         "outputAction": "BLOCK",
         "inputEnabled": true,
@@ -170,7 +265,13 @@
     ]
   },
   "tags": [
-    { "key": "app", "value": "daisy" },
-    { "key": "env", "value": "prod" }
+    {
+      "key": "app",
+      "value": "daisy"
+    },
+    {
+      "key": "env",
+      "value": "prod"
+    }
   ]
 }
