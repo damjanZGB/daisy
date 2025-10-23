@@ -2852,8 +2852,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                         )
                     # Cache a minimal selection map in session for smoother follow-ups.
                     try:
-                        sess = event.setdefault("sessionAttributes", {})
-                        sess["last_recommendation"] = {
+                        snapshot = {
                             "origin": origin_code,
                             "month": month_text or month_range_text,
                             "options": [
@@ -2868,8 +2867,16 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                                 for o in options[:3]
                             ],
                         }
-                    except Exception:
-                        pass
+                        encoded_snapshot = json.dumps(snapshot, ensure_ascii=False)
+                        # Bedrock session attributes require string values; guard against oversized payloads.
+                        encoded_bytes = encoded_snapshot.encode("utf-8")
+                        if len(encoded_bytes) > 2000:
+                            encoded_snapshot = encoded_bytes[:2000].decode("utf-8", "ignore")
+                        sess = dict(event.get("sessionAttributes") or {})
+                        sess["last_recommendation"] = encoded_snapshot
+                        event["sessionAttributes"] = sess
+                    except Exception as attr_err:
+                        _log("Failed to cache recommendation snapshot", error=str(attr_err))
                 # Return minimal options only (avoid large payloads)
                 def _brief(o: Dict[str, Any]) -> Dict[str, Any]:
                     off = o.get("offer") or {}
