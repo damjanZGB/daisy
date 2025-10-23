@@ -1,4 +1,4 @@
-// frontend/persona.mjs — capture persona answers and attach to invoke payloads
+// frontend/persona.js — capture persona answers and attach to /invoke payloads
 const LS_KEY = "daisy.persona";
 let personaState = null;
 
