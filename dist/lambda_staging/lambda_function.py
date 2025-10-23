@@ -47,6 +47,7 @@ RECOMMENDER_VERBOSE = (os.getenv("RECOMMENDER_VERBOSE") or "true").strip().lower
 RECOMMENDER_MAX_OPTIONS = int((os.getenv("RECOMMENDER_MAX_OPTIONS") or "10").strip() or 10)
 # If the formatted message text exceeds this many bytes, switch to a compact format (limit options, drop THEN lines).
 RECOMMENDER_MAX_TEXT_BYTES = int((os.getenv("RECOMMENDER_MAX_TEXT_BYTES") or "4000").strip() or 4000)
+SESSION_ATTR_VALUE_MAX_BYTES = int((os.getenv("SESSION_ATTR_VALUE_MAX_BYTES") or "2000").strip() or 2000)
 
 # --------------- Destination Catalog (recommender) ----------------
 _DEST_CATALOG_PATHS = [
@@ -455,6 +456,42 @@ def _safe_detail(value: Any, *, limit: int = 400) -> str:
     if len(text) > limit:
         return text[: limit - 3] + "..."
     return text
+
+
+def _session_attr_text(value: Any, *, key: Optional[str] = None, attr_type: str = "session") -> str:
+    """Serialize session attribute values to strings and trim to the configured byte budget."""
+    if isinstance(value, str):
+        text = value
+    else:
+        try:
+            text = json.dumps(value, default=str, ensure_ascii=False)
+        except Exception:
+            text = str(value)
+    try:
+        encoded = text.encode("utf-8")
+    except Exception:
+        encoded = str(text).encode("utf-8", "ignore")
+    if len(encoded) > SESSION_ATTR_VALUE_MAX_BYTES:
+        _log(
+            "Session attribute truncated",
+            attrType=attr_type,
+            key=key,
+            originalBytes=len(encoded),
+            maxBytes=SESSION_ATTR_VALUE_MAX_BYTES,
+        )
+        text = encoded[:SESSION_ATTR_VALUE_MAX_BYTES].decode("utf-8", "ignore")
+    return text
+
+
+def _sanitize_session_attributes(attrs: Optional[Dict[str, Any]], *, attr_type: str = "session") -> Dict[str, str]:
+    if not isinstance(attrs, dict):
+        return {}
+    sanitized: Dict[str, str] = {}
+    for key, value in attrs.items():
+        key_str = str(key)
+        text = _session_attr_text(value, key=key_str, attr_type=attr_type)
+        sanitized[key_str] = text
+    return sanitized
 
 
 class InvocationLogger:
@@ -1608,6 +1645,10 @@ def _wrap_openapi(
         except Exception:
             payload = body_obj
     response_body = {"application/json": {"body": json.dumps(payload)}}
+    session_attrs = _sanitize_session_attributes(event.get("sessionAttributes"), attr_type="session")
+    prompt_attrs = _sanitize_session_attributes(event.get("promptSessionAttributes"), attr_type="prompt")
+    event["sessionAttributes"] = session_attrs
+    event["promptSessionAttributes"] = prompt_attrs
     action_response = {
         "actionGroup": event.get("actionGroup"),
         "apiPath": event.get("apiPath"),
@@ -1619,8 +1660,8 @@ def _wrap_openapi(
     return {
         "messageVersion": "1.0",
         "response": action_response,
-        "sessionAttributes": event.get("sessionAttributes", {}),
-        "promptSessionAttributes": event.get("promptSessionAttributes", {}),
+        "sessionAttributes": session_attrs,
+        "promptSessionAttributes": prompt_attrs,
     }
 
 
@@ -1667,6 +1708,10 @@ def _wrap_function(
         event.get("actionGroup")
         or (action_group_reco if func_for_group == "recommend_destinations" else action_group_default)
     )
+    session_attrs = _sanitize_session_attributes(event.get("sessionAttributes"), attr_type="session")
+    prompt_attrs = _sanitize_session_attributes(event.get("promptSessionAttributes"), attr_type="prompt")
+    event["sessionAttributes"] = session_attrs
+    event["promptSessionAttributes"] = prompt_attrs
     return {
         "messageVersion": "1.0",
         "response": {
@@ -1679,8 +1724,8 @@ def _wrap_function(
                 }
             },
         },
-        "sessionAttributes": event.get("sessionAttributes", {}),
-        "promptSessionAttributes": event.get("promptSessionAttributes", {}),
+        "sessionAttributes": session_attrs,
+        "promptSessionAttributes": prompt_attrs,
     }
 
 
@@ -2446,8 +2491,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         if not offers and alternatives:
             # Persist alternatives in session for later confirmation
             try:
-                sess = event.setdefault("sessionAttributes", {})
-                sess["last_alternatives"] = [
+                alt_snapshot = [
                     {
                         "date": a.get("date"),
                         "price": (a.get("offer") or {}).get("totalPrice"),
@@ -2457,6 +2501,13 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                     }
                     for a in alternatives[: max(1, min(10, RECOMMENDER_MAX_OPTIONS))]
                 ]
+                sess = dict(event.get("sessionAttributes") or {})
+                sess["last_alternatives"] = _session_attr_text(
+                    alt_snapshot,
+                    key="last_alternatives",
+                    attr_type="session",
+                )
+                event["sessionAttributes"] = sess
             except Exception:
                 pass
             # Compact, sectioned alternatives for display
@@ -2867,11 +2918,11 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                                 for o in options[:3]
                             ],
                         }
-                        encoded_snapshot = json.dumps(snapshot, ensure_ascii=False)
-                        # Bedrock session attributes require string values; guard against oversized payloads.
-                        encoded_bytes = encoded_snapshot.encode("utf-8")
-                        if len(encoded_bytes) > 2000:
-                            encoded_snapshot = encoded_bytes[:2000].decode("utf-8", "ignore")
+                        encoded_snapshot = _session_attr_text(
+                            snapshot,
+                            key="last_recommendation",
+                            attr_type="session",
+                        )
                         sess = dict(event.get("sessionAttributes") or {})
                         sess["last_recommendation"] = encoded_snapshot
                         event["sessionAttributes"] = sess
