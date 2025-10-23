@@ -911,7 +911,7 @@
         setMessages(m => [...m, userMsg]);
         setBusy(true);
         try {
-          const payload = { inputText: text, sessionId };
+          let payload = { inputText: text, sessionId };
           const labelText = locationInfo?.label;
           if (labelText && !/detecting/i.test(labelText)) {
             payload.locationLabel = labelText;
@@ -1025,6 +1025,7 @@
  </body>
 
  </html>
+
 
 
 
