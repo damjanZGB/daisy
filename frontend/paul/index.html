@@ -59,8 +59,14 @@
 </head>
 
 <body class="bg-[#0f172a] text-slate-100 min-h-screen">
+  <script type="module">
+    import { initPersona, setPersonaFromQuestionnaire, attachPersona, clearPersona } from "../persona.mjs";
+    window.DaisyPersona = { initPersona, setPersonaFromQuestionnaire, attachPersona, clearPersona };
+    initPersona();
+  </script>
   <div id="root"></div>
   <script type="text/babel">
+    const Persona = window.DaisyPersona || {};
     const CONFIG = (() => {
       try {
         const request = new XMLHttpRequest();
@@ -894,6 +900,9 @@
       const send = async () => {
         const text = input.trim();
         if (!text || busy) return;
+        if (Persona.setPersonaFromQuestionnaire) {
+          Persona.setPersonaFromQuestionnaire(text);
+        }
         if (/\bsnitch\b/i.test(text)) {
           snitchPendingRef.current = true;
         }
@@ -922,6 +931,9 @@
           if (typeof locationInfo?.lat === 'number' && typeof locationInfo?.lon === 'number') {
             payload.locationLat = locationInfo.lat;
             payload.locationLon = locationInfo.lon;
+          }
+          if (Persona.attachPersona) {
+            payload = Persona.attachPersona(payload);
           }
           const res = await fetch(apiUrl, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)

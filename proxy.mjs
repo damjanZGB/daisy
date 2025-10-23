@@ -6,6 +6,7 @@ import express from "express";
 import fs from "node:fs";
 import path from "node:path";
 import { BedrockAgentRuntimeClient, InvokeAgentCommand } from "@aws-sdk/client-bedrock-agent-runtime";
+import { toSessionAttributes } from "./backend/persona.mjs";
 
 const {
   AWS_REGION = "us-west-2",
@@ -38,6 +39,23 @@ async function httpCall(base, method, path, paramsOrBody={}) {
   const t = await r.text();
   if (!r.ok) throw new Error(`${method} ${url} -> ${r.status} ${t.slice(0,200)}`);
   try { return JSON.parse(t); } catch { return { ok:false, text:t }; }
+}
+
+function sanitizeSessionAttributes(attrs = {}) {
+  const out = {};
+  for (const [key, value] of Object.entries(attrs)) {
+    if (value === undefined || value === null) continue;
+    if (typeof value === "string") {
+      out[key] = value;
+    } else {
+      try {
+        out[key] = JSON.stringify(value);
+      } catch {
+        out[key] = String(value);
+      }
+    }
+  }
+  return out;
 }
 
 // ---------------- IATA lookup helpers ----------------
@@ -239,9 +257,20 @@ async function executeInput(input) {
   return await httpCall(TOOLS_BASE_URL, verb, path, verb==="GET"?q:b);
 }
 
-export async function handleChat({ sessionId, text, persona={} }) {
+export async function handleChat({ sessionId, text, persona = {} }) {
   let sid = sessionId || String(Date.now());
-  let state = { attributes: { persona } };
+  let state = {};
+  try {
+    if (persona && typeof persona === "object") {
+      const normalized = toSessionAttributes(persona);
+      const sessionAttrs = sanitizeSessionAttributes(normalized);
+      if (Object.keys(sessionAttrs).length > 0) {
+        state.sessionAttributes = sessionAttrs;
+      }
+    }
+  } catch (error) {
+    console.warn("[proxy] persona processing failed", error);
+  }
   let out = "";
   for (let hop=0; hop<6; hop++) {
     const { text: chunk, rc } = await invokeOnce({ sessionId: sid, text: hop===0?text:"", sessionState: state });
