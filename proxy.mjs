@@ -3,6 +3,8 @@
 // No runtime provider switch. The chosen provider is hard-coded in the agent's instructions.
 
 import express from "express";
+import fs from "node:fs";
+import path from "node:path";
 import { BedrockAgentRuntimeClient, InvokeAgentCommand } from "@aws-sdk/client-bedrock-agent-runtime";
 
 const {
@@ -16,6 +18,7 @@ const {
   TOOLS_BASE_URL = "https://origin-daisy.onrender.com",
   GOOGLE_BASE_URL = "https://google-api-daisy.onrender.com",
   FORWARD_TOOLS = "true",
+  IATA_DB_PATH = "./iata.json",
 } = process.env;
 
 const AGENT = SUPERVISOR_AGENT_ID || AGENT_ID;
@@ -35,6 +38,152 @@ async function httpCall(base, method, path, paramsOrBody={}) {
   const t = await r.text();
   if (!r.ok) throw new Error(`${method} ${url} -> ${r.status} ${t.slice(0,200)}`);
   try { return JSON.parse(t); } catch { return { ok:false, text:t }; }
+}
+
+// ---------------- IATA lookup helpers ----------------
+const EARTH_RADIUS_KM = 6371;
+let IATA_DATA = null;
+let IATA_LIST = null;
+
+function toNumber(value) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : undefined;
+}
+
+function loadIataData() {
+  if (IATA_DATA && IATA_LIST) return;
+  const resolved = path.resolve(IATA_DB_PATH);
+  try {
+    const raw = fs.readFileSync(resolved, "utf8");
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") {
+      IATA_DATA = parsed;
+      IATA_LIST = Object.entries(parsed).map(([code, record]) => ({
+        code: String(code || "").toUpperCase(),
+        name: record?.name || "",
+        city: record?.city || "",
+        country: record?.country || "",
+        type: record?.type || "",
+        state: record?.state || "",
+        timezone: record?.timezone || "",
+        icao: record?.icao || "",
+        latitude: toNumber(record?.latitude),
+        longitude: toNumber(record?.longitude),
+      }));
+    } else {
+      IATA_DATA = {};
+      IATA_LIST = [];
+    }
+  } catch (error) {
+    console.warn("[proxy] IATA load failed", { file: resolved, message: error?.message });
+    IATA_DATA = {};
+    IATA_LIST = [];
+  }
+}
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const rLat1 = lat1 * Math.PI / 180;
+  const rLat2 = lat2 * Math.PI / 180;
+  const a = Math.sin(dLat/2) ** 2 + Math.sin(dLon/2) ** 2 * Math.cos(rLat1) * Math.cos(rLat2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return EARTH_RADIUS_KM * c;
+}
+
+function normalizeTerm(payload = {}) {
+  const term =
+    payload.term ??
+    payload.code ??
+    payload.query ??
+    payload.q ??
+    "";
+  return String(term || "").trim().toUpperCase();
+}
+
+function parseLimit(value, fallback = 20) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.min(Math.round(n), 50);
+}
+
+function shapeResult(entry, distanceKm) {
+  const result = {
+    code: entry.code,
+    name: entry.name,
+    city: entry.city,
+    country: entry.country,
+    type: entry.type,
+    state: entry.state,
+    timezone: entry.timezone,
+    icao: entry.icao,
+  };
+  if (entry.latitude !== undefined) result.latitude = entry.latitude;
+  if (entry.longitude !== undefined) result.longitude = entry.longitude;
+  if (distanceKm !== undefined) result.distanceKm = Number(distanceKm.toFixed(1));
+  return result;
+}
+
+function iataLookup(payload = {}) {
+  loadIataData();
+  const list = Array.isArray(IATA_LIST) ? IATA_LIST : [];
+
+  const term = normalizeTerm(payload);
+  const limit = parseLimit(payload.limit, 20);
+  const lat = toNumber(payload.lat ?? payload.latitude);
+  const lon = toNumber(payload.lon ?? payload.longitude);
+  const hasCoords = lat !== undefined && lon !== undefined;
+
+  if (hasCoords) {
+    const nearest = [];
+    const pushNearest = (entry, distance) => {
+      nearest.push({ distance, entry });
+      nearest.sort((a, b) => a.distance - b.distance);
+      while (nearest.length > limit) nearest.pop();
+    };
+    const termFilter = term ? term : null;
+
+    for (const entry of list) {
+      if (entry.type && entry.type.toLowerCase() !== "airport") continue;
+      if (entry.latitude === undefined || entry.longitude === undefined) continue;
+      if (termFilter) {
+        const code = entry.code;
+        const city = entry.city.toUpperCase();
+        const name = entry.name.toUpperCase();
+        if (!code.includes(termFilter) && !city.includes(termFilter) && !name.includes(termFilter)) continue;
+      }
+      const distance = haversineKm(lat, lon, entry.latitude, entry.longitude);
+      pushNearest(entry, distance);
+    }
+
+    return nearest.map(({ entry, distance }) => shapeResult(entry, distance));
+  }
+
+  if (!term) return [];
+
+  const scored = [];
+  for (const entry of list) {
+    const code = entry.code;
+    const city = entry.city.toUpperCase();
+    const name = entry.name.toUpperCase();
+
+    if (!code.includes(term) && !city.includes(term) && !name.includes(term)) continue;
+
+    if (code === term) return [shapeResult(entry)];
+
+    let score = 100;
+    if (city === term || name === term) score = 0;
+    else if (city.startsWith(term) || name.startsWith(term)) score = 1;
+    else if (code.startsWith(term)) score = 2;
+    else if (city.includes(term)) score = 3;
+    else if (name.includes(term)) score = 4;
+    else score = 5;
+
+    scored.push({ score, entry });
+  }
+
+  scored.sort((a, b) => (a.score === b.score ? a.entry.code.localeCompare(b.entry.code) : a.score - b.score));
+  return scored.slice(0, limit).map(({ entry }) => shapeResult(entry));
 }
 
 async function invokeOnce({ sessionId, text, sessionState }) {
@@ -73,6 +222,10 @@ async function executeInput(input) {
   const q = input.parameters || input.query || {};
   const b = input.requestBody || input.body || {};
 
+  if (path.startsWith("/tools/iata/lookup")) {
+    const payload = method === "GET" ? q : b;
+    return { matches: iataLookup(payload) };
+  }
   if (path.startsWith("/tools/")) {
     const verb = method === "GET" ? "GET" : "POST";
     return await httpCall(TOOLS_BASE_URL, verb, path, verb==="GET"?q:b);
@@ -125,9 +278,34 @@ app.post("/invoke", async (req,res)=>{
   catch(e){ res.status(500).json({ ok:false, error:String(e) }); }
 });
 
+app.get("/tools/iata/lookup", (req, res) => {
+  try {
+    const matches = iataLookup(req.query || {});
+    res.set("Cache-Control", "public, max-age=300");
+    res.json({ matches });
+  } catch (error) {
+    console.error("[proxy] /tools/iata/lookup GET failed", error);
+    res.status(500).json({ error: "iata_lookup_failed" });
+  }
+});
+
+app.post("/tools/iata/lookup", (req, res) => {
+  try {
+    const matches = iataLookup(req.body || {});
+    res.set("Cache-Control", "public, max-age=300");
+    res.json({ matches });
+  } catch (error) {
+    console.error("[proxy] /tools/iata/lookup POST failed", error);
+    res.status(500).json({ error: "iata_lookup_failed" });
+  }
+});
+
+app.head("/tools/iata/lookup", (_req, res) => res.status(200).end());
+
 // Optional: forward /tools/* to TOOLS_BASE_URL for front-ends
 if (/^true$/i.test(FORWARD_TOOLS||"true")) {
-  app.all("/tools/*", async (req,res)=>{
+  app.all("/tools/*", async (req,res,next)=>{
+    if (req.path === "/tools/iata/lookup") return next();
     try {
       const target = new URL(req.originalUrl, TOOLS_BASE_URL);
       const r = await fetch(target, { method:req.method, headers:{ "content-type":req.headers["content-type"]||"application/json" }, body: req.method==="GET"?undefined:JSON.stringify(req.body||{}) });
