@@ -1,9 +1,9 @@
-// services/s3escalator.mjs — S3 uploader
+// services/s3escalator.mjs — S3 uploader (v3 SDK)
 import express from "express";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const {
-  PORT = 8792, ALLOWED_ORIGINS="*",
+  PORT=8792, ALLOWED_ORIGINS="*",
   AWS_REGION="us-east-1", AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
   S3_BUCKET="dAisys-diary", S3_PREFIX="", UPLOADER_TOKEN=""
 } = process.env;
@@ -30,7 +30,7 @@ app.post("/tools/s3escalator", async (req,res)=>{
     if (UPLOADER_TOKEN && token !== UPLOADER_TOKEN) return res.status(401).json({ ok:false, error:"Bad token" });
     const { type="logs", path="", sender="unknown", fileBase64="", fileData="", file="" } = req.body || {};
     const folder = `${S3_PREFIX||""}${S3_PREFIX?"/":""}${type}/${sender}/${today()}`;
-    const key = `${folder}/${path || ("upload_"+Date.now()+".log")}`;
+    const key = `${folder}/${path || "upload_"+Date.now()+".log"}`;
     const body = fileBase64 ? Buffer.from(fileBase64, "base64") : (fileData ? Buffer.from(String(fileData)) : Buffer.from(String(file||"")));
     await s3.send(new PutObjectCommand({ Bucket:S3_BUCKET, Key:key, Body: body }));
     res.json({ ok:true, bucket:S3_BUCKET, key });
