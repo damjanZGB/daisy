@@ -8,7 +8,7 @@ import path from "node:path";
 import { BedrockAgentRuntimeClient, InvokeAgentCommand } from "@aws-sdk/client-bedrock-agent-runtime";
 
 const {
-  AWS_REGION = "us-east-1",
+  AWS_REGION = "us-west-¸2",
   SUPERVISOR_AGENT_ID,
   SUPERVISOR_AGENT_ALIAS_ID,
   AGENT_ID,
