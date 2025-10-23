@@ -972,6 +972,9 @@
       return (
         <div className="min-h-screen grid grid-rows-[auto,1fr,auto] bg-gradient-to-b from-lhBlueDark to-[#0b1229]">
           <Header apiUrl={apiUrl} locationInfo={locationInfo} proxyOnline={proxyOnline} />
+          <div className="max-w-5xl mx-auto w-full px-4 pt-2">
+            <p className="text-xs text-red-300 text-center font-medium">For best results, please allow location sharing!</p>
+          </div>
           <main className="max-w-5xl mx-auto w-full px-4 py-6">
             <div ref={scrollRef} className="scroll-area h-[66vh] sm:h-[70vh] rounded-2xl bg-slate-900/60 border border-white/10 p-4 overflow-y-auto space-y-3">
               {messages.map(m => (
@@ -1013,6 +1016,9 @@
               </button>
             </div>
           </footer>
+          <div className="max-w-5xl mx-auto w-full px-4 pb-6 text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-red-400">BETA test version!</p>
+          </div>
         </div>
       );
     }
