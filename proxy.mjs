@@ -2,6 +2,7 @@
 // Forwards: /tools/* -> TOOLS_BASE_URL (origin-daisy), /google/* -> GOOGLE_BASE_URL (google-api-daisy)
 // No runtime provider switch. The chosen provider is hard-coded in the agent's instructions.
 
+import "dotenv/config";
 import express from "express";
 import fs from "node:fs";
 import path from "node:path";
@@ -16,18 +17,31 @@ const {
   AGENT_ALIAS_ID,
   PORT = 8787,
   ALLOWED_ORIGINS = "*",
-  TOOLS_BASE_URL = "https://origin-daisy.onrender.com",
+  TOOLS_BASE_URL = "",
   GOOGLE_BASE_URL = "https://google-api-daisy.onrender.com",
   FORWARD_TOOLS = "true",
   IATA_DB_PATH = "./iata.json",
+  ANTI_PHASER_URL = "",
+  ANTIPHASER_URL = "",
+  DER_DRUCKER_URL = "",
+  S3_ESCALATOR_URL = "",
 } = process.env;
+
+const normalized = (value) => (value || "").trim().replace(/\/+$/, "");
 
 const AGENT = SUPERVISOR_AGENT_ID || AGENT_ID;
 const ALIAS = SUPERVISOR_AGENT_ALIAS_ID || AGENT_ALIAS_ID;
 const client = new BedrockAgentRuntimeClient({ region: AWS_REGION });
+const TOOLS_BASE = normalized(TOOLS_BASE_URL);
+const ANTI_PHASER_BASE = normalized(ANTI_PHASER_URL || ANTIPHASER_URL);
+const DER_DRUCKER_BASE = normalized(DER_DRUCKER_URL);
+const S3_ESCALATOR_BASE = normalized(S3_ESCALATOR_URL);
 
 async function httpCall(base, method, path, paramsOrBody={}) {
-  const url = new URL(path, base);
+  if (!base) throw new Error(`Missing base URL for ${path}`);
+  const resolvedBase = base.endsWith("/") ? base : `${base}/`;
+  const relativePath = path.startsWith("/") ? path.slice(1) : path;
+  const url = new URL(relativePath, resolvedBase);
   const opts = { method, headers: {} };
   if (method === "GET") {
     Object.entries(paramsOrBody || {}).forEach(([k,v]) => v!=null && url.searchParams.set(k, String(v)));
@@ -244,17 +258,29 @@ async function executeInput(input) {
     const payload = method === "GET" ? q : b;
     return { matches: iataLookup(payload) };
   }
+  if (path.startsWith("/tools/antiPhaser")) {
+    const base = ANTI_PHASER_BASE || TOOLS_BASE;
+    return await httpCall(base, verb, path, verb === "GET" ? q : b);
+  }
+  if (path.startsWith("/tools/datetime/interpret")) {
+    const base = TOOLS_BASE || ANTI_PHASER_BASE;
+    return await httpCall(base, verb, path, verb === "GET" ? q : b);
+  }
+  if (path.startsWith("/tools/derDrucker")) {
+    const base = DER_DRUCKER_BASE || TOOLS_BASE;
+    return await httpCall(base, verb, path, verb === "GET" ? q : b);
+  }
+  if (path === "/tools/s3escalator" || path.startsWith("/tools/s3escalator/")) {
+    const base = S3_ESCALATOR_BASE || TOOLS_BASE;
+    return await httpCall(base, verb, path, verb === "GET" ? q : b);
+  }
   if (path.startsWith("/tools/")) {
-    const verb = method === "GET" ? "GET" : "POST";
-    return await httpCall(TOOLS_BASE_URL, verb, path, verb==="GET"?q:b);
+    return await httpCall(TOOLS_BASE, verb, path, verb==="GET"?q:b);
   }
   if (path.startsWith("/google/")) {
-    const verb = method === "GET" ? "GET" : "POST";
     return await httpCall(GOOGLE_BASE_URL, verb, path, verb==="GET"?q:b);
   }
-  // Fallback to tools base
-  const verb = method === "GET" ? "GET" : "POST";
-  return await httpCall(TOOLS_BASE_URL, verb, path, verb==="GET"?q:b);
+  return await httpCall(TOOLS_BASE, verb, path, verb==="GET"?q:b);
 }
 
 export async function handleChat({ sessionId, text, persona = {} }) {
@@ -331,16 +357,60 @@ app.post("/tools/iata/lookup", (req, res) => {
 
 app.head("/tools/iata/lookup", (_req, res) => res.status(200).end());
 
-// Optional: forward /tools/* to TOOLS_BASE_URL for front-ends
-if (/^true$/i.test(FORWARD_TOOLS||"true")) {
-  app.all("/tools/*", async (req,res,next)=>{
-    if (req.path === "/tools/iata/lookup") return next();
+function createToolForwarder(base) {
+  if (!base) return null;
+  const resolved = base.endsWith("/") ? base : `${base}/`;
+  return async (req, res) => {
     try {
-      const target = new URL(req.originalUrl, TOOLS_BASE_URL);
-      const r = await fetch(target, { method:req.method, headers:{ "content-type":req.headers["content-type"]||"application/json" }, body: req.method==="GET"?undefined:JSON.stringify(req.body||{}) });
-      const t = await r.text(); res.status(r.status).set("content-type", r.headers.get("content-type")||"application/json").send(t);
-    } catch (e) { res.status(502).json({ ok:false, error:String(e) }); }
-  });
+      const url = new URL(req.originalUrl.replace(/^\//, ""), resolved);
+      const init = {
+        method: req.method,
+        headers: { ...req.headers },
+      };
+      if (req.method !== "GET" && req.method !== "HEAD") {
+        init.body = JSON.stringify(req.body || {});
+        init.headers["content-type"] = "application/json";
+      }
+      const response = await fetch(url, init);
+      const text = await response.text();
+      res
+        .status(response.status)
+        .set("content-type", response.headers.get("content-type") || "application/json")
+        .send(text);
+    } catch (error) {
+      console.error("[proxy] tool forward failed", { target: base, path: req.path, error: error.message });
+      res.status(502).json({ ok: false, error: String(error) });
+    }
+  };
+}
+
+if (/^true$/i.test(FORWARD_TOOLS || "true")) {
+  const antiPhaserForward = createToolForwarder(ANTI_PHASER_BASE || TOOLS_BASE);
+  if (antiPhaserForward) {
+    app.all("/tools/antiPhaser", antiPhaserForward);
+  }
+  const derDruckerForward = createToolForwarder(DER_DRUCKER_BASE || TOOLS_BASE);
+  if (derDruckerForward) {
+    app.all("/tools/derDrucker/*", derDruckerForward);
+  }
+  const s3Forward = createToolForwarder(S3_ESCALATOR_BASE || TOOLS_BASE);
+  if (s3Forward) {
+    app.all("/tools/s3escalator", s3Forward);
+  }
+  const genericForward = createToolForwarder(TOOLS_BASE);
+  if (genericForward) {
+    app.all("/tools/*", (req, res, next) => {
+      if (
+        req.path === "/tools/iata/lookup" ||
+        req.path.startsWith("/tools/antiPhaser") ||
+        req.path.startsWith("/tools/derDrucker") ||
+        req.path === "/tools/s3escalator"
+      ) {
+        return next();
+      }
+      return genericForward(req, res);
+    });
+  }
 }
 
 app.listen(Number(PORT), ()=>console.log(`[proxy] up on ${PORT}`));

@@ -1,4 +1,5 @@
 // derDrucker.mjs — Markdown formatter and PDF ticket generator service
+import "dotenv/config";
 import express from "express";
 import { Buffer } from "node:buffer";
 import { PDFDocument, StandardFonts } from "pdf-lib";

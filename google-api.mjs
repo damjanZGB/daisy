@@ -1,6 +1,7 @@
 // services/google-api.mjs — Google endpoints microservice backed by searchapi.io
 // Exposes GET/POST under /google/flights/*, /google/calendar/*, /google/explore/*
 
+import "dotenv/config";
 import express from "express";
 
 const {

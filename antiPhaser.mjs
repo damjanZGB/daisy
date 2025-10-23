@@ -1,4 +1,5 @@
 // antiPhaser.mjs — Natural language date phrase parser service
+import "dotenv/config";
 import express from "express";
 import * as chrono from "chrono-node";
 import { DateTime } from "luxon";

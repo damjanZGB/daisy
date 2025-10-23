@@ -1,4 +1,5 @@
 // services/s3escalator.mjs — S3 uploader (v3 SDK)
+import "dotenv/config";
 import express from "express";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
