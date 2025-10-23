@@ -4,7 +4,7 @@ info:
   version: 1.1.1
   description: HTTP tools for the Bedrock Agent to search flights via Amadeus and resolve IATA codes.
 servers:
-  - url: https://origin-daisy.onrender.com
+- url: https://origin-daisy.onrender.com
 paths:
   /tools/amadeus/search:
     description: Amadeus Flight Offers Search adapter exposed by the proxy server.
@@ -19,10 +19,10 @@ paths:
             schema:
               type: object
               required:
-                - originLocationCode
-                - destinationLocationCode
-                - departureDate
-                - adults
+              - originLocationCode
+              - destinationLocationCode
+              - departureDate
+              - adults
               properties:
                 originLocationCode:
                   type: string
@@ -59,10 +59,10 @@ paths:
                 travelClass:
                   type: string
                   enum:
-                    - ECONOMY
-                    - PREMIUM_ECONOMY
-                    - BUSINESS
-                    - FIRST
+                  - ECONOMY
+                  - PREMIUM_ECONOMY
+                  - BUSINESS
+                  - FIRST
                   description: Preferred cabin class
                 currencyCode:
                   type: string
@@ -80,7 +80,7 @@ paths:
                   default: 10
                   description: Maximum number of offers to return
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
@@ -90,14 +90,13 @@ paths:
                   offers:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Offer"
+                      $ref: '#/components/schemas/Offer'
                   raw:
                     type: object
-        "400":
+        '400':
           description: Bad Request
-        "502":
+        '502':
           description: Upstream error
-
   /tools/iata/lookup:
     description: Deterministic IATA resolver backed by the proxy server.
     get:
@@ -105,14 +104,14 @@ paths:
       summary: Resolve IATA code or city or airport name
       description: Look up IATA codes or names deterministically using the proxy database.
       parameters:
-        - in: query
-          name: term
-          required: true
-          schema:
-            type: string
-          description: IATA code (for example, MUC) or partial city or airport name (for example, Munich)
+      - in: query
+        name: term
+        required: true
+        schema:
+          type: string
+        description: IATA code (for example, MUC) or partial city or airport name (for example, Munich)
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
@@ -123,7 +122,6 @@ paths:
                     type: array
                     items:
                       type: object
-
   /tools/amadeus/flex:
     description: One-call flexible dates selection and LH-only pricing (one-way).
     get:
@@ -131,104 +129,104 @@ paths:
       summary: Flexible dates priced list
       description: Request the proxy to select cheapest days and return LH-only priced offers for one-way searches.
       parameters:
-        - in: query
-          name: origin
-          required: true
-          schema:
-            type: string
-          description: IATA origin code (for example, MUC)
-        - in: query
-          name: destination
-          required: true
-          schema:
-            type: string
-          description: IATA destination code (for example, ZRH)
-        - in: query
-          name: departureDate
-          required: false
-          schema:
-            type: string
-          description: Specific departure date or inclusive range (YYYY-MM-DD or YYYY-MM-DD,YYYY-MM-DD)
-        - in: query
-          name: month
-          required: false
-          schema:
-            type: string
-          description: Month window (YYYY-MM); alternative to departureDate
-        - in: query
-          name: oneWay
-          required: false
-          schema:
-            type: boolean
-            default: true
-          description: Must be true to return priced results (calendar is internal)
-        - in: query
-          name: nonStop
-          required: false
-          schema:
-            type: boolean
-            default: false
-          description: If true, return only non-stop options
-        - in: query
-          name: maxPrice
-          required: false
-          schema:
-            type: integer
-          description: Maximum price per traveler (positive integer)
-        - in: query
-          name: viewBy
-          required: false
-          schema:
-            type: string
-            enum:
-              - DATE
-              - DURATION
-              - WEEK
-          description: Optional calendar grouping (defaults to DATE for one-way)
-        - in: query
-          name: currencyCode
-          required: false
-          schema:
-            type: string
-          description: Currency code (ISO 4217), for example EUR
-        - in: query
-          name: limit
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 10
-            default: 5
-          description: Maximum number of cheapest days to select from calendar
-        - in: query
-          name: priceLimit
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 10
-          description: Maximum number of days to price (defaults to limit)
-        - in: query
-          name: adults
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-          description: Number of adult passengers
-        - in: query
-          name: travelClass
-          required: false
-          schema:
-            type: string
-            enum:
-              - ECONOMY
-              - PREMIUM_ECONOMY
-              - BUSINESS
-              - FIRST
-          description: Preferred cabin class
+      - in: query
+        name: origin
+        required: true
+        schema:
+          type: string
+        description: IATA origin code (for example, MUC)
+      - in: query
+        name: destination
+        required: true
+        schema:
+          type: string
+        description: IATA destination code (for example, ZRH)
+      - in: query
+        name: departureDate
+        required: false
+        schema:
+          type: string
+        description: Specific departure date or inclusive range (YYYY-MM-DD or YYYY-MM-DD,YYYY-MM-DD)
+      - in: query
+        name: month
+        required: false
+        schema:
+          type: string
+        description: Month window (YYYY-MM); alternative to departureDate
+      - in: query
+        name: oneWay
+        required: false
+        schema:
+          type: boolean
+          default: true
+        description: Must be true to return priced results (calendar is internal)
+      - in: query
+        name: nonStop
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: If true, return only non-stop options
+      - in: query
+        name: maxPrice
+        required: false
+        schema:
+          type: integer
+        description: Maximum price per traveler (positive integer)
+      - in: query
+        name: viewBy
+        required: false
+        schema:
+          type: string
+          enum:
+          - DATE
+          - DURATION
+          - WEEK
+        description: Optional calendar grouping (defaults to DATE for one-way)
+      - in: query
+        name: currencyCode
+        required: false
+        schema:
+          type: string
+        description: Currency code (ISO 4217), for example EUR
+      - in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 5
+        description: Maximum number of cheapest days to select from calendar
+      - in: query
+        name: priceLimit
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 10
+        description: Maximum number of days to price (defaults to limit)
+      - in: query
+        name: adults
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: Number of adult passengers
+      - in: query
+        name: travelClass
+        required: false
+        schema:
+          type: string
+          enum:
+          - ECONOMY
+          - PREMIUM_ECONOMY
+          - BUSINESS
+          - FIRST
+        description: Preferred cabin class
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
@@ -248,177 +246,2036 @@ paths:
                         offers:
                           type: array
                           items:
-                            $ref: "#/components/schemas/Offer"
+                            $ref: '#/components/schemas/Offer'
                 required:
-                  - priced
-        "400":
+                - priced
+        '400':
           description: Bad Request
-        "502":
+        '502':
           description: Upstream error
-
   /tools/s3escalator:
     description: Upload artifacts (logs, transcripts, alerts) through the proxy escalator service.
     post:
       operationId: uploadEscalator
       summary: Upload a debug or transcript artifact
+      description: Upload a transcript, log, or alert payload to S3 via the escalator proxy endpoint.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EscalatorUploadRequest"
+              $ref: '#/components/schemas/EscalatorUploadRequest'
       responses:
-        "200":
+        '200':
           description: Upload completed
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EscalatorUploadResponse"
-        "400":
+                $ref: '#/components/schemas/EscalatorUploadResponse'
+        '400':
           description: Missing required fields or file payload.
-        "502":
+        '502':
           description: Escalator service error.
-
   /tools/antiPhaser:
     description: Dedicated microservice for parsing natural-language date phrases using chrono-node/luxon.
     get:
       operationId: antiPhaserGet
       summary: Interpret a date phrase (GET)
+      description: Parse a natural-language phrase supplied as query parameters and return normalized date/time results.
       parameters:
-        - in: query
-          name: phrase
-          required: true
-          schema:
-            type: string
-          description: Phrase to interpret, e.g. `next Friday at 2pm`.
-        - in: query
-          name: timezone
-          required: false
-          schema:
-            type: string
-          description: IANA timezone (default UTC).
-        - in: query
-          name: referenceDate
-          required: false
-          schema:
-            type: string
-          description: ISO date to anchor relative phrases (defaults to current day).
+      - in: query
+        name: phrase
+        required: true
+        schema:
+          type: string
+        description: Phrase to interpret, e.g. `next Friday at 2pm`.
+      - in: query
+        name: timezone
+        required: false
+        schema:
+          type: string
+        description: IANA timezone (default UTC).
+      - in: query
+        name: referenceDate
+        required: false
+        schema:
+          type: string
+        description: ISO date to anchor relative phrases (defaults to current day).
       responses:
-        "200":
+        '200':
           description: Parsed successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AntiPhaserResponse"
-        "400":
+                $ref: '#/components/schemas/AntiPhaserResponse'
+        '400':
           description: Invalid or missing phrase.
-        "502":
+        '502':
           description: antiPhaser service error.
     post:
       operationId: antiPhaserPost
       summary: Interpret a date phrase (POST)
+      description: Parse a natural-language phrase from a JSON request body and return normalized date/time results.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AntiPhaserRequest"
+              $ref: '#/components/schemas/AntiPhaserRequest'
       responses:
-        "200":
+        '200':
           description: Parsed successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AntiPhaserResponse"
-        "400":
+                $ref: '#/components/schemas/AntiPhaserResponse'
+        '400':
           description: Invalid or missing phrase.
-        "502":
+        '502':
           description: antiPhaser service error.
-
   /tools/derDrucker/wannaCandy:
     description: Format LH-Group itinerary offers into Markdown via the derDrucker service.
     post:
       operationId: derDruckerWannaCandy
       summary: Format offers into Markdown
+      description: Send structured offer data to derDrucker to receive canonical Markdown output for itineraries.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DerDruckerMarkdownRequest"
+              $ref: '#/components/schemas/DerDruckerMarkdownRequest'
       responses:
-        "200":
+        '200':
           description: Markdown generated successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DerDruckerMarkdownResponse"
-        "400":
+                $ref: '#/components/schemas/DerDruckerMarkdownResponse'
+        '400':
           description: Input payload invalid.
-        "502":
+        '502':
           description: derDrucker service error.
-
   /tools/derDrucker/generateTickets:
     description: Produce base64-encoded PDF boarding passes via derDrucker.
     post:
       operationId: derDruckerGenerateTickets
       summary: Generate PDF tickets
+      description: Provide passenger and itinerary details so derDrucker can render boarding passes as base64-encoded PDFs.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DerDruckerTicketRequest"
+              $ref: '#/components/schemas/DerDruckerTicketRequest'
       responses:
-        "200":
+        '200':
           description: PDF tickets generated
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DerDruckerTicketResponse"
-        "400":
+                $ref: '#/components/schemas/DerDruckerTicketResponse'
+        '400':
           description: Input payload invalid.
-        "502":
+        '502':
           description: derDrucker service error.
-
   /tools/give_me_tools:
     description: Inspect the proxy's tool catalog at runtime.
     get:
       operationId: giveMeTools
       summary: Enumerate available proxy tools
+      description: Retrieve the current list of tool endpoints exposed by the proxy for capability introspection.
       responses:
-        "200":
+        '200':
           description: Tool catalog retrieved
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ToolCatalogResponse"
-        "502":
+                $ref: '#/components/schemas/ToolCatalogResponse'
+        '502':
           description: Proxy error when fetching tool list.
-
   /tools/datetime/interpret:
     description: In-proxy interpretation fallback that mirrors TimePhraseParser.
     post:
       operationId: proxyDatetimeInterpret
       summary: Interpret a natural-language date/time phrase
+      description: Use the proxy's fallback interpreter to resolve natural-language date and time phrases when antiPhaser is unavailable.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DatetimeInterpretRequest"
+              $ref: '#/components/schemas/DatetimeInterpretRequest'
       responses:
-        "200":
+        '200':
           description: Phrase interpreted successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DatetimeInterpretResponse"
-        "400":
+                $ref: '#/components/schemas/DatetimeInterpretResponse'
+        '400':
           description: Missing phrase or unable to interpret.
-        "502":
+        '502':
           description: Internal interpreter error.
-
+  /google/flights/search:
+    description: Proxy adapter that forwards SerpAPI Google Flights queries and returns structured flight data.
+    get:
+      summary: Google Flights Search
+      description: Execute a SerpAPI Google Flights search and return structured flight results for the agent.
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      parameters:
+      - name: engine
+        in: query
+        required: true
+        description: Engine to use for the search
+        schema:
+          type: string
+          enum:
+          - google_flights
+      - name: departure_id
+        in: query
+        required: false
+        description: Departure airport code or city ID (required unless flight_type is multi_city)
+        schema:
+          type: string
+      - name: arrival_id
+        in: query
+        required: false
+        description: Arrival airport code or city ID (required unless flight_type is multi_city)
+        schema:
+          type: string
+      - name: outbound_date
+        in: query
+        required: false
+        description: Outbound flight date in YYYY-MM-DD format (required unless flight_type is multi_city)
+        schema:
+          type: string
+          pattern: ^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$
+      - name: return_date
+        in: query
+        required: false
+        description: Return flight date in YYYY-MM-DD format (required for round_trip flights)
+        schema:
+          type: string
+          pattern: ^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$
+      - name: hl
+        in: query
+        required: false
+        description: Language for the results
+        schema:
+          type: string
+          default: en
+          enum:
+          - af
+          - am
+          - ar
+          - bg
+          - bn
+          - bs
+          - ca
+          - cs
+          - da
+          - de
+          - el
+          - en
+          - en-GB
+          - en-US
+          - es
+          - es-419
+          - et
+          - eu
+          - fa
+          - fi
+          - fil
+          - fr
+          - gl
+          - gu
+          - hi
+          - hr
+          - hu
+          - id
+          - is
+          - it
+          - iw
+          - ja
+          - ka
+          - km
+          - kn
+          - ko
+          - lo
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - ne
+          - nl
+          - 'no'
+          - pa
+          - pl
+          - pt-BR
+          - pt-PT
+          - ro
+          - ru
+          - si
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-Latn
+          - sv
+          - sw
+          - ta
+          - te
+          - th
+          - tr
+          - uk
+          - ur
+          - vi
+          - zh-CN
+          - zh-TW
+      - name: gl
+        in: query
+        required: false
+        description: Country of the search
+        schema:
+          type: string
+          default: US
+          enum:
+          - AF
+          - AL
+          - DZ
+          - AS
+          - AD
+          - AO
+          - AI
+          - AG
+          - AR
+          - AM
+          - AU
+          - AT
+          - AZ
+          - BS
+          - BH
+          - BD
+          - BY
+          - BE
+          - BZ
+          - BJ
+          - BT
+          - BO
+          - BA
+          - BW
+          - BR
+          - VG
+          - BN
+          - BG
+          - BF
+          - BI
+          - KH
+          - CM
+          - CA
+          - CV
+          - CF
+          - TD
+          - CL
+          - CN
+          - CO
+          - CG
+          - CD
+          - CK
+          - CR
+          - CI
+          - HR
+          - CU
+          - CY
+          - CZ
+          - DK
+          - DJ
+          - DM
+          - DO
+          - EC
+          - EG
+          - SV
+          - EE
+          - ET
+          - FJ
+          - FI
+          - FR
+          - GA
+          - GM
+          - GE
+          - DE
+          - GH
+          - GI
+          - GR
+          - GL
+          - GT
+          - GG
+          - GY
+          - HT
+          - HN
+          - HK
+          - HU
+          - IS
+          - IN
+          - ID
+          - IR
+          - IQ
+          - IE
+          - IM
+          - IL
+          - IT
+          - JM
+          - JP
+          - JE
+          - JO
+          - KZ
+          - KE
+          - KI
+          - KW
+          - KG
+          - LA
+          - LV
+          - LB
+          - LS
+          - LY
+          - LI
+          - LT
+          - LU
+          - MG
+          - MW
+          - MY
+          - MV
+          - ML
+          - MT
+          - MU
+          - MX
+          - FM
+          - MD
+          - MN
+          - ME
+          - MS
+          - MA
+          - MZ
+          - MM
+          - NA
+          - NR
+          - NP
+          - NL
+          - NZ
+          - NI
+          - NE
+          - NG
+          - NU
+          - MK
+          - 'NO'
+          - OM
+          - PK
+          - PS
+          - PA
+          - PG
+          - PY
+          - PE
+          - PH
+          - PN
+          - PL
+          - PT
+          - PR
+          - QA
+          - RO
+          - RU
+          - RW
+          - WS
+          - SM
+          - ST
+          - SA
+          - SN
+          - RS
+          - SC
+          - SL
+          - SG
+          - SK
+          - SI
+          - SB
+          - SO
+          - ZA
+          - KR
+          - ES
+          - LK
+          - SH
+          - VC
+          - SR
+          - SE
+          - CH
+          - TW
+          - TJ
+          - TZ
+          - TH
+          - TL
+          - TG
+          - TO
+          - TT
+          - TN
+          - TR
+          - TM
+          - UG
+          - UA
+          - AE
+          - GB
+          - US
+          - UY
+          - UZ
+          - VU
+          - VE
+          - VN
+          - ZM
+          - ZW
+      - name: currency
+        in: query
+        required: false
+        description: Currency for prices
+        schema:
+          type: string
+          default: USD
+          enum:
+          - ALL
+          - DZD
+          - ARS
+          - AMD
+          - AWG
+          - AUD
+          - AZN
+          - BSD
+          - BHD
+          - BYN
+          - BMD
+          - BAM
+          - BRL
+          - GBP
+          - BGN
+          - CAD
+          - XPF
+          - CLP
+          - CNY
+          - COP
+          - CRC
+          - CUP
+          - CZK
+          - DKK
+          - DOP
+          - EGP
+          - EUR
+          - GEL
+          - HKD
+          - HUF
+          - ISK
+          - INR
+          - IDR
+          - IRR
+          - ILS
+          - JMD
+          - JPY
+          - JOD
+          - KZT
+          - KWD
+          - LBP
+          - MKD
+          - MYR
+          - MXN
+          - MDL
+          - MAD
+          - TWD
+          - NZD
+          - NOK
+          - OMR
+          - PKR
+          - PAB
+          - PEN
+          - PHP
+          - PLN
+          - QAR
+          - RON
+          - RUB
+          - SAR
+          - RSD
+          - SGD
+          - ZAR
+          - KRW
+          - SEK
+          - CHF
+          - THB
+          - TRY
+          - UAH
+          - AED
+          - USD
+          - VND
+      - name: flight_type
+        in: query
+        required: false
+        description: Type of flight search
+        schema:
+          type: string
+          default: round_trip
+          enum:
+          - round_trip
+          - one_way
+          - multi_city
+      - name: stops
+        in: query
+        required: false
+        description: Filter by number of stops
+        schema:
+          type: string
+          default: any
+          enum:
+          - any
+          - nonstop
+          - one_stop_or_fewer
+          - two_stops_or_fewer
+      - name: sort_by
+        in: query
+        required: false
+        description: Sort order for results
+        schema:
+          type: string
+          enum:
+          - top_flights
+          - price
+          - departure_time
+          - arrival_time
+          - duration
+          - emissions
+      - name: travel_class
+        in: query
+        required: false
+        description: Travel class preference
+        schema:
+          type: string
+          default: economy
+          enum:
+          - economy
+          - premium_economy
+          - business
+          - first_class
+      - name: adults
+        in: query
+        required: false
+        description: Number of adult passengers
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 9
+          default: 1
+      - name: children
+        in: query
+        required: false
+        description: Number of child passengers
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 9
+          default: 0
+      - name: infants_in_seat
+        in: query
+        required: false
+        description: Number of infants with seat
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 9
+          default: 0
+      - name: infants_on_lap
+        in: query
+        required: false
+        description: Number of infants on lap
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 9
+          default: 0
+      - name: max_price
+        in: query
+        required: false
+        description: Maximum price filter
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+      - name: carry_on_bags
+        in: query
+        required: false
+        description: Number of carry-on bags
+        schema:
+          type: integer
+      - name: checked_bags
+        in: query
+        required: false
+        description: Number of checked bags
+        schema:
+          type: integer
+      - name: included_airlines
+        in: query
+        required: false
+        description: Comma-separated list of airline codes to include
+        schema:
+          type: string
+      - name: excluded_airlines
+        in: query
+        required: false
+        description: Comma-separated list of airline codes to exclude
+        schema:
+          type: string
+      - name: included_connecting_airports
+        in: query
+        required: false
+        description: Comma-separated list of connecting airport codes to include
+        schema:
+          type: string
+      - name: excluded_connecting_airports
+        in: query
+        required: false
+        description: Comma-separated list of connecting airport codes to exclude
+        schema:
+          type: string
+      - name: outbound_times
+        in: query
+        required: false
+        description: Comma-separated departure hour preferences (0-23)
+        schema:
+          type: string
+      - name: return_times
+        in: query
+        required: false
+        description: Comma-separated return hour preferences (0-23)
+        schema:
+          type: string
+      - name: emissions
+        in: query
+        required: false
+        description: Filter for less emissions only
+        schema:
+          type: string
+          enum:
+          - '1'
+      - name: layover_duration_min
+        in: query
+        required: false
+        description: Minimum layover duration in minutes
+        schema:
+          type: integer
+          minimum: 0
+      - name: layover_duration_max
+        in: query
+        required: false
+        description: Maximum layover duration in minutes
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+      - name: max_flight_duration
+        in: query
+        required: false
+        description: Maximum flight duration in minutes
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+      - name: separate_tickets
+        in: query
+        required: false
+        description: Show or hide separate tickets
+        schema:
+          type: string
+          enum:
+          - '0'
+          - '1'
+      - name: departure_token
+        in: query
+        required: false
+        description: Token for pagination of search results
+        schema:
+          type: string
+      - name: booking_token
+        in: query
+        required: false
+        description: Token for retrieving booking options
+        schema:
+          type: string
+      - name: multi_city_json
+        in: query
+        required: false
+        description: JSON array of flight segments for multi-city trips
+        schema:
+          type: string
+      - name: show_cheapest_flights
+        in: query
+        required: false
+        description: Show cheapest flights option
+        schema:
+          type: boolean
+      - name: show_hidden_flights
+        in: query
+        required: false
+        description: Show hidden flights option
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GFlights_SearchResponse'
+        '400':
+          description: Validation Error. There is an issue with query parameters, such as missing required parameters or invalid
+            values.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GFlights_ErrorResponse'
+        '401':
+          description: Authentication Error. The API key is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GFlights_ErrorResponse'
+        '429':
+          description: Rate Limit Exceeded. The number of allowed requests has been exceeded. Consider upgrading your plan
+            or waiting for the limit to reset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GFlights_ErrorResponse'
+        '500':
+          description: Server Error. Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GFlights_ErrorResponse'
+        '503':
+          description: Timeout. We could not retrieve results in 90 seconds.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GFlights_ErrorResponse'
+      tags:
+      - google-flights
+  /google/calendar/search:
+    description: Proxy adapter that surfaces SerpAPI Google Flights price calendar data.
+    get:
+      summary: Google Flights Calendar Search
+      description: Fetch SerpAPI Google Flights calendar pricing data for flexible date planning.
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      parameters:
+      - name: engine
+        in: query
+        required: true
+        description: Set to "google_flights_calendar"
+        schema:
+          type: string
+          default: google_flights_calendar
+      - name: departure_id
+        in: query
+        required: true
+        description: Airport code or city ID for departure location
+        schema:
+          type: string
+      - name: arrival_id
+        in: query
+        required: true
+        description: Airport code or city ID for arrival location
+        schema:
+          type: string
+      - name: currency
+        in: query
+        required: false
+        description: Currency code for prices
+        schema:
+          type: string
+          enum:
+          - ALL
+          - DZD
+          - ARS
+          - AMD
+          - AWG
+          - AUD
+          - AZN
+          - BSD
+          - BHD
+          - BYN
+          - BMD
+          - BAM
+          - BRL
+          - GBP
+          - BGN
+          - CAD
+          - XPF
+          - CLP
+          - CNY
+          - COP
+          - CRC
+          - CUP
+          - CZK
+          - DKK
+          - DOP
+          - EGP
+          - EUR
+          - GEL
+          - HKD
+          - HUF
+          - ISK
+          - INR
+          - IDR
+          - IRR
+          - ILS
+          - JMD
+          - JPY
+          - JOD
+          - KZT
+          - KWD
+          - LBP
+          - MKD
+          - MYR
+          - MXN
+          - MDL
+          - MAD
+          - TWD
+          - NZD
+          - NOK
+          - OMR
+          - PKR
+          - PAB
+          - PEN
+          - PHP
+          - PLN
+          - QAR
+          - RON
+          - RUB
+          - SAR
+          - RSD
+          - SGD
+          - ZAR
+          - KRW
+          - SEK
+          - CHF
+          - THB
+          - TRY
+          - UAH
+          - AED
+          - USD
+          - VND
+          default: USD
+      - name: hl
+        in: query
+        required: false
+        description: Language code (ISO 639-1)
+        schema:
+          type: string
+          enum:
+          - af
+          - bs
+          - ca
+          - cs
+          - da
+          - de
+          - et
+          - en-gb
+          - en-us
+          - es
+          - es-419
+          - eu
+          - fil
+          - fr
+          - gl
+          - hr
+          - id
+          - is
+          - it
+          - sw
+          - lv
+          - lt
+          - hu
+          - ms
+          - nl
+          - 'no'
+          - pl
+          - pt-br
+          - pt-pt
+          - ro
+          - sq
+          - sk
+          - sl
+          - sr-latn
+          - fi
+          - sv
+          - vi
+          - tr
+          - el
+          - bg
+          - mk
+          - mn
+          - ru
+          - sr
+          - uk
+          - ka
+          - iw
+          - ur
+          - ar
+          - fa
+          - am
+          - ne
+          - mr
+          - hi
+          - bn
+          - pa
+          - gu
+          - ta
+          - te
+          - kn
+          - ml
+          - si
+          - th
+          - lo
+          - km
+          - ko
+          - ja
+          - zh-cn
+          - zh-tw
+          default: en
+      - name: gl
+        in: query
+        required: false
+        description: Country code (ISO 3166-1 alpha-2)
+        schema:
+          type: string
+          enum:
+          - af
+          - al
+          - dz
+          - as
+          - ad
+          - ao
+          - ai
+          - aq
+          - ag
+          - ar
+          - am
+          - au
+          - at
+          - az
+          - bs
+          - bh
+          - bd
+          - by
+          - be
+          - bz
+          - bj
+          - bt
+          - bo
+          - ba
+          - bw
+          - br
+          - vg
+          - bn
+          - bg
+          - bf
+          - bi
+          - kh
+          - cm
+          - ca
+          - cv
+          - cf
+          - td
+          - cl
+          - cn
+          - cx
+          - co
+          - cg
+          - cd
+          - ck
+          - cr
+          - ci
+          - hr
+          - cu
+          - cy
+          - cz
+          - dk
+          - dj
+          - dm
+          - do
+          - tl
+          - ec
+          - eg
+          - sv
+          - ee
+          - et
+          - fk
+          - fj
+          - fi
+          - fr
+          - pf
+          - tf
+          - ga
+          - gm
+          - ge
+          - de
+          - gh
+          - gi
+          - gr
+          - gl
+          - gd
+          - gp
+          - gu
+          - gt
+          - gg
+          - gn
+          - gw
+          - gy
+          - ht
+          - hn
+          - hk
+          - hu
+          - is
+          - in
+          - id
+          - ir
+          - iq
+          - ie
+          - im
+          - il
+          - it
+          - jm
+          - jp
+          - je
+          - jo
+          - kz
+          - ke
+          - ki
+          - kr
+          - kw
+          - kg
+          - la
+          - lv
+          - lb
+          - ls
+          - lr
+          - ly
+          - li
+          - lt
+          - lu
+          - mo
+          - mk
+          - mg
+          - mw
+          - my
+          - mv
+          - ml
+          - mt
+          - mh
+          - mq
+          - mr
+          - mu
+          - yt
+          - mx
+          - fm
+          - md
+          - mc
+          - mn
+          - me
+          - ms
+          - ma
+          - mz
+          - mm
+          - na
+          - nr
+          - np
+          - nl
+          - nc
+          - nz
+          - ni
+          - ne
+          - ng
+          - nu
+          - 'no'
+          - om
+          - pk
+          - pw
+          - ps
+          - pa
+          - pg
+          - py
+          - pe
+          - ph
+          - pn
+          - pl
+          - pt
+          - pr
+          - qa
+          - re
+          - ro
+          - ru
+          - rw
+          - sh
+          - kn
+          - pm
+          - vc
+          - ws
+          - sm
+          - st
+          - sa
+          - sn
+          - rs
+          - sc
+          - sl
+          - sg
+          - sk
+          - si
+          - sb
+          - so
+          - za
+          - gs
+          - es
+          - lk
+          - sd
+          - sr
+          - sz
+          - se
+          - ch
+          - sy
+          - tw
+          - tj
+          - tz
+          - th
+          - tg
+          - tk
+          - to
+          - tt
+          - tn
+          - tr
+          - tm
+          - tc
+          - tv
+          - ug
+          - ua
+          - ae
+          - gb
+          - us
+          - um
+          - uy
+          - uz
+          - vu
+          - va
+          - ve
+          - vn
+          - wf
+          - ye
+          - zm
+          - zw
+          default: us
+      - name: outbound_date
+        in: query
+        required: true
+        description: Outbound flight date in YYYY-MM-DD format
+        schema:
+          type: string
+          pattern: ^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$
+      - name: return_date
+        in: query
+        required: false
+        description: Return flight date in YYYY-MM-DD format (required for round-trip flights)
+        schema:
+          type: string
+          pattern: ^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$
+      - name: flight_type
+        in: query
+        required: false
+        description: Type of flight search
+        schema:
+          type: string
+          enum:
+          - round_trip
+          - one_way
+          - multi_city
+          default: round_trip
+      - name: travel_class
+        in: query
+        required: false
+        description: Travel class preference
+        schema:
+          type: string
+          enum:
+          - economy
+          - premium_economy
+          - business
+          - first_class
+          default: economy
+      - name: stops
+        in: query
+        required: false
+        description: Maximum number of stops allowed
+        schema:
+          type: string
+          enum:
+          - any
+          - nonstop
+          - one_stop_or_fewer
+          - two_stops_or_fewer
+          default: any
+      - name: adults
+        in: query
+        required: false
+        description: Number of adult passengers (1-9)
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 9
+          default: 1
+      - name: children
+        in: query
+        required: false
+        description: Number of child passengers (0-9)
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 9
+          default: 0
+      - name: infants_in_seat
+        in: query
+        required: false
+        description: Number of infants with their own seat (0-9)
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 9
+          default: 0
+      - name: infants_on_lap
+        in: query
+        required: false
+        description: Number of lap infants (0-9)
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 9
+          default: 0
+      - name: max_price
+        in: query
+        required: false
+        description: Maximum price filter
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+      - name: carry_on_bags
+        in: query
+        required: false
+        description: Number of carry-on bags
+        schema:
+          type: integer
+          minimum: 0
+      - name: checked_bags
+        in: query
+        required: false
+        description: Number of checked bags
+        schema:
+          type: integer
+          minimum: 0
+      - name: included_airlines
+        in: query
+        required: false
+        description: Comma-separated list of airline codes to include
+        schema:
+          type: string
+      - name: excluded_airlines
+        in: query
+        required: false
+        description: Comma-separated list of airline codes to exclude
+        schema:
+          type: string
+      - name: outbound_times
+        in: query
+        required: false
+        description: Comma-separated list of departure/arrival time preferences (0-23)
+        schema:
+          type: string
+      - name: return_times
+        in: query
+        required: false
+        description: Comma-separated list of return flight departure/arrival time preferences (0-23)
+        schema:
+          type: string
+      - name: emissions
+        in: query
+        required: false
+        description: Filter for lower emissions flights
+        schema:
+          type: string
+          enum:
+          - '1'
+      - name: included_connecting_airports
+        in: query
+        required: false
+        description: Comma-separated list of airport codes to include as connections
+        schema:
+          type: string
+      - name: excluded_connecting_airports
+        in: query
+        required: false
+        description: Comma-separated list of airport codes to exclude as connections
+        schema:
+          type: string
+      - name: layover_duration_min
+        in: query
+        required: false
+        description: Minimum layover duration in minutes
+        schema:
+          type: integer
+          minimum: 0
+      - name: layover_duration_max
+        in: query
+        required: false
+        description: Maximum layover duration in minutes
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+      - name: max_flight_duration
+        in: query
+        required: false
+        description: Maximum flight duration in minutes
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+      - name: separate_tickets
+        in: query
+        required: false
+        description: Control display of separate ticket options
+        schema:
+          type: string
+          enum:
+          - '0'
+          - '1'
+      - name: outbound_date_start
+        in: query
+        required: false
+        description: Start date for outbound date range in YYYY-MM-DD format
+        schema:
+          type: string
+          pattern: ^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$
+      - name: outbound_date_end
+        in: query
+        required: false
+        description: End date for outbound date range in YYYY-MM-DD format
+        schema:
+          type: string
+          pattern: ^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$
+      - name: return_date_start
+        in: query
+        required: false
+        description: Start date for return date range in YYYY-MM-DD format
+        schema:
+          type: string
+          pattern: ^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$
+      - name: return_date_end
+        in: query
+        required: false
+        description: End date for return date range in YYYY-MM-DD format
+        schema:
+          type: string
+          pattern: ^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GCal_SearchResponse'
+        '400':
+          description: Validation Error. There is an issue with query parameters, such as missing required parameters or invalid
+            values.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GCal_ErrorResponse'
+        '401':
+          description: Authentication Error. The API key is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GCal_ErrorResponse'
+        '429':
+          description: Rate Limit Exceeded. The number of allowed requests has been exceeded. Consider upgrading your plan
+            or waiting for the limit to reset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GCal_ErrorResponse'
+        '500':
+          description: Server Error. Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GCal_ErrorResponse'
+        '503':
+          description: Timeout. We could not retrieve results in 90 seconds.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GCal_ErrorResponse'
+      tags:
+      - google-calendar
+  /google/explore/search:
+    description: Proxy adapter that exposes SerpAPI Google Explore destination inspiration results.
+    get:
+      summary: Google Travel Explore Search
+      description: Call the SerpAPI Google Explore endpoint to discover destination ideas and supporting details.
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyQuery: []
+      parameters:
+      - name: engine
+        in: query
+        required: true
+        description: Engine to use for the search
+        schema:
+          type: string
+          enum:
+          - google_travel_explore
+      - name: departure_id
+        in: query
+        required: true
+        description: Departure location as 3-letter IATA code or kgmid starting with '/m/'
+        schema:
+          type: string
+      - name: arrival_id
+        in: query
+        required: false
+        description: 'Arrival location filter: bounding box [[lat,long],[lat,long]] or kgmid starting with ''/m/'''
+        schema:
+          type: string
+          default: /m/02j71
+      - name: time_period
+        in: query
+        required: false
+        description: Travel time period as predefined option, specific date (YYYY-MM-DD), or date range (YYYY-MM-DD..YYYY-MM-DD)
+        schema:
+          type: string
+          default: one_week_trip_in_the_next_six_months
+      - name: travel_mode
+        in: query
+        required: false
+        description: Filter results by travel mode
+        schema:
+          type: string
+          default: all
+          enum:
+          - all
+          - flights_only
+      - name: adults
+        in: query
+        required: false
+        description: Number of adult passengers
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 9
+          default: 1
+      - name: children
+        in: query
+        required: false
+        description: Number of child passengers
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 9
+          default: 0
+      - name: infants_in_seat
+        in: query
+        required: false
+        description: Number of infants with own seat
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 9
+          default: 0
+      - name: infants_on_lap
+        in: query
+        required: false
+        description: Number of infants on lap
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 9
+          default: 0
+      - name: travel_class
+        in: query
+        required: false
+        description: Travel class preference
+        schema:
+          type: string
+          default: economy
+          enum:
+          - economy
+          - premium_economy
+          - business
+          - first_class
+      - name: interests
+        in: query
+        required: false
+        description: Filter destinations by interest
+        schema:
+          type: string
+          default: popular
+          enum:
+          - popular
+          - outdoors
+          - beaches
+          - museums
+          - history
+          - skiing
+      - name: stops
+        in: query
+        required: false
+        description: Filter by number of stops
+        schema:
+          type: string
+          default: any
+          enum:
+          - any
+          - nonstop
+          - one_stop_or_fewer
+          - two_stops_or_fewer
+      - name: max_price
+        in: query
+        required: false
+        description: Maximum flight price
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+      - name: max_flight_duration
+        in: query
+        required: false
+        description: Maximum flight duration in minutes
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+      - name: carry_on_bags
+        in: query
+        required: false
+        description: Number of carry-on bags
+        schema:
+          type: integer
+          minimum: 0
+      - name: included_airlines
+        in: query
+        required: false
+        description: Comma-separated airline alliances to include
+        schema:
+          type: string
+          pattern: ^(ONEWORLD|SKYTEAM|STAR_ALLIANCE)(,(ONEWORLD|SKYTEAM|STAR_ALLIANCE))*$
+      - name: currency
+        in: query
+        required: false
+        description: Currency for prices
+        schema:
+          type: string
+          default: USD
+          enum:
+          - ALL
+          - DZD
+          - ARS
+          - AMD
+          - AWG
+          - AUD
+          - AZN
+          - BSD
+          - BHD
+          - BYN
+          - BMD
+          - BAM
+          - BRL
+          - GBP
+          - BGN
+          - CAD
+          - XPF
+          - CLP
+          - CNY
+          - COP
+          - CRC
+          - CUP
+          - CZK
+          - DKK
+          - DOP
+          - EGP
+          - EUR
+          - GEL
+          - HKD
+          - HUF
+          - ISK
+          - INR
+          - IDR
+          - IRR
+          - ILS
+          - JMD
+          - JPY
+          - JOD
+          - KZT
+          - KWD
+          - LBP
+          - MKD
+          - MYR
+          - MXN
+          - MDL
+          - MAD
+          - TWD
+          - NZD
+          - NOK
+          - OMR
+          - PKR
+          - PAB
+          - PEN
+          - PHP
+          - PLN
+          - QAR
+          - RON
+          - RUB
+          - SAR
+          - RSD
+          - SGD
+          - ZAR
+          - KRW
+          - SEK
+          - CHF
+          - THB
+          - TRY
+          - UAH
+          - AED
+          - USD
+          - VND
+      - name: hl
+        in: query
+        required: false
+        description: Language for the results
+        schema:
+          type: string
+          default: en-US
+          enum:
+          - af
+          - bs
+          - ca
+          - cs
+          - da
+          - de
+          - et
+          - en-GB
+          - en-US
+          - es
+          - es-419
+          - eu
+          - fil
+          - fr
+          - gl
+          - hr
+          - id
+          - is
+          - it
+          - sw
+          - lv
+          - lt
+          - hu
+          - ms
+          - nl
+          - 'no'
+          - pl
+          - pt-BR
+          - pt-PT
+          - ro
+          - sq
+          - sk
+          - sl
+          - sr-Latn
+          - fi
+          - sv
+          - vi
+          - tr
+          - el
+          - bg
+          - mk
+          - mn
+          - ru
+          - sr
+          - uk
+          - ka
+          - iw
+          - ur
+          - ar
+          - fa
+          - am
+          - ne
+          - mr
+          - hi
+          - bn
+          - pa
+          - gu
+          - ta
+          - te
+          - kn
+          - ml
+          - si
+          - th
+          - lo
+          - km
+          - ko
+          - ja
+          - zh-CN
+          - zh-TW
+      - name: gl
+        in: query
+        required: false
+        description: Country of the search
+        schema:
+          type: string
+          default: US
+          enum:
+          - AF
+          - AL
+          - DZ
+          - AS
+          - AD
+          - AO
+          - AI
+          - AG
+          - AR
+          - AM
+          - AU
+          - AT
+          - AZ
+          - BS
+          - BH
+          - BD
+          - BY
+          - BE
+          - BZ
+          - BJ
+          - BT
+          - BO
+          - BA
+          - BW
+          - BR
+          - VG
+          - BN
+          - BG
+          - BF
+          - BI
+          - KH
+          - CM
+          - CA
+          - CV
+          - CF
+          - TD
+          - CL
+          - CN
+          - CO
+          - CG
+          - CD
+          - CK
+          - CR
+          - CI
+          - HR
+          - CU
+          - CY
+          - CZ
+          - DK
+          - DJ
+          - DM
+          - DO
+          - EC
+          - EG
+          - SV
+          - EE
+          - ET
+          - FJ
+          - FI
+          - FR
+          - GA
+          - GM
+          - GE
+          - DE
+          - GH
+          - GI
+          - GR
+          - GL
+          - GT
+          - GG
+          - GY
+          - HT
+          - HN
+          - HK
+          - HU
+          - IS
+          - IN
+          - ID
+          - IR
+          - IQ
+          - IE
+          - IM
+          - IL
+          - IT
+          - JM
+          - JP
+          - JE
+          - JO
+          - KZ
+          - KE
+          - KI
+          - KW
+          - KG
+          - LA
+          - LV
+          - LB
+          - LS
+          - LY
+          - LI
+          - LT
+          - LU
+          - MG
+          - MW
+          - MY
+          - MV
+          - ML
+          - MT
+          - MU
+          - MX
+          - FM
+          - MD
+          - MN
+          - ME
+          - MS
+          - MA
+          - MZ
+          - MM
+          - NA
+          - NR
+          - NP
+          - NL
+          - NZ
+          - NI
+          - NE
+          - NG
+          - NU
+          - MK
+          - 'NO'
+          - OM
+          - PK
+          - PS
+          - PA
+          - PG
+          - PY
+          - PE
+          - PH
+          - PN
+          - PL
+          - PT
+          - PR
+          - QA
+          - RO
+          - RU
+          - RW
+          - WS
+          - SM
+          - ST
+          - SA
+          - SN
+          - RS
+          - SC
+          - SL
+          - SG
+          - SK
+          - SI
+          - SB
+          - SO
+          - ZA
+          - KR
+          - ES
+          - LK
+          - SH
+          - VC
+          - SR
+          - SE
+          - CH
+          - TW
+          - TJ
+          - TZ
+          - TH
+          - TL
+          - TG
+          - TO
+          - TT
+          - TN
+          - TR
+          - TM
+          - UG
+          - UA
+          - AE
+          - GB
+          - US
+          - UY
+          - UZ
+          - VU
+          - VE
+          - VN
+          - ZM
+          - ZW
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GExplore_SearchResponse'
+        '400':
+          description: Validation Error. There is an issue with query parameters, such as missing required parameters or invalid
+            values.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GExplore_ErrorResponse'
+        '401':
+          description: Authentication Error. The API key is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GExplore_ErrorResponse'
+        '429':
+          description: Rate Limit Exceeded. The number of allowed requests has been exceeded. Consider upgrading your plan
+            or waiting for the limit to reset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GExplore_ErrorResponse'
+        '500':
+          description: Server Error. Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GExplore_ErrorResponse'
+        '503':
+          description: Timeout. We could not retrieve results in 90 seconds.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GExplore_ErrorResponse'
+      tags:
+      - google-explore
 components:
   schemas:
     Offer:
@@ -433,7 +2290,7 @@ components:
         itineraries:
           type: array
           items:
-            $ref: "#/components/schemas/Itinerary"
+            $ref: '#/components/schemas/Itinerary'
     Itinerary:
       type: object
       properties:
@@ -442,7 +2299,7 @@ components:
         segments:
           type: array
           items:
-            $ref: "#/components/schemas/FlightSegment"
+            $ref: '#/components/schemas/FlightSegment'
     FlightSegment:
       type: object
       properties:
@@ -463,7 +2320,7 @@ components:
     AntiPhaserRequest:
       type: object
       required:
-        - phrase
+      - phrase
       properties:
         phrase:
           type: string
@@ -497,9 +2354,9 @@ components:
     EscalatorUploadRequest:
       type: object
       required:
-        - type
-        - path
-        - sender
+      - type
+      - path
+      - sender
       properties:
         type:
           type: string
@@ -587,7 +2444,7 @@ components:
     DatetimeInterpretRequest:
       type: object
       required:
-        - phrase
+      - phrase
       properties:
         phrase:
           type: string
@@ -612,3 +2469,996 @@ components:
           type: string
         timeZone:
           type: string
+    GFlights_SearchResponse:
+      type: object
+      properties:
+        search_metadata:
+          $ref: '#/components/schemas/GFlights_SearchMetadata'
+        search_parameters:
+          $ref: '#/components/schemas/GFlights_SearchParameters'
+        error:
+          type: string
+          description: Error message if no results found
+        best_flights:
+          type: array
+          description: Best flight options
+          items:
+            $ref: '#/components/schemas/GFlights_Flight'
+        other_flights:
+          type: array
+          description: Other available flights
+          items:
+            $ref: '#/components/schemas/GFlights_Flight'
+        price_insights:
+          $ref: '#/components/schemas/GFlights_PriceInsights'
+        airports:
+          type: array
+          description: Airport information
+          items:
+            $ref: '#/components/schemas/GFlights_AirportInfo'
+        selected_flights:
+          type: array
+          description: Selected flights when using booking_token
+          items:
+            $ref: '#/components/schemas/GFlights_SelectedFlight'
+        booking_options:
+          type: array
+          description: Booking options when using booking_token
+          items:
+            $ref: '#/components/schemas/GFlights_BookingOption'
+    GFlights_SearchMetadata:
+      type: object
+      required:
+      - id
+      - status
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the search request
+        status:
+          type: string
+          description: Status of the search request
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the search was created
+        request_time_taken:
+          type: number
+          description: Time taken to make the request in seconds
+        parsing_time_taken:
+          type: number
+          description: Time taken to parse the results in seconds
+        total_time_taken:
+          type: number
+          description: Total time taken for the search in seconds
+        request_url:
+          type: string
+          description: Google Flights URL for this search
+        html_url:
+          type: string
+          description: URL to view HTML results
+        json_url:
+          type: string
+          description: URL to view JSON results
+    GFlights_SearchParameters:
+      type: object
+      properties:
+        engine:
+          type: string
+          description: Engine used for the search
+        departure_id:
+          type: string
+          description: Departure airport or city ID
+        arrival_id:
+          type: string
+          description: Arrival airport or city ID
+        currency:
+          type: string
+          description: Currency for prices
+        hl:
+          type: string
+          description: Language for results
+        gl:
+          type: string
+          description: Country of search
+        outbound_date:
+          type: string
+          description: Outbound flight date
+        return_date:
+          type: string
+          description: Return flight date
+        flight_type:
+          type: string
+          description: Type of flight
+        travel_class:
+          type: string
+          description: Travel class
+        stops:
+          type: string
+          description: Number of stops
+        sort_by:
+          type: string
+          description: Sort order
+        adults:
+          type: integer
+          description: Number of adults
+        children:
+          type: integer
+          description: Number of children
+        infants_in_seat:
+          type: integer
+          description: Number of infants with seat
+        infants_on_lap:
+          type: integer
+          description: Number of infants on lap
+        max_price:
+          type: integer
+          description: Maximum price filter
+        carry_on_bags:
+          type: integer
+          description: Number of carry-on bags
+        checked_bags:
+          type: integer
+          description: Number of checked bags
+        included_airlines:
+          type: string
+          description: Included airlines
+        excluded_airlines:
+          type: string
+          description: Excluded airlines
+        outbound_times:
+          type: string
+          description: Outbound time preferences
+        return_times:
+          type: string
+          description: Return time preferences
+        emissions:
+          type: string
+          description: Emissions filter
+        show_hidden_flights:
+          type: boolean
+          description: Show hidden flights
+        show_cheapest_flights:
+          type: boolean
+          description: Show cheapest flights
+        included_connecting_airports:
+          type: string
+          description: Included connecting airports
+        excluded_connecting_airports:
+          type: string
+          description: Excluded connecting airports
+        layover_duration_min:
+          type: integer
+          description: Minimum layover duration
+        layover_duration_max:
+          type: integer
+          description: Maximum layover duration
+        max_flight_duration:
+          type: integer
+          description: Maximum flight duration
+        separate_tickets:
+          type: string
+          description: Separate tickets option
+        departure_token:
+          type: string
+          description: Departure token for pagination
+        booking_token:
+          type: string
+          description: Booking token
+        multi_city_json:
+          type: string
+          description: Multi-city flight segments
+    GFlights_Flight:
+      type: object
+      properties:
+        flights:
+          type: array
+          description: Individual flight segments
+          items:
+            $ref: '#/components/schemas/GFlights_FlightSegment'
+        layovers:
+          type: array
+          description: Layover information
+          items:
+            $ref: '#/components/schemas/GFlights_Layover'
+        total_duration:
+          type: integer
+          description: Total flight duration in minutes
+        carbon_emissions:
+          $ref: '#/components/schemas/GFlights_CarbonEmissions'
+        price:
+          type: integer
+          description: Flight price
+        type:
+          type: string
+          description: Flight type
+        extensions:
+          type: array
+          description: Additional flight information
+          items:
+            type: string
+        airline_logo:
+          type: string
+          description: URL to airline logo
+        booking_token:
+          type: string
+          description: Token for booking this specific flight
+        departure_token:
+          type: string
+          description: Token for next page of results
+    GFlights_SelectedFlight:
+      type: object
+      properties:
+        flights:
+          type: array
+          description: Individual flight segments
+          items:
+            $ref: '#/components/schemas/GFlights_FlightSegment'
+        layovers:
+          type: array
+          description: Layover information
+          items:
+            $ref: '#/components/schemas/GFlights_Layover'
+        total_duration:
+          type: integer
+          description: Total flight duration in minutes
+        carbon_emissions:
+          $ref: '#/components/schemas/GFlights_CarbonEmissions'
+        type:
+          type: string
+          description: Flight type
+        airline_logo:
+          type: string
+          description: URL to airline logo
+    GFlights_FlightSegment:
+      type: object
+      properties:
+        departure_airport:
+          $ref: '#/components/schemas/GFlights_AirportDetails'
+        arrival_airport:
+          $ref: '#/components/schemas/GFlights_AirportDetails'
+        duration:
+          type: integer
+          description: Flight segment duration in minutes
+        airplane:
+          type: string
+          description: Aircraft type
+        airline:
+          type: string
+          description: Airline name
+        airline_logo:
+          type: string
+          description: URL to airline logo
+        travel_class:
+          type: string
+          description: Travel class
+        flight_number:
+          type: string
+          description: Flight number
+        ticket_also_sold_by:
+          type: array
+          description: Other sellers of this ticket
+          items:
+            type: string
+        is_overnight:
+          type: boolean
+          description: Whether flight is overnight
+        is_often_delayed:
+          type: boolean
+          description: Whether flight is often delayed
+        is_different_class_business:
+          type: boolean
+          description: Whether business class differs
+        extensions:
+          type: array
+          description: Additional information
+          items:
+            type: string
+        detected_extensions:
+          $ref: '#/components/schemas/GFlights_DetectedExtensions'
+    GFlights_AirportDetails:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Airport name
+        id:
+          type: string
+          description: Airport code
+        date:
+          type: string
+          description: Date in YYYY-MM-DD format
+        time:
+          type: string
+          description: Time in HH:MM format
+    GFlights_Layover:
+      type: object
+      properties:
+        duration:
+          type: integer
+          description: Layover duration in minutes
+        name:
+          type: string
+          description: Airport name
+        id:
+          type: string
+          description: Airport code
+        is_overnight:
+          type: boolean
+          description: Whether layover is overnight
+    GFlights_CarbonEmissions:
+      type: object
+      properties:
+        this_flight:
+          type: integer
+          description: CO2 emissions for this flight
+        typical_for_this_route:
+          type: integer
+          description: Typical emissions for route
+        difference_percent:
+          type: integer
+          description: Percentage difference from typical
+        lowest_route:
+          type: integer
+          description: Lowest emissions option for route
+    GFlights_PriceInsights:
+      type: object
+      properties:
+        lowest_price:
+          type: integer
+          description: Lowest price found
+        price_level:
+          type: string
+          description: Price level assessment
+          enum:
+          - low
+          - typical
+          - high
+        typical_price_range:
+          type: object
+          properties:
+            low_price:
+              type: integer
+              description: Low end of typical price range
+            high_price:
+              type: integer
+              description: High end of typical price range
+        price_history:
+          type: array
+          description: Historical price data
+          items:
+            type: object
+            properties:
+              price:
+                type: integer
+                description: Price on date
+              iso_date:
+                type: string
+                description: Date in ISO 8601 format
+    GFlights_AirportInfo:
+      type: object
+      properties:
+        departure:
+          type: array
+          description: Departure airport options
+          items:
+            $ref: '#/components/schemas/GFlights_AirportData'
+        arrival:
+          type: array
+          description: Arrival airport options
+          items:
+            $ref: '#/components/schemas/GFlights_AirportData'
+    GFlights_AirportData:
+      type: object
+      properties:
+        airport:
+          type: object
+          properties:
+            id:
+              type: string
+              description: Airport code
+            name:
+              type: string
+              description: Airport name
+        city:
+          type: string
+          description: City name
+        country:
+          type: string
+          description: Country name
+        country_code:
+          type: string
+          description: Country code
+        image:
+          type: string
+          description: Image URL
+        thumbnail:
+          type: string
+          description: Thumbnail URL
+    GFlights_BookingOption:
+      type: object
+      properties:
+        book_with:
+          type: string
+          description: Booking provider name
+        airline_logos:
+          type: array
+          description: URLs to airline logos
+          items:
+            type: string
+        flight_numbers:
+          type: array
+          description: Flight numbers
+          items:
+            type: string
+        price:
+          type: integer
+          description: Total price
+        local_prices:
+          type: array
+          description: Prices in local currencies
+          items:
+            type: object
+            properties:
+              currency:
+                type: string
+                description: Currency code
+              price:
+                type: integer
+                description: Price in currency
+        option_title:
+          type: string
+          description: Option title
+        extensions:
+          type: array
+          description: Additional information
+          items:
+            type: string
+        baggage_prices:
+          type: array
+          description: Baggage pricing information
+          items:
+            type: string
+        booking_phone:
+          type: string
+          description: Phone number for booking
+        estimated_phone_service_fee:
+          type: integer
+          description: Phone service fee
+        booking_request:
+          $ref: '#/components/schemas/GFlights_BookingRequest'
+        is_split_booking:
+          type: boolean
+          description: Whether this is a split booking option
+        departure:
+          $ref: '#/components/schemas/GFlights_BookingOption'
+          description: Departure booking details for split bookings
+        arrival:
+          $ref: '#/components/schemas/GFlights_BookingOption'
+          description: Arrival booking details for split bookings
+    GFlights_ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+    GFlights_DetectedExtensions:
+      type: object
+      description: Structured amenity data for flight segments
+      properties:
+        has_power_and_usb_outlets:
+          type: boolean
+          description: Power and USB outlets available
+        has_some_power_and_usb_outlets:
+          type: boolean
+          description: Some power and USB outlets available
+        has_in_seat_power_outlet:
+          type: boolean
+          description: In-seat power outlet available
+        has_some_in_seat_power_outlet:
+          type: boolean
+          description: Some in-seat power outlets available
+        has_in_seat_usb_outlet:
+          type: boolean
+          description: In-seat USB outlet available
+        has_some_in_seat_usb_outlet:
+          type: boolean
+          description: Some in-seat USB outlets available
+        has_personal_video_screen:
+          type: boolean
+          description: Personal video screen available
+        has_live_tv:
+          type: boolean
+          description: Live TV available
+        has_on_demand_video:
+          type: boolean
+          description: On-demand video available
+        has_stream_video_to_own_device:
+          type: boolean
+          description: Can stream video to personal device
+        wifi:
+          type: string
+          description: Wi-Fi availability status
+          enum:
+          - available
+          - free
+          - for fee
+        seat_type:
+          type: string
+          description: Seat type classification
+          enum:
+          - Average Legroom
+          - Below Average Legroom
+          - Above Average Legroom
+          - Extra Reclining
+          - Lie Flat
+          - Individual Suite
+          - Standard Recliner Seat
+          - Angled Flat Seat
+        legroom_short:
+          type: string
+          description: Short legroom description
+        legroom_long:
+          type: string
+          description: Detailed legroom description
+        carbon_emission:
+          type: number
+          format: float
+          description: Carbon emissions in kg
+    GFlights_BookingRequest:
+      type: object
+      description: Booking request details
+      properties:
+        url:
+          type: string
+          description: Booking URL
+        post_data:
+          type: string
+          description: POST request data for booking
+    GCal_SearchResponse:
+      type: object
+      properties:
+        search_metadata:
+          $ref: '#/components/schemas/GCal_SearchMetadata'
+        search_parameters:
+          $ref: '#/components/schemas/GCal_SearchParameters'
+        calendar:
+          type: array
+          description: Array of calendar entries with flight prices
+          items:
+            $ref: '#/components/schemas/GCal_CalendarEntry'
+        error:
+          type: string
+          description: Error message if no results found
+    GCal_SearchMetadata:
+      type: object
+      required:
+      - id
+      - status
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the search request
+        status:
+          type: string
+          description: Status of the search request
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the search was created
+        request_time_taken:
+          type: number
+          description: Time taken to make the request in seconds
+        parsing_time_taken:
+          type: number
+          description: Time taken to parse the results in seconds
+        total_time_taken:
+          type: number
+          description: Total time taken for the search in seconds
+        request_url:
+          type: string
+          description: Google Flights URL for this search
+        html_url:
+          type: string
+          description: URL to view HTML results
+        json_url:
+          type: string
+          description: URL to view JSON results
+    GCal_SearchParameters:
+      type: object
+      properties:
+        engine:
+          type: string
+          description: Search engine used
+        departure_id:
+          type: string
+          description: Departure location ID
+        arrival_id:
+          type: string
+          description: Arrival location ID
+        currency:
+          type: string
+          description: Currency code
+        hl:
+          type: string
+          description: Language code
+        gl:
+          type: string
+          description: Country code
+        outbound_date:
+          type: string
+          description: Outbound flight date
+        return_date:
+          type: string
+          description: Return flight date
+        flight_type:
+          type: string
+          description: Type of flight
+        travel_class:
+          type: string
+          description: Travel class
+        stops:
+          type: string
+          description: Stop preferences
+        adults:
+          type: integer
+          description: Number of adults
+        children:
+          type: integer
+          description: Number of children
+        infants_in_seat:
+          type: integer
+          description: Number of infants with seats
+        infants_on_lap:
+          type: integer
+          description: Number of lap infants
+        max_price:
+          type: integer
+          description: Maximum price
+        carry_on_bags:
+          type: integer
+          description: Number of carry-on bags
+        checked_bags:
+          type: integer
+          description: Number of checked bags
+        included_airlines:
+          type: string
+          description: Included airlines
+        excluded_airlines:
+          type: string
+          description: Excluded airlines
+        outbound_times:
+          type: string
+          description: Outbound time preferences
+        return_times:
+          type: string
+          description: Return time preferences
+        emissions:
+          type: string
+          description: Emissions filter
+        included_connecting_airports:
+          type: string
+          description: Included connecting airports
+        excluded_connecting_airports:
+          type: string
+          description: Excluded connecting airports
+        layover_duration_min:
+          type: integer
+          description: Minimum layover duration
+        layover_duration_max:
+          type: integer
+          description: Maximum layover duration
+        max_flight_duration:
+          type: integer
+          description: Maximum flight duration
+        separate_tickets:
+          type: string
+          description: Separate tickets preference
+        outbound_date_start:
+          type: string
+          description: Outbound date range start
+        outbound_date_end:
+          type: string
+          description: Outbound date range end
+        return_date_start:
+          type: string
+          description: Return date range start
+        return_date_end:
+          type: string
+          description: Return date range end
+    GCal_CalendarEntry:
+      type: object
+      properties:
+        departure:
+          type: string
+          description: Departure date in YYYY-MM-DD format
+        return:
+          type: string
+          description: Return date in YYYY-MM-DD format (only for round-trip flights)
+        price:
+          type: integer
+          description: Flight price in the selected currency
+        has_no_flights:
+          type: boolean
+          description: Indicates if there are no flights available for this date combination
+        is_lowest_price:
+          type: boolean
+          description: Indicates if this is the lowest price in the calendar
+    GCal_ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+    GExplore_SearchResponse:
+      type: object
+      properties:
+        search_metadata:
+          $ref: '#/components/schemas/GExplore_SearchMetadata'
+        search_parameters:
+          $ref: '#/components/schemas/GExplore_SearchParameters'
+        destinations:
+          type: array
+          description: List of travel destination suggestions
+          items:
+            $ref: '#/components/schemas/GExplore_Destination'
+        error:
+          type: string
+          description: Error message if no results found
+    GExplore_SearchMetadata:
+      type: object
+      required:
+      - id
+      - status
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the search request
+        status:
+          type: string
+          description: Status of the search request
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the search was created
+        request_time_taken:
+          type: number
+          description: Time taken to make the request in seconds
+        parsing_time_taken:
+          type: number
+          description: Time taken to parse the results in seconds
+        total_time_taken:
+          type: number
+          description: Total time taken for the search in seconds
+        request_url:
+          type: string
+          description: Google Travel Explore URL for this search
+        html_url:
+          type: string
+          description: URL to view HTML results
+        json_url:
+          type: string
+          description: URL to view JSON results
+    GExplore_SearchParameters:
+      type: object
+      properties:
+        engine:
+          type: string
+          description: Engine used for the search
+        departure_id:
+          type: string
+          description: Departure location identifier
+        arrival_id:
+          type: string
+          description: Arrival location identifier or bounding box
+        time_period:
+          type: string
+          description: Travel time period
+        travel_mode:
+          type: string
+          description: Travel mode filter
+        adults:
+          type: string
+          description: Number of adult passengers
+        children:
+          type: string
+          description: Number of child passengers
+        infants_in_seat:
+          type: string
+          description: Number of infants with own seat
+        infants_on_lap:
+          type: string
+          description: Number of infants on lap
+        travel_class:
+          type: string
+          description: Travel class
+        interests:
+          type: string
+          description: Interest filter
+        stops:
+          type: string
+          description: Stop preference
+        max_price:
+          type: string
+          description: Maximum price filter
+        currency:
+          type: string
+          description: Currency code
+        hl:
+          type: string
+          description: Language code
+        gl:
+          type: string
+          description: Country code
+        max_flight_duration:
+          type: string
+          description: Maximum flight duration in minutes
+        carry_on_bags:
+          type: string
+          description: Number of carry-on bags
+        included_airlines:
+          type: string
+          description: Included airline alliances
+    GExplore_Destination:
+      type: object
+      required:
+      - name
+      - kgmid
+      - primary_airport
+      - country
+      - coordinates
+      - image
+      - outbound_date
+      - return_date
+      properties:
+        name:
+          type: string
+          description: Name of the destination
+        kgmid:
+          type: string
+          description: Google Knowledge Graph MID for the destination
+        primary_airport:
+          type: string
+          description: Primary airport serving the destination
+        country:
+          type: string
+          description: Country of the destination
+        coordinates:
+          type: array
+          description: Geographic coordinates [latitude, longitude]
+          items:
+            type: number
+        distance:
+          type: string
+          description: Distance from departure location
+        avg_cost_per_night:
+          type: integer
+          description: Average accommodation cost per night
+        driving_duration:
+          type: string
+          description: Driving duration in human-readable format
+        driving_duration_minutes:
+          type: integer
+          description: Driving duration in minutes
+        outbound_date:
+          type: string
+          description: Suggested outbound travel date
+        alternative_outbound_date:
+          type: string
+          description: Alternative outbound date if available
+        return_date:
+          type: string
+          description: Suggested return travel date
+        image:
+          type: string
+          description: URL of destination image
+        flight:
+          $ref: '#/components/schemas/GExplore_Flight'
+    GExplore_Flight:
+      type: object
+      required:
+      - airport_code
+      - departure_city_kgmid
+      - price
+      - stops
+      - flight_duration
+      - flight_duration_minutes
+      - airline_code
+      - airline_name
+      properties:
+        city:
+          type: string
+          description: Destination city name
+        city_kgmid:
+          type: string
+          description: Google Knowledge Graph MID for the city
+        airport_code:
+          type: string
+          description: Airport code for the flight
+        price:
+          type: integer
+          description: Flight price in specified currency
+        stops:
+          type: integer
+          description: Number of stops
+        flight_duration:
+          type: string
+          description: Flight duration in human-readable format
+        flight_duration_minutes:
+          type: integer
+          description: Flight duration in minutes
+        driving_duration:
+          type: string
+          description: Driving duration from airport in human-readable format
+        driving_duration_minutes:
+          type: integer
+          description: Driving duration from airport in minutes
+        airline_code:
+          type: string
+          description: Airline IATA code
+        airline_name:
+          type: string
+          description: Airline name
+        departure_city_kgmid:
+          type: string
+          description: Google Knowledge Graph MID for departure city
+        search_origin_kgmid:
+          type: string
+          description: Google Knowledge Graph MID for search origin
+    GExplore_ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+  parameters: {}
+  responses: {}
+  requestBodies: {}
+  headers: {}
+  securitySchemes:
+    GFlights_ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Use Bearer authentication. Format: "Bearer YOUR_API_KEY"'
+    GFlights_ApiKeyQuery:
+      type: apiKey
+      in: query
+      name: api_key
+      description: Pass API key as query parameter
+    GCal_ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Use Bearer authentication. Format: "Bearer YOUR_API_KEY"'
+    GCal_ApiKeyQuery:
+      type: apiKey
+      in: query
+      name: api_key
+      description: Pass API key as query parameter
+    GExplore_ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Use Bearer authentication. Format: "Bearer YOUR_API_KEY"'
+    GExplore_ApiKeyQuery:
+      type: apiKey
+      in: query
+      name: api_key
+      description: Pass API key as query parameter
+tags:
+- name: google-flights
+  description: google-flights operations imported from Google spec
+- name: google-calendar
+  description: google-calendar operations imported from Google spec
+- name: google-explore
+  description: google-explore operations imported from Google spec
