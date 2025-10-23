@@ -93,7 +93,8 @@ Frontend (PDF and parsing)
   - generatePdf constructs legs from bullets when needed; carrier+number without space; blanks instead of random gate/zone/seat/seq; multi-page generation fixed (one page per leg).
   - Trigger words include: confirm, confirmed, book, hold, pdf, download, itinerary, ticket, boarding pass.
   - Removed UI-level fallback for functionResponse; UI uses `text` from proxy only (backend-controlled).
-  - Frontends send `locationLat/locationLon` when available; proxy infers `default_origin` (nearest airport). Never send locality labels (e.g., �Zapre�ic�) to tools.
+  - Frontends send `locationLat/locationLon` when available; proxy infers `default_origin` (nearest airport). Never send locality labels (e.g., "Zapre�ic") to tools.
+  - Each UI now records the detection outcome at the top of the local log (`LAT`, `LON`, `CITY`, `COUNTRY`, `AIR`, `METHOD`). `METHOD` is `navigator.geolocation.getCurrentPosition`, `https://ipapi.co`, `DENIED`, or `FAILED`.
 
 Amadeus API Compatibility
 - Requests sent through proxy use fields aligned with v2.8/2.9: originLocationCode, destinationLocationCode, departureDate, returnDate, adults, children, infants, travelClass, nonStop, currencyCode, includedAirlineCodes, excludedAirlineCodes, max.

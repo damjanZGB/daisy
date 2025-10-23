@@ -1,0 +1,19 @@
+FLIGHT: LH5021
+LAT: N/A, LON: N/A
+CITY: N/A, COUNTRY: N/A
+AIR: N/A
+METHOD: PENDING
+SESSION: ab18c644-d3a3-4f34-9041-0d5ccb918ea1
+STARTED: 2025-10-22T22:04:21.157Z
+LOCATION: Detecting location...
+TIMEZONE: Europe/Zagreb
+DEFAULT ORIGIN: ZAG
+---
+[2025-10-22T22:04:21.157Z] ASSISTANT: Lufthansa Group Inspirational AI flight assistant. Nice to meet you!
+[2025-10-22T22:04:26.076Z] USER: Hi
+[2025-10-22T22:04:28.602Z] ASSISTANT: Hi, I am Paul, your Lufthansa Group Digital Travel Assistant. I am here to help you find your next travel destination and travel plan. How can I help you today? Before getting into it, please help me understand
+                           you better. Which of the following best corresponds to your personality when deciding and planning your travel? Please choose 1-4:
+                           1) Analytical Curator - you value rationality in deciding and control in planning
+                           2) Rational Explorer - you value rationality in deciding and freedom in planning
+                           3) Sentimental Voyager - you value feelings in deciding and control in planning
+                           4) Experiential Libertine - you value feelings in deciding and freedom in planning
