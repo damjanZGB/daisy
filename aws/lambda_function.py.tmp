@@ -1,11 +1,8 @@
 # aws/lambda_function.py — Bedrock Return-Control bridge for Daisy microservices
 import base64
 import binascii
-import calendar
-import re
 import json
 import os
-import os.path
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -16,7 +13,6 @@ AWS_REGION = os.getenv("AWS_REGION", "us-west-2")
 AGENT_ID = os.getenv("AGENT_ID") or os.getenv("SUPERVISOR_AGENT_ID")
 AGENT_ALIAS_ID = os.getenv("AGENT_ALIAS_ID") or os.getenv("SUPERVISOR_AGENT_ALIAS_ID")
 PROXY_BASE_URL = (os.getenv("PROXY_BASE_URL") or "https://origin-daisy.onrender.com").rstrip("/")
-GOOGLE_BASE_URL = (os.getenv("GOOGLE_BASE_URL") or "https://google-api-daisy.onrender.com").rstrip("/")
 RC_MAX_HOPS = int(os.getenv("RETURN_CONTROL_MAX_HOPS") or "6")
 HTTP_TIMEOUT = int(os.getenv("PROXY_TIMEOUT_SECONDS") or "60")
 
@@ -31,15 +27,6 @@ if AGENT_ID:
     AGENT_ID_ALLOWLIST.add(AGENT_ID)
 if AGENT_ALIAS_ID:
     AGENT_ALIAS_ALLOWLIST.add(AGENT_ALIAS_ID)
-
-IATA_PATHS = [
-    os.path.join(os.getcwd(), "backend", "iata.json"),
-    os.path.join(os.getcwd(), "data", "iata.json"),
-    os.path.join(os.getcwd(), "aws", "deploy_action", "data", "iata.json"),
-    os.path.join(os.getcwd(), "aws", "deploy_action", "iata.json"),
-    os.path.join(os.getcwd(), "iata.json"),
-]
-IATA_DATA = None
 
 bedrock = boto3.client("bedrock-agent-runtime", region_name=AWS_REGION)
 
@@ -72,165 +59,6 @@ def _decode_chunk_payload(payload) -> str:
         return json.dumps(payload, ensure_ascii=False)
     except Exception:
         return str(payload)
-
-
-def _load_iata_data():
-    global IATA_DATA
-    if IATA_DATA is not None:
-        return IATA_DATA
-    for candidate in IATA_PATHS:
-        try:
-            with open(candidate, "r", encoding="utf-8") as handle:
-                IATA_DATA = json.load(handle)
-                return IATA_DATA
-        except Exception:
-            continue
-    IATA_DATA = {}
-    return IATA_DATA
-
-
-def _country_for_iata(code: str | None) -> str | None:
-    if not code:
-        return None
-    data = _load_iata_data()
-    entry = data.get(str(code).upper())
-    if isinstance(entry, dict):
-        country = entry.get("country")
-        if isinstance(country, str) and len(country) == 2:
-            return country.upper()
-    return None
-
-
-def _is_valid_gl(value: str | None) -> bool:
-    return isinstance(value, str) and len(value) == 2 and value.isalpha()
-
-
-def _normalize_time_period(value) -> str:
-    if not value:
-        return "one_week_trip_in_the_next_six_months"
-    text = str(value).strip()
-    lower = text.lower()
-    year_match = None
-    for token in lower.split():
-        if token.isdigit() and len(token) == 4:
-            year_match = int(token)
-            break
-    if "summer" in lower and year_match:
-        return f"{year_match}-06-01..{year_match}-08-31"
-    if "winter" in lower and year_match:
-        return f"{year_match}-12-01..{year_match+1}-02-28"
-    if calendar_re := re.match(r"^(\d{4})-(\d{2})$", text):
-        year = int(calendar_re.group(1))
-        month = int(calendar_re.group(2))
-        last_day = calendar.monthrange(year, month)[1]
-        return f"{year:04d}-{month:02d}-01..{year:04d}-{month:02d}-{last_day:02d}"
-    if calendar_re := re.match(r"^(\d{4})-(\d{2})-(\d{2})$", text):
-        y, m, d = calendar_re.groups()
-        return f"{y}-{m}-{d}..{y}-{m}-{d}"
-    if ".." in text or text.startswith("custom_dates:"):
-        return text
-    return "one_week_trip_in_the_next_six_months"
-
-
-def _parse_time_period_range(value: str | None) -> tuple[str | None, str | None]:
-    if not value:
-        return None, None
-    text = str(value).strip()
-    if ".." in text:
-        start, end = text.split("..", 1)
-        start = start.strip() or None
-        end = end.strip() or None
-        return start, end
-    return text, None
-
-
-def _is_iso_date(value: str | None) -> bool:
-    if not value:
-        return False
-    return bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(value).strip()))
-
-
-def _canonical_interest(value: str | None) -> str | None:
-    if not isinstance(value, str):
-        return None
-    interest = value.strip().lower()
-    if not interest:
-        return None
-    mapping = {
-        "beach": "beaches",
-        "beaches": "beaches",
-        "outdoor": "outdoors",
-        "outdoors": "outdoors",
-        "popular": "popular",
-        "museum": "museums",
-        "museums": "museums",
-        "history": "history",
-        "ski": "skiing",
-        "skiing": "skiing",
-    }
-    return mapping.get(interest, interest)
-
-
-def _convert_explore_to_flights(params: dict) -> dict | None:
-    if not isinstance(params, dict):
-        return None
-    departure = params.get("departure_id")
-    arrival = params.get("arrival_id")
-    # Require concrete IATA arrival (avoid global bounding boxes or empty)
-    if not isinstance(departure, str) or len(departure.strip()) == 0:
-        return None
-    if not isinstance(arrival, str):
-        return None
-    arrival_trimmed = arrival.strip()
-    if len(arrival_trimmed) != 3 or not arrival_trimmed.isalpha():
-        return None
-
-    outbound_date = None
-    return_date = None
-    if _is_iso_date(params.get("outbound_date")):
-        outbound_date = str(params["outbound_date"]).strip()
-    if _is_iso_date(params.get("return_date")):
-        return_date = str(params["return_date"]).strip()
-
-    if not outbound_date:
-        start, end = _parse_time_period_range(params.get("time_period"))
-        if _is_iso_date(start):
-            outbound_date = start
-        if _is_iso_date(end) and end != outbound_date:
-            return_date = end
-
-    if not outbound_date:
-        return None
-
-    flight_type = "round_trip" if return_date else "one_way"
-    payload: dict[str, str] = {
-        "engine": "google_flights",
-        "flight_type": flight_type,
-        "departure_id": departure.strip(),
-        "arrival_id": arrival_trimmed,
-        "outbound_date": outbound_date,
-    }
-    if return_date:
-        payload["return_date"] = return_date
-    optional_keys = (
-        "adults",
-        "children",
-        "infants_in_seat",
-        "infants_on_lap",
-        "travel_class",
-        "currency",
-        "stops",
-        "max_price",
-        "gl",
-        "hl",
-        "nonstop",
-    )
-    for key in optional_keys:
-        value = params.get(key)
-        if value is None or value == "":
-            continue
-        payload[key] = str(value)
-    return payload
 
 
 def _event_to_dict(event) -> dict:
@@ -440,34 +268,19 @@ def _invoke_once(agent_id: str, agent_alias_id: str, session_id: str, text: str 
     return aggregated_text, return_control, response.get("sessionState")
 
 
-def _target_bases(path: str) -> list[str]:
-    targets: list[str] = []
-    if path.startswith("/google/"):
-        if GOOGLE_BASE_URL:
-            targets.append(GOOGLE_BASE_URL)
-        elif PROXY_BASE_URL:
-            targets.append(PROXY_BASE_URL)
-    else:
-        if PROXY_BASE_URL:
-            targets.append(PROXY_BASE_URL)
-    return targets or [PROXY_BASE_URL or GOOGLE_BASE_URL]
-
-
-def _proxy_url(base: str, path: str) -> str:
-    base = (base or "").rstrip("/")
-    return f"{base}/{path.lstrip('/')}"
+def _proxy_url(path: str) -> str:
+    return f"{PROXY_BASE_URL}/{path.lstrip('/')}"
 
 
 def _call_proxy(path: str, method: str, params: dict | None, body: dict | None) -> dict:
+    url = _proxy_url(path)
     method = (method or "POST").upper()
     data = None
     headers = {}
     if method == "GET":
         query_pairs = []
-        param_dict = {}
         if isinstance(params, dict):
             query_pairs = list(params.items())
-            param_dict = dict(query_pairs)
         elif isinstance(params, list):
             for item in params:
                 if isinstance(item, dict):
@@ -475,86 +288,10 @@ def _call_proxy(path: str, method: str, params: dict | None, body: dict | None) 
                     value = item.get("value")
                     if key and value is not None:
                         query_pairs.append((key, value))
-                        param_dict[key] = value
         elif isinstance(params, tuple):
             query_pairs = list(params)
-            param_dict = dict(query_pairs)
-        if path.startswith("/google/explore/"):
-            inferred_gl = _country_for_iata(param_dict.get("departure_id"))
-            if inferred_gl:
-                param_dict["gl"] = inferred_gl
-            else:
-                current_gl = param_dict.get("gl")
-                if not _is_valid_gl(current_gl):
-                    param_dict["gl"] = "US"
-            if not param_dict.get("hl"):
-                param_dict["hl"] = "en-US"
-            if not param_dict.get("engine"):
-                param_dict["engine"] = "google_travel_explore"
-            normalized_period = _normalize_time_period(param_dict.get("time_period"))
-            param_dict["time_period"] = normalized_period
-            canonical_interest = _canonical_interest(param_dict.get("interests"))
-            if canonical_interest:
-                param_dict["interests"] = canonical_interest
-            flights_params = _convert_explore_to_flights(param_dict)
-            if flights_params:
-                path = "/google/flights/search"
-                param_dict = flights_params
-            else:
-                allowed_keys = {
-                    "engine",
-                    "departure_id",
-                    "arrival_id",
-                    "gl",
-                    "hl",
-                    "search_query",
-                    "time_period",
-                    "travel_mode",
-                    "adults",
-                    "currency",
-                    "interests",
-                    "travel_class",
-                    "max_price",
-                    "children",
-                    "infants_in_seat",
-                    "infants_on_lap",
-                    "stops",
-                }
-                for extra_key in list(param_dict.keys()):
-                    if extra_key not in allowed_keys:
-                        param_dict.pop(extra_key, None)
-                arrival_value = param_dict.get("arrival_id")
-                if arrival_value:
-                    arrival_str = str(arrival_value).strip()
-                    valid_arrival = False
-                    if arrival_str.startswith("/m/"):
-                        valid_arrival = True
-                    elif arrival_str.startswith("[[") and arrival_str.endswith("]]"):
-                        valid_arrival = True
-                    elif len(arrival_str) == 3 and arrival_str.isalpha():
-                        valid_arrival = True
-                    if not valid_arrival:
-                        param_dict.pop("arrival_id", None)
-                        existing_query = param_dict.get("search_query")
-                        param_dict["search_query"] = f"{existing_query} {arrival_str}".strip() if existing_query else arrival_str
-                if not param_dict.get("travel_mode"):
-                    param_dict["travel_mode"] = "flights_only"
-                if not param_dict.get("adults"):
-                    param_dict["adults"] = "1"
-                if not param_dict.get("currency"):
-                    param_dict["currency"] = "EUR"
-            query_pairs = list(param_dict.items())
-        query_suffix = f"?{urllib.parse.urlencode(query_pairs, doseq=True)}" if query_pairs else ""
-        try:
-            print(
-                "[lambda] tool_query",
-                json.dumps(
-                    {"path": path, "method": method, "query": query_pairs},
-                    default=str,
-                ),
-            )
-        except Exception:
-            pass
+        if query_pairs:
+            url += "?" + urllib.parse.urlencode(query_pairs, doseq=True)
     else:
         headers["content-type"] = "application/json"
         payload_obj = body
@@ -566,59 +303,22 @@ def _call_proxy(path: str, method: str, params: dict | None, body: dict | None) 
         elif body is None:
             payload_obj = {}
         data = json.dumps(payload_obj or {}).encode("utf-8")
-        query_suffix = ""
+    request = urllib.request.Request(url, data=data, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as resp:
+            payload = resp.read().decode("utf-8", "ignore")
+            status = resp.getcode()
+    except urllib.error.HTTPError as err:
+        payload = err.read().decode("utf-8", "ignore")
+        status = err.code
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
 
-    targets = _target_bases(path or "")
-    last_failure: dict | None = None
-    for base in targets:
-        url = _proxy_url(base, path or "")
-        if method == "GET" and query_suffix:
-            url = f"{url}{query_suffix}"
-        request = urllib.request.Request(url, data=data, headers=headers, method=method)
-        try:
-            with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as resp:
-                payload = resp.read().decode("utf-8", "ignore")
-                status = resp.getcode()
-        except urllib.error.HTTPError as err:
-            payload = err.read().decode("utf-8", "ignore")
-            status = err.code
-            try:
-                data = json.loads(payload) if payload else {}
-            except Exception:
-                data = {"raw": payload}
-            last_failure = {"ok": status < 400, "status": status, "data": data}
-            continue
-        except Exception as exc:
-            try:
-                print(
-                    "[lambda] tool_exception",
-                    json.dumps(
-                        {"path": path, "url": url, "error": str(exc), "exc_type": type(exc).__name__},
-                        default=str,
-                    ),
-                )
-            except Exception:
-                pass
-            last_failure = {"ok": False, "error": str(exc)}
-            continue
-
-        try:
-            data = json.loads(payload) if payload else {}
-        except Exception:
-            data = {"raw": payload}
-        result = {"ok": status < 400, "status": status, "data": data}
-        if not result["ok"]:
-            try:
-                print(
-                    "[lambda] tool_error_detail",
-                    json.dumps({"status": status, "data": data}, default=str),
-                )
-            except Exception:
-                pass
-        return result
-    if last_failure:
-        return last_failure
-    return {"ok": False, "status": 520, "data": {"error": "tool_call_failed"}}
+    try:
+        data = json.loads(payload) if payload else {}
+    except Exception:
+        data = {"raw": payload}
+    return {"ok": status < 400, "status": status, "data": data}
 
 
 def _rc_result(invocation_id: str, inputs: list, results: list) -> list:
@@ -719,19 +419,6 @@ def lambda_handler(event, context):
                         "status": proxy_result.get("status"),
                         "ok": proxy_result.get("ok"),
                     }
-                ),
-            )
-        except Exception:
-            pass
-        try:
-            print(
-                "[lambda] tool_payload",
-                json.dumps(
-                    {
-                        "params": params,
-                        "body": body,
-                    },
-                    default=str,
                 ),
             )
         except Exception:
@@ -863,4 +550,3 @@ def lambda_handler(event, context):
         "headers": {"content-type": "application/json"},
         "body": json.dumps(response_payload),
     }
-

@@ -1,16 +1,1 @@
-﻿{
-    "apiPath":  "/tools/amadeus/flex",
-    "httpMethod":  "GET",
-    "body":  {
-                 "originLocationCode":  "MUC",
-                 "destinationLocationCode":  "ZRH",
-                 "month":  "2025-11",
-                 "oneWay":  true,
-                 "nonStop":  false,
-                 "currencyCode":  "EUR",
-                 "limit":  5,
-                 "priceLimit":  3,
-                 "adults":  1,
-                 "travelClass":  "ECONOMY"
-             }
-}
+{"body":"{\"sessionId\":\"cli-test\",\"inputText\":\"Hello again\"}"}

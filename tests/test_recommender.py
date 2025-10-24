@@ -1,5 +1,8 @@
+import io
 import unittest
 from datetime import date
+from unittest import mock
+import urllib.error
 
 import aws.lambda_function as lf
 
@@ -69,6 +72,65 @@ class TestScoring(unittest.TestCase):
         s_gva, _ = lf._score_destination(gva, {"winter_sports"}, 1, "MUC")
         self.assertGreater(s_gva, s_tfs)
 
+class TestExploreProxy(unittest.TestCase):
+    def test_summer_2026_query_normalizes_and_keeps_filters(self):
+        fake_response = mock.MagicMock()
+        fake_response.read.return_value = b'{"destinations": []}'
+        fake_response.getcode.return_value = 200
+        with mock.patch("urllib.request.urlopen") as mock_urlopen:
+            mock_urlopen.return_value.__enter__.return_value = fake_response
+            result = lf._call_proxy(
+                "/google/explore/search",
+                "GET",
+                {
+                    "engine": "google_travel_explore",
+                    "departure_id": "ZAG",
+                    "time_period": "Summer 2026",
+                    "interests": "beach",
+                    "travel_class": "business",
+                    "max_price": "1200",
+                },
+                None,
+            )
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["status"], 200)
+        request_obj = mock_urlopen.call_args[0][0]
+        self.assertTrue(request_obj.full_url.startswith(lf.GOOGLE_BASE_URL))
+        self.assertIn(
+            "time_period=2026-06-01..2026-08-31", request_obj.full_url
+        )
+        self.assertIn("interests=beaches", request_obj.full_url)
+        self.assertIn("travel_class=business", request_obj.full_url)
+        self.assertIn("max_price=1200", request_obj.full_url)
+
+    def test_primary_error_surface_when_no_tool_fallback(self):
+        error_fp = io.BytesIO(b"Cannot GET /google/explore/search")
+        primary_error = urllib.error.HTTPError(
+            f"{lf.GOOGLE_BASE_URL}/google/explore/search",
+            404,
+            "Not Found",
+            None,
+            error_fp,
+        )
+        with mock.patch("urllib.request.urlopen") as mock_urlopen:
+            mock_urlopen.side_effect = [primary_error]
+            result = lf._call_proxy(
+                "/google/explore/search",
+                "GET",
+                {
+                    "departure_id": "ZAG",
+                    "time_period": "Summer 2026",
+                    "interests": "beach",
+                },
+                None,
+            )
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], 404)
+        self.assertEqual(mock_urlopen.call_count, 1)
+        first_request = mock_urlopen.call_args_list[0][0][0]
+        self.assertTrue(first_request.full_url.startswith(lf.GOOGLE_BASE_URL))
+
 
 if __name__ == "__main__":
     unittest.main()
+

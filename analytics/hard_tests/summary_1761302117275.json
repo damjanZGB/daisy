@@ -1,0 +1,23 @@
+[
+  {
+    "alias": "paul",
+    "sessionId": "paul-hard-19a15c8ff1c",
+    "ok": false,
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\hard_tests\\paul_paul-hard-19a15c8ff1c.json",
+    "error": "DependencyFailedException: Your request couldn't be completed. Lambda function arn:aws:lambda:us-west-2:083756035354:function:daisy_in_action-0k2c0 encountered a problem while processing request.The error message from the Lambda function is Unhandled. Check the Lambda function log for error details, then try your request again after fixing the error."
+  },
+  {
+    "alias": "bianca",
+    "sessionId": "bianca-hard-19a15c922c3",
+    "ok": true,
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\hard_tests\\bianca_bianca-hard-19a15c922c3.json",
+    "error": null
+  },
+  {
+    "alias": "gina",
+    "sessionId": "gina-hard-19a15c96527",
+    "ok": false,
+    "file": "C:\\Users\\Damjan\\source\\repos\\daisy\\analytics\\hard_tests\\gina_gina-hard-19a15c96527.json",
+    "error": "DependencyFailedException: Your request couldn't be completed. Lambda function arn:aws:lambda:us-west-2:083756035354:function:daisy_in_action-0k2c0 encountered a problem while processing request.The error message from the Lambda function is Unhandled. Check the Lambda function log for error details, then try your request again after fixing the error."
+  }
+]

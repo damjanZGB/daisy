@@ -1,0 +1,4 @@
+{"invocationId":"test-explore","invocationInputs":[{"actionGroup":"daisy_in_action","apiPath":"/google/explore/search","httpMethod":"GET","parameters":{"engine":"google_travel_explore","departure_id":"ZAG","time_period":"Summer 2026","interests":"beach","travel_class":"business","max_price":"1200"}}]}
+
+
+

@@ -1,0 +1,34 @@
+{
+  "ok": false,
+  "sessionId": "paul-hard-19a15ad4e71",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Hi, I am Paul, your Lufthansa Group Digital Travel Inspirational Assistant. What kind of journey are you imagining today? Before we go further, which travel personality best fits you? Choose 1–4: 1) Analytical Curator – rational + control  2) Rational Explorer – rational + freedom  3) Sentimental Voyager – feelings + control  4) Experiential Libertine – feelings + freedom",
+      "askUser": []
+    },
+    {
+      "turn": 2,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "text": "Hi, I am Paul, your Lufthansa Group Digital Travel Inspirational Assistant. What kind of journey are you imagining today? Before we go further, which travel personality best fits you? Choose 1–4: 1) Analytical Curator – rational + control  2) Rational Explorer – rational + freedom  3) Sentimental Voyager – feelings + control  4) Experiential Libertine – feelings + freedom",
+      "askUser": []
+    },
+    {
+      "turn": 3,
+      "role": "error",
+      "text": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+    }
+  ],
+  "error": "DependencyFailedException: The server encountered an error processing the Lambda response. Check the Lambda response and retry the request"
+}

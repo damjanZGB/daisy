@@ -1,0 +1,20 @@
+{
+    "Variables":  {
+                      "ACTION_GROUP_NAME":  "daisy_in_action",
+                      "DEBUG_S3_PREFIX":  "debug-tool-io",
+                      "AGENT_ID":  "JDLTXAKYJY",
+                      "AGENT_ID_ALLOWLIST":  "JDLTXAKYJY",
+                      "RECOMMENDER_MAX_OPTIONS":  "10",
+                      "DEBUG_TOOL_IO":  "true",
+                      "AGENT_ALIAS_ID":  "UY0U7MRMDK",
+                      "AGENT_ALIAS_ALLOWLIST":  "D84WDVHMZR,R1YRB7NGUP,UY0U7MRMDK",
+                      "RECOMMENDER_VERBOSE":  "true",
+                      "AMADEUS_ENV":  "test",
+                      "DEFAULT_CURRENCY":  "EUR",
+                      "ACTION_GROUP_RECOMMENDER":  "DestinationRecommender",
+                      "PROXY_BASE_URL":  "https://origin-daisy.onrender.com",
+                      "RECOMMENDER_MAX_TEXT_BYTES":  "4000",
+                      "DEBUG_S3_BUCKET":  "origin-daisy-bucket",
+                      "LH_GROUP_ONLY":  "true"
+                  }
+}

@@ -1,0 +1,94 @@
+{
+  "ok": true,
+  "sessionId": "gina-hard-19a15cde4de",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Hi, I am Paul, your Lufthansa Group Digital Travel Inspirational Assistant. What kind of journey are you imagining today?\n\nBefore we go further, which travel personality best fits you? Choose 1–4:\n1) Analytical Curator – rational + control\n2) Rational Explorer – rational + freedom\n3) Sentimental Voyager – feelings + control\n4) Experiential Libertine – feelings + freedom",
+      "askUser": []
+    },
+    {
+      "turn": 2,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "text": "Hi, I am Paul, your Lufthansa Group Digital Travel Inspirational Assistant. What kind of journey are you imagining today?\n\nBefore we go further, which travel personality best fits you? Choose 1–4:\n1) Analytical Curator – rational + control\n2) Rational Explorer – rational + freedom\n3) Sentimental Voyager – feelings + control\n4) Experiential Libertine – feelings + freedom",
+      "askUser": []
+    },
+    {
+      "turn": 3,
+      "role": "user",
+      "text": "I want to go to Zurich. Next saturday."
+    },
+    {
+      "turn": 3,
+      "role": "assistant",
+      "text": "Before we go further, which travel personality best fits you? Choose 1–4:\n1) Analytical Curator – rational + control\n2) Rational Explorer – rational + freedom\n3) Sentimental Voyager – feelings + control\n4) Experiential Libertine – feelings + freedom",
+      "askUser": []
+    },
+    {
+      "turn": 4,
+      "role": "user",
+      "text": "Ok"
+    },
+    {
+      "turn": 4,
+      "role": "assistant",
+      "text": "Thank you for the information. To confirm, you want to travel to Zurich next Saturday. Before we proceed, which travel personality best fits you? Choose 1–4:\n1) Analytical Curator – rational + control\n2) Rational Explorer – rational + freedom\n3) Sentimental Voyager – feelings + control\n4) Experiential Libertine – feelings + freedom",
+      "askUser": []
+    },
+    {
+      "turn": 5,
+      "role": "user",
+      "text": "I want to stay for five days."
+    },
+    {
+      "turn": 5,
+      "role": "assistant",
+      "text": "Thank you for the details. To confirm, you want to travel to Zurich next Saturday for a five-day stay. Before we proceed, which travel personality best fits you? Choose 1–4:\n1) Analytical Curator – rational + control\n2) Rational Explorer – rational + freedom\n3) Sentimental Voyager – feelings + control\n4) Experiential Libertine – feelings + freedom",
+      "askUser": []
+    },
+    {
+      "turn": 6,
+      "role": "user",
+      "text": "Departure is the next saturday, and arrival five days after that."
+    },
+    {
+      "turn": 6,
+      "role": "assistant",
+      "text": "Thank you for the details. To confirm, you want to travel to Zurich, departing next Saturday and arriving five days later. Before we proceed, which travel personality best fits you? Choose 1–4:\n1) Analytical Curator – rational + control\n2) Rational Explorer – rational + freedom\n3) Sentimental Voyager – feelings + control\n4) Experiential Libertine – feelings + freedom",
+      "askUser": []
+    },
+    {
+      "turn": 7,
+      "role": "user",
+      "text": "Next saturday"
+    },
+    {
+      "turn": 7,
+      "role": "assistant",
+      "text": "Thank you for the details. To confirm, you want to travel to Zurich, departing next Saturday and arriving five days later. Before we proceed, which travel personality best fits you? Choose 1–4:\n1) Analytical Curator – rational + control\n2) Rational Explorer – rational + freedom\n3) Sentimental Voyager – feelings + control\n4) Experiential Libertine – feelings + freedom",
+      "askUser": []
+    },
+    {
+      "turn": 8,
+      "role": "user",
+      "text": "Next saturday"
+    },
+    {
+      "turn": 8,
+      "role": "assistant",
+      "text": "Thank you for the details. To confirm, you want to travel to Zurich, departing next Saturday and arriving five days later. Before we proceed, which travel personality best fits you? Choose 1–4:\n1) Analytical Curator – rational + control\n2) Rational Explorer – rational + freedom\n3) Sentimental Voyager – feelings + control\n4) Experiential Libertine – feelings + freedom",
+      "askUser": []
+    }
+  ]
+}

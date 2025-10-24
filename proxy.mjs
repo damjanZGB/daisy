@@ -286,6 +286,7 @@ async function executeInput(input) {
 export async function handleChat({ sessionId, text, inputText, persona = {} }) {
   let sid = sessionId || String(Date.now());
   let state = {};
+  const allToolResults = [];
   try {
     if (persona && typeof persona === "object") {
       const normalized = toSessionAttributes(persona);
@@ -309,12 +310,23 @@ export async function handleChat({ sessionId, text, inputText, persona = {} }) {
     const inputs = rc.invocationInputs || [];
     const results = [];
     for (const inp of inputs) {
-      try { results.push({ ok:true, data: await executeInput(inp) }); }
-      catch (e) { results.push({ ok:false, error:String(e) }); }
+      const apiPath = inp?.apiPath || inp?.operation || "";
+      const httpMethod = (inp?.httpMethod || inp?.method || "POST").toUpperCase();
+      try {
+        const data = await executeInput(inp);
+        results.push({ ok: true, data, apiPath, httpMethod });
+      } catch (e) {
+        results.push({ ok: false, error: String(e), apiPath, httpMethod });
+      }
     }
-    state = { ...state, returnControlInvocationResults: rcResults(invId, inputs, results) };
+    const rcBundle = rcResults(invId, inputs, results);
+    const hopResults = rcBundle?.[0]?.returnControlInvocationResults || [];
+    if (hopResults.length) {
+      allToolResults.push(...hopResults);
+    }
+    state = { ...state, returnControlInvocationResults: rcBundle };
   }
-  return { text: out.trim() };
+  return { text: out.trim(), toolResults: allToolResults };
 }
 
 const app = express();

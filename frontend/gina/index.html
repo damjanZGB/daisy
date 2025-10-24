@@ -295,6 +295,95 @@
         return null;
       }
     };
+    const formatCurrency = (value, currency) => {
+      if (value === null || value === undefined || value === '') return null;
+      const amount = Number(value);
+      if (Number.isFinite(amount) && currency) {
+        try {
+          return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount);
+        } catch (_) {
+          return `${amount} ${currency}`;
+        }
+      }
+      if (Number.isFinite(amount)) {
+        try {
+          return new Intl.NumberFormat().format(amount);
+        } catch (_) {
+          return String(amount);
+        }
+      }
+      return currency ? `${value} ${currency}` : String(value);
+    };
+    const extractToolResults = (payload) => {
+      if (!payload || typeof payload !== 'object') return [];
+      if (Array.isArray(payload.toolResults)) return payload.toolResults;
+      const rcBundles =
+        payload.returnControlInvocationResults ||
+        payload.sessionState?.returnControlInvocationResults ||
+        [];
+      if (!Array.isArray(rcBundles)) return [];
+      return rcBundles.flatMap((bundle) => bundle?.returnControlInvocationResults || []);
+    };
+    const buildToolCards = (toolResults = []) => {
+      const cards = [];
+      const seen = new Set();
+      for (const entry of toolResults) {
+        if (!entry || typeof entry !== 'object') continue;
+        const path = entry.apiPath || entry.path || '';
+        const result = entry.result || entry;
+        if (!result || result.ok === false) continue;
+        const data = result.data || {};
+        if (typeof path === 'string' && path.startsWith("/google/explore/") && Array.isArray(data.destinations)) {
+          const currency = data?.search_parameters?.currency;
+          for (const dest of data.destinations) {
+            if (!dest || typeof dest !== 'object') continue;
+            const image = dest.image || dest.thumbnail;
+            if (!image || seen.has(image)) continue;
+            seen.add(image);
+            const flight = dest.flight || {};
+            const subtitleParts = [];
+            if (dest.country && dest.country !== dest.name) subtitleParts.push(dest.country);
+            if (flight.price !== undefined && flight.price !== null) {
+              const formattedPrice = formatCurrency(flight.price, currency);
+              if (formattedPrice) subtitleParts.push(formattedPrice);
+            }
+            const airline = flight.airline_name || flight.airline_code;
+            if (airline) subtitleParts.push(airline);
+            cards.push({
+              image,
+              title: dest.name || flight.city || 'Destination',
+              subtitle: subtitleParts.filter(Boolean).join(' | ') || null,
+            });
+            if (cards.length >= 6) break;
+          }
+        } else if (typeof path === 'string' && path.startsWith("/google/flights/") && Array.isArray(data.airports)) {
+          for (const section of data.airports) {
+            const arrivals = Array.isArray(section?.arrival) ? section.arrival : [];
+            for (const airport of arrivals) {
+              if (!airport || typeof airport !== 'object') continue;
+              const image = airport.image || airport.thumbnail;
+              if (!image || seen.has(image)) continue;
+              seen.add(image);
+              const title = airport.city || airport.airport?.name || 'Destination';
+              const subtitleParts = [];
+              if (airport.country) subtitleParts.push(airport.country);
+              if (section?.departure?.[0]?.city && airport.city) {
+                subtitleParts.push(`${section.departure[0].city} -> ${airport.city}`);
+              }
+              cards.push({
+                image,
+                title,
+                subtitle: subtitleParts.filter(Boolean).join(' | ') || null,
+              });
+              if (cards.length >= 6) break;
+            }
+            if (cards.length >= 6) break;
+          }
+        }
+        if (cards.length >= 6) break;
+      }
+      return cards;
+    };
     const resolveInitialApiUrl = () => {
       try {
         const params = new URLSearchParams(window.location.search);
@@ -372,16 +461,55 @@
     }
     function Bubble({ role, text, meta }) {
       const isUser = role === 'user';
+      const metaObj = meta && typeof meta === 'object' ? meta : null;
+      const cards = metaObj && Array.isArray(metaObj.cards) ? metaObj.cards : [];
+      const pdfMeta = metaObj && metaObj.pdfUrl ? metaObj : null;
+      let metaText = null;
+      if (typeof meta === 'string') {
+        metaText = meta;
+      } else if (metaObj) {
+        if (metaObj.note) {
+          metaText = metaObj.note;
+        } else if (metaObj.cid) {
+          metaText = `cid ${metaObj.cid}`;
+        }
+      }
       return (
         <div className={`w-full flex ${isUser ? 'justify-end' : 'justify-start'}`}>
           <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 border ${isUser ? 'bg-lhYellow/95 text-lhBlue border-transparent' : 'bg-white/5 text-white/95 border-white/10'}`}>
             <p className="whitespace-pre-wrap text-sm leading-6">{text}</p>
-            {meta?.pdfUrl && (
+            {cards.length > 0 && (
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {cards.map((card, idx) => (
+                  <figure key={card.image || `${card.title || 'card'}-${idx}`} className="overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                    {card.image && (
+                      <div className="aspect-[4/3] overflow-hidden bg-black/30">
+                        <img
+                          src={card.image}
+                          alt={card.title || 'Destination preview'}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.03]"
+                        />
+                      </div>
+                    )}
+                    {(card.title || card.subtitle) && (
+                      <figcaption className="p-3 text-xs">
+                        {card.title ? <p className="font-semibold text-white">{card.title}</p> : null}
+                        {card.subtitle ? <p className="text-white/70 mt-0.5">{card.subtitle}</p> : null}
+                      </figcaption>
+                    )}
+                  </figure>
+                ))}
+              </div>
+            )}
+            {pdfMeta && (
               <p className={`mt-2 text-[12px] ${isUser ? 'text-lhBlue/80' : 'text-white/80'}`}>
-                <a className="underline decoration-dotted" href={meta.pdfUrl} download={meta.pdfName || 'itinerary.pdf'}>Download itinerary (PDF)</a>
+                <a className="underline decoration-dotted" href={pdfMeta.pdfUrl} download={pdfMeta.pdfName || 'itinerary.pdf'}>Download itinerary (PDF)</a>
               </p>
             )}
-            {meta && !meta.pdfUrl ? <p className={`mt-1 text-[10px] ${isUser ? 'text-lhBlue/70' : 'text-white/50'}`}>{meta}</p> : null}
+            {metaText ? (
+              <p className={`mt-1 text-[10px] ${isUser ? 'text-lhBlue/70' : 'text-white/50'}`}>{metaText}</p>
+            ) : null}
           </div>
         </div>
       );
@@ -934,13 +1062,18 @@
           setProxyOnline(true);
           const data = await res.json();
           const reply = sanitizeAssistantText((data.text || data.responseText || data.answer || '').trim());
-          const meta = data.cid ? `cid ${data.cid}` : undefined;
+          const toolResults = extractToolResults(data);
+          const cards = buildToolCards(toolResults);
+          const metaPayload = {};
+          if (data.cid) metaPayload.cid = data.cid;
+          if (cards.length) metaPayload.cards = cards;
+          const botMeta = Object.keys(metaPayload).length ? metaPayload : undefined;
           // track last itinerary options for possible PDF generation
           const parsedOptions = parseItineraryOptions(reply);
           if (parsedOptions && parsedOptions.length) {
             setLastItinerary(parsedOptions);
           }
-          const botMsg = { id: uid(), role: 'assistant', text: reply || 'No text response.', meta, ts: new Date().toISOString() };
+          const botMsg = { id: uid(), role: 'assistant', text: reply || 'No text response.', meta: botMeta, ts: new Date().toISOString() };
           setMessages(m => [...m, botMsg]);
           // If user asked to confirm/hold/book OR explicitly asked for a PDF/download,
           // generate a PDF from the latest known itinerary options.

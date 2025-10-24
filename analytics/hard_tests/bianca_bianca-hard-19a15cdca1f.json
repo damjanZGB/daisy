@@ -1,0 +1,34 @@
+{
+  "ok": false,
+  "sessionId": "bianca-hard-19a15cdca1f",
+  "transcript": [
+    {
+      "turn": 1,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 1,
+      "role": "assistant",
+      "text": "Hi, I am Paul, your Lufthansa Group Digital Travel Inspirational Assistant. What kind of journey are you imagining today? Before we go further, which travel personality best fits you? Choose 1–4: 1) Analytical Curator – rational + control  2) Rational Explorer – rational + freedom  3) Sentimental Voyager – feelings + control  4) Experiential Libertine – feelings + freedom",
+      "askUser": []
+    },
+    {
+      "turn": 2,
+      "role": "user",
+      "text": "Hi"
+    },
+    {
+      "turn": 2,
+      "role": "assistant",
+      "text": "Hi again! To tailor your travel experience with Lufthansa Group, could you please tell me which travel personality best fits you? Choose 1–4: 1) Analytical Curator – rational + control  2) Rational Explorer – rational + freedom  3) Sentimental Voyager – feelings + control  4) Experiential Libertine – feelings + freedom",
+      "askUser": []
+    },
+    {
+      "turn": 3,
+      "role": "error",
+      "text": "DependencyFailedException: Your request couldn't be completed. Lambda function arn:aws:lambda:us-west-2:083756035354:function:daisy_in_action-0k2c0 encountered a problem while processing request.The error message from the Lambda function is Unhandled. Check the Lambda function log for error details, then try your request again after fixing the error."
+    }
+  ],
+  "error": "DependencyFailedException: Your request couldn't be completed. Lambda function arn:aws:lambda:us-west-2:083756035354:function:daisy_in_action-0k2c0 encountered a problem while processing request.The error message from the Lambda function is Unhandled. Check the Lambda function log for error details, then try your request again after fixing the error."
+}
