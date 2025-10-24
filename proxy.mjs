@@ -17,7 +17,7 @@ const {
   AGENT_ALIAS_ID,
   PORT = 8787,
   ALLOWED_ORIGINS = "*",
-  TOOLS_BASE_URL = "",
+  TOOLS_BASE_URL = "https://origin-daisy.onrender.com",
   GOOGLE_BASE_URL = "https://google-api-daisy.onrender.com",
   FORWARD_TOOLS = "true",
   IATA_DB_PATH = "./iata.json",
