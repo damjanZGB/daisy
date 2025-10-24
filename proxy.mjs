@@ -283,7 +283,7 @@ async function executeInput(input) {
   return await httpCall(TOOLS_BASE, verb, path, verb==="GET"?q:b);
 }
 
-export async function handleChat({ sessionId, text, persona = {} }) {
+export async function handleChat({ sessionId, text, inputText, persona = {} }) {
   let sid = sessionId || String(Date.now());
   let state = {};
   try {
@@ -297,9 +297,12 @@ export async function handleChat({ sessionId, text, persona = {} }) {
   } catch (error) {
     console.warn("[proxy] persona processing failed", error);
   }
+  const initialText = (text ?? inputText ?? "").toString();
+  const userText = initialText.trim();
+  if (!userText) throw new Error("inputText_required");
   let out = "";
-  for (let hop=0; hop<6; hop++) {
-    const { text: chunk, rc } = await invokeOnce({ sessionId: sid, text: hop===0?text:"", sessionState: state });
+  for (let hop = 0; hop < 6; hop++) {
+    const { text: chunk, rc } = await invokeOnce({ sessionId: sid, text: hop === 0 ? userText : "", sessionState: state });
     if (chunk) out += chunk;
     if (!rc) break;
     const invId = rc.invocationId;
@@ -328,9 +331,18 @@ app.use((req,res,next)=>{
 });
 
 app.get("/healthz",(req,res)=>res.json({ok:true, agent:AGENT, alias:ALIAS}));
-app.post("/invoke", async (req,res)=>{
-  try { res.json(await handleChat(req.body||{})); }
-  catch(e){ res.status(500).json({ ok:false, error:String(e) }); }
+app.post("/invoke", async (req, res) => {
+  try {
+    const body = req.body || {};
+    const textCandidate = body.inputText ?? body.text;
+    if (typeof textCandidate !== "string" || !textCandidate.trim()) {
+      return res.status(400).json({ ok: false, error: "inputText_missing" });
+    }
+    res.json(await handleChat({ ...body, inputText: textCandidate }));
+  } catch (e) {
+    console.error("[proxy] invoke failed", e);
+    res.status(500).json({ ok: false, error: String(e) });
+  }
 });
 
 app.get("/tools/iata/lookup", (req, res) => {
@@ -414,3 +426,11 @@ if (/^true$/i.test(FORWARD_TOOLS || "true")) {
 }
 
 app.listen(Number(PORT), ()=>console.log(`[proxy] up on ${PORT}`));
+
+
+
+
+
+
+
+
