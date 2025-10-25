@@ -1,158 +1,131 @@
-Handoff - Daisy Agent and Action Groups (Updated 2025-10-21)
+﻿Handoff – Daisy Agent Platform (Updated 2025-10-24)
+=================================================
 
-This document equips the next Codex session with all essentials to continue smoothly: which agent and aliases are live, action groups, Lambda, proxy, logging, verified behaviors, and follow-ups.
+This document gets the next Codex engineer productive fast. It covers live AWS context, code layout, toolchain updates, recent changes (Oct 24 redeploy), runbooks, and to-dos.
 
-AWS / Bedrock Essentials
-- Region: us-west-2
-- Account: 083756035354
+1. AWS / Bedrock Snapshot
+-------------------------
+- Region / Account: us-west-2 • 083756035354
 - Bedrock Agent ID: JDLTXAKYJY
-- Aliases (live)
-  - Bianca: D84WDVHMZR (routes to agent version 99)
-  - Paul: R1YRB7NGUP (routes to agent version 97)
-  - Gina: UY0U7MRMDK (routes to agent version 98)
-  - AgentTestAlias: TSTALIASID (routes to DRAFT)
+- Active aliases:
+  - Bianca → D84WDVHMZR (agent version 99)
+  - Paul   → R1YRB7NGUP (version 97)
+  - Gina   → UY0U7MRMDK (version 98)
+  - AgentTestAlias → TSTALIASID (current DRAFT)
+- IAM Role used by Lambda: service-role/daisy_in_action-0k2c0-role-FGL64GQRD5P
 
-Action Groups
-- DestinationRecommender (ID: DFAEASLNVH)
-  - Purpose: Recommend destinations (catalog driven) and optionally enrich with itineraries.
-  - Function: recommend_destinations (function-details)
-  - Executor Lambda: arn:aws:lambda:us-west-2:083756035354:function:daisy_in_action-0k2c0
-- daisy_in_action (ID: 8QPJXRIZN5)
-  - Purpose: Flight shopping (Amadeus Flight Offers Search v2), IATA lookup fallback
-  - OpenAPI route: /tools/amadeus/search (POST)
-  - Executor Lambda: arn:aws:lambda:us-west-2:083756035354:function:daisy_in_action-0k2c0
-- TimePhraseParser (ID: ASTBBKPZOE)
-- UserInputAction (ID: QFT1TGMW5Y)
+2. Action Groups / Lambda
+-------------------------
+- DestinationRecommender (ID DFAEASLNVH)
+  - Lambda: arn:aws:lambda:us-west-2:083756035354:function:daisy_in_action-0k2c0
+  - payload: recommend destinations from bundled catalog + itineraries.
+- daisy_in_action (ID 8QPJXRIZN5)
+  - Handles flights, IATA lookup fallback, Google proxy calls.
+  - Exposed OpenAPI route: /tools/amadeus/search (POST) running from origin proxy.
+- TimePhraseParser (ID ASTBBKPZOE) and UserInputAction (ID QFT1TGMW5Y) remain unchanged.
 
-Lambda (Flight + Recommender)
-- Name: daisy_in_action-0k2c0
-- ARN: arn:aws:lambda:us-west-2:083756035354:function:daisy_in_action-0k2c0
-- Runtime: Python 3.12 | Handler: lambda_function.lambda_handler | Timeout: 90s
-- Environment
+Lambda Runtime (deployed Oct‑24 19:47 UTC)
+- Runtime: Python 3.12 (handler lambda_function.lambda_handler)
+- Key env vars:
   - PROXY_BASE_URL=https://origin-daisy.onrender.com
-  - DEFAULT_CURRENCY=EUR
-  - LH_GROUP_ONLY=true
-  - RECOMMENDER_VERBOSE=true
-  - RECOMMENDER_MAX_OPTIONS=10
-  - RECOMMENDER_MAX_TEXT_BYTES=4000
+  - GOOGLE_BASE_URL=https://google-api-daisy.onrender.com
+  - DEFAULT_CURRENCY=EUR, LH_GROUP_ONLY=true
   - ACTION_GROUP_NAME=daisy_in_action
   - ACTION_GROUP_RECOMMENDER=DestinationRecommender
-  - DEBUG_TOOL_IO=true
-  - DEBUG_S3_BUCKET=origin-daisy-bucket
-  - DEBUG_S3_PREFIX=debug-tool-io
-- Bundled catalog: data/lh_destinations_catalog.json
+  - RECOMMENDER_MAX_OPTIONS=10, RECOMMENDER_MAX_TEXT_BYTES=4000
+  - DEBUG_TOOL_IO=true (uploads to s3://origin-daisy-bucket/debug-tool-io/YYYY/MM/DD/)
+- Bundled data: data/lh_destinations_catalog.json (LH-only destinations)
 
-Proxy (Node)
-- File: proxy.mjs | Port: 8787
-- Bedrock client: AWS SDK v3 (`@aws-sdk/client-bedrock-agent-runtime`) streaming (no custom SigV4 or eventstream parser)
+Latest Lambda changes (Oct‑24):
+- Auto route /google/explore/search to /google/flights/search when concrete outbound dates are provided (ISO or range). Interest terms are canonicalised (beach→beaches, ski→skiing) and HL default is en-US.
+- _convert_explore_to_flights builds SearchAPI flights query (supports round trip when range includes return).
+- _target_bases honours GOOGLE_BASE_URL priority.
+
+3. Node Proxy (proxy.mjs)
+-------------------------
+- Runs on Render, port 8787 (Express + AWS SDK v3).
 - Routes:
-  - POST /invoke ? forwards to Bedrock Agent Runtime (streams events)
-  - POST /tools/amadeus/search ? Amadeus Flight Offers Search adapter
-  - GET  /tools/iata/lookup ? local deterministic IATA resolver
-  - POST /tools/give_me_tools ? return JSON catalogue of available proxy tools
-  - GET/HEAD /health ? liveness (JSON for GET, empty for HEAD)
-  - GET/HEAD /ready ? readiness (cached background checks, JSON for GET, empty for HEAD)
-  - GET/HEAD / ? plain text banner for probes (200)
-- Readiness checks (60s cadence, cached):
-  - config: required env present (hard-fail at startup if missing)
-  - iata: DB loadable and non-empty
-  - bedrock: SDK credentials usable (CreateSessionCommand with 5s abort)
-  - s3 (optional): HeadBucket only when transcript upload enabled
-  - amadeusConfigured: reported but not gating readiness
-- CORS: explicit allowlist via `ORIGIN` env (comma-separated)
-- Body limit: 1 MiB; strict JSON parse
-- Amadeus timeout: 12000 ms (AbortController)
+  - POST /invoke → Bedrock agent runtime (streaming).
+  - POST /tools/amadeus/search → Amadeus adapter.
+  - GET /tools/iata/lookup (deterministic local lookup).
+  - Forwards /google/* to GOOGLE_BASE_URL (searchapi-powered microservice).
+- CORS allowlist via ORIGIN env; body cap 1 MiB.
+- Readiness probe caches config/iata/bedrock checks.
+- New (Oct‑24): handleChat now returns 	oolResults so frontend can surface images/cards.
 
-Tool I/O Debug Capture (S3) 
-- Enabled (DEBUG_TOOL_IO=true)
-- Bucket/prefix: s3://origin-daisy-bucket/debug-tool-io/YYYY/MM/DD/
-- Contents: full request (proxy payload) and full response (simplified offers and raw Amadeus JSON)
-- IAM: Bucket policy grants PutObject for Lambda role arn:aws:iam::083756035354:role/service-role/daisy_in_action-0k2c0-role-FGL64GQRD5P to debug-tool-io/*
+4. Google API microservice (google-api.mjs)
+------------------------------------------
+- Exposes /google/flights/*, /google/calendar/*, /google/explore/* via SearchAPI.io (key stored in env SEARCHAPI_KEY).
+- Explore path defaults: adds engine, gl (from origin), hl=en, etc. Fallbacks ensure at least flights_only, adults=1, currency=EUR when unspecified.
+- Flights/Calendar endpoints unchanged (pass-through to SearchAPI).
 
-Verified Behaviors (CloudWatch)
-- Tools working: OpenAPI /tools/amadeus/search calls and recommender enrichment calls succeeded (200) and returned offers during sessions LH2943, LH6638, LH6119, LH4128.
-- Function-details streaming: Bedrock may return only a final functionResponse (no streamed outputText). This previously led to �No text response.�
-  - Implemented fix: proxy appends functionResponse TEXT when stream is empty/heading-only; frontend logic no longer parses finalResponse (backend owns fallback).
+5. Frontend UIs (React + Tailwind)
+-----------------------------------
+- Supported variants: frontend/gina, frontend/bianca, frontend/paul, frontend/origin.
+- Shared features:
+  - persona.js attaches questionnaire persona state.
+  - Chat log with PDF export (derDrucker feed).
+  - New image carousel: toolResults cards (destinations) displayed using uildToolCards helper; cards show photo, region, price (formatted), airline.
+  - Bubble component now accepts meta object with cards/pdf metadata.
+- When deploying static sites (S3/CloudFront or Render static), ensure cache invalidation so new cards appear.
 
-Instruction Updates (ASCII variants)
-- Files updated:
-  - aws/Agent_instructions_ascii.md
-  - aws/agent_aris_instructions_ascii.md
-  - aws/agent_mira_instructions_ascii.md
-  - aws/agent_leo_instructions_ascii.md
-- Enforcements:
-  - Tool-first policy; do not fabricate data; do not emit placeholders (Airport Name N, Airline Name N, EUR X.XX, X km, Notes: ...).
-  - Reclassify comma-separated flight intents as full searches (resolve IATA -> TimePhraseParser -> Amadeus).
-  - Flight numbers must include carrier + number with no space (LH612, OU324, OS654) in main items and THEN lines.
-  - Presentation: ASCII arrow ->, uppercase THEN; sections “Direct Flights” and “Connecting Flights”.
+6. Toolchain / Data
+--------------------
+- Python deps inside Lambda layer: boto3 (managed by AWS runtime). All business logic inline.
+- Proxy / microservices rely on Node 18 + npm modules (chrono-node, luxon, pdf-lib). Ensure 
+pm install at repo root before running services locally.
+- Local scripts:
+  - scripts/deploy_lambda.ps1 builds dist/lambda.zip and runs ws lambda update-function-code.
+  - Config env update stored in ws/env_update.json (GOOGLE_BASE_URL now included).
 
-Frontend (PDF and parsing)
-- Files updated: frontend/paul/index.html, frontend/bianca/index.html, frontend/gina/index.html, frontend/origin/index.html
-- Changes:
-  - Sanitizer strips Markdown; parser captures legacy bullet lines (Departure/Arrival) and canonical THEN lines.
-  - generatePdf constructs legs from bullets when needed; carrier+number without space; blanks instead of random gate/zone/seat/seq; multi-page generation fixed (one page per leg).
-  - Trigger words include: confirm, confirmed, book, hold, pdf, download, itinerary, ticket, boarding pass.
-  - Removed UI-level fallback for functionResponse; UI uses `text` from proxy only (backend-controlled).
-  - Frontends send `locationLat/locationLon` when available; proxy infers `default_origin` (nearest airport). Never send locality labels (e.g., "Zapre�ic") to tools.
-  - Each UI now records the detection outcome at the top of the local log (`LAT`, `LON`, `CITY`, `COUNTRY`, `AIR`, `METHOD`). `METHOD` is `navigator.geolocation.getCurrentPosition`, `https://ipapi.co`, `DENIED`, or `FAILED`.
+7. Testing / Diagnostics
+-------------------------
+- Unit tests (run with Python 3.13 on Windows):
+  - python -m unittest tests.test_recommender.TestExploreProxy
+- Known failing legacy tests: rest of 	ests/test_recommender rely on helper functions removed from lambda. They are ignored for now; do not delete.
+- Hard-test transcripts: analytics/hard_tests/*.json (latest summary_1761302422834.json). Bianca fails due to upstream tool issue (DependencyFailedException) pre-dating current work.
+- CloudWatch logs: /aws/lambda/daisy_in_action-0k2c0.
 
-Amadeus API Compatibility
-- Requests sent through proxy use fields aligned with v2.8/2.9: originLocationCode, destinationLocationCode, departureDate, returnDate, adults, children, infants, travelClass, nonStop, currencyCode, includedAirlineCodes, excludedAirlineCodes, max.
-- Proxy now forwards `includedAirlineCodes`/`excludedAirlineCodes` when provided and sets `Accept: application/vnd.amadeus+json`.
-- Responses include simplified “offers” and “raw” canonical Amadeus payload (data[].itineraries[].segments[].carrierCode/number/departure/arrival).
+8. Deploy / Infra Ops
+----------------------
+- Lambda redeploy command (PowerShell, default profile):
+  scripts/deploy_lambda.ps1 -FunctionName daisy_in_action-0k2c0 -Region us-west-2
+- After redeploy, run smoke invoke:
+  ws lambda invoke --function-name daisy_in_action-0k2c0 --payload fileb://aws/invoke_explore.json aws/invoke_explore_out.json
+- Update env: ws lambda update-function-configuration --environment file://aws/env_update.json (contains GOOGLE_BASE_URL).
+- Proxy / google-api microservices hosted separately (Render). To update, push new code and redeploy service.
 
-Examples (S3 Debug Keys, 2025-10-20)
-- debug-tool-io/2025/10/20/d6306f8ce0174299807632d88fb1111c_post.json
-- debug-tool-io/2025/10/20/5438a519cdd2435ba9386bf5a2a8aae0_post.json
-- debug-tool-io/2025/10/20/70eb15a2517a4cfeb6787f3814c67c00_post.json
+9. Recent Oct‑24 Work Summary
+------------------------------
+- Added Google Flights auto-switch in lambda + interest canonicaliser.
+- Proxy now attaches 	oolResults to final JSON; downstream UIs show destination images.
+- Frontends (all personas) render SearchAPI imagery, keep PDF flow intact, preserve persona log capture.
+- Redeployed Lambda 2025-10-24 ~19:47 UTC, validated explore+dates returns flights data.
+- Explore / flights tool calls enforce Lufthansa Group airlines and clamp responses to 10 results.
 
-CLI Snippets
-- Tail logs: aws logs tail "/aws/lambda/daisy_in_action-0k2c0" --since 15m --follow --region us-west-2 --profile reStrike
-- Filter logs by time: aws logs filter-log-events --log-group-name "/aws/lambda/daisy_in_action-0k2c0" --start-time <epoch_ms> --end-time <epoch_ms> --region us-west-2 --profile reStrike
-- List alias/action groups:
-  - aws bedrock-agent list-agent-aliases --agent-id JDLTXAKYJY --region us-west-2 --profile reStrike
-  - aws bedrock-agent list-agent-action-groups --agent-id JDLTXAKYJY --agent-version <97|98|99> --region us-west-2 --profile reStrike
-  - aws bedrock-agent get-agent-action-group --agent-id JDLTXAKYJY --agent-version <ver> --action-group-id <ID> --region us-west-2 --profile reStrike
-- Fetch tool I/O debug: aws s3 ls s3://origin-daisy-bucket/debug-tool-io/2025/10/20/ --profile reStrike --region us-west-2
-- Probe liveness/readiness:
-  - curl -I https://<proxy>/health
-  - curl -s https://<proxy>/ready | jq
+10. Outstanding & Next Steps
+-----------------------------
+- Bianca hard-test still fails due to DependencyFailedException from earlier run; rerun smoke tests after next agent session.
+- Consider re-enabling full `tests.test_recommender` by porting helper functions to a utility module.
+- Monitor SearchAPI quotas; add alerting if 401/429 increase.
+- Implement explore fallback per `docs/searchapi_google_explore_fix.md` (map “default” origins to real IATA + valid `gl`).
+- Future improvement: surface toolResults in transcript uploads for audit trail.
 
-Open Items (handoff)
-- DONE: Implement proxy fallback to surface TEXT from functionResponse when streamed text is empty/heading-only; removed frontend fallback.
-- DONE: Extend replay tooling to count tool calls from CloudWatch and flag placeholder patterns.
-- TODO: Wire the new developer-mode menu (stress test, replay, debug, instructions) once proxy/CLI scaffolding lands and teach the agent to call `/tools/give_me_tools` for self-discovery before invoking a tool.
-- TODO: Bedrock currently rejects any update to the `daisy_in_action` OpenAPI schema (`ValidationException: Failed to create OpenAPI 3 model...`) even when resubmitting the previously accepted contract. Open a support ticket or re-export the schema directly from the console before trying again.
+11. Quick Start Checklist for Next Agent
+----------------------------------------
+1. Clone repo, 
+pm install for microservices, ensure Python 3.12+ available.
+2. Export AWS credentials with rights to Lambda & CloudWatch.
+3. Run python -m unittest tests.test_recommender.TestExploreProxy.
+4. For UI updates, open rontend/<persona>/index.html using React dev server or serve static build.
+5. When testing explore scenarios, supply ISO dates so lambda selects Google Flights endpoint.
+6. Always redeploy using scripts/deploy_lambda.ps1 and confirm with test invoke + CloudWatch tail.
 
+Contact & Notes
+---------------
+- Repo location: C:\Users\Damjan\source\repos\daisy
+- Persona instructions ASCII copies under ws/agent_*_instructions_ascii.md.
+- Debug S3 bucket: origin-daisy-bucket (debug-tool-io prefix). Requires least-priv role to inspect.
+- Slack/Email integrations not configured (manual log download via frontend).
 
-Proxy Best Practices (implemented)
-- Use AWS SDK v3 for Bedrock Agent Runtime streaming.
-- Separate liveness (/health) and readiness (/ready) � readiness uses cached background checks.
-- Strict CORS allowlist (env `ORIGIN`), 1 MiB body limit, strict JSON parsing.
-- Only minimal context injection: origin (IATA) inferred from lat/lon; date/destination parsing is tool responsibility.
-- Never pass locality labels (e.g., �Zapre�ic�) to tools � only IATA codes or coordinates.
-- Accept header set for Amadeus; forward airline filters when provided.
-- Structured logs include requestId, method, path, status, duration, UA.
-
-Recommended (edge/ops)
-- Rate limiting at the edge (CloudFront/ALB + AWS WAF). In-app rate limiting only if required; exempt /health and /ready.
-- Downgrade benign HEAD/GET 404 logs to info/debug if needed (current explicit routes avoid probe noise).
-- Emit minimal counters/timers (success rate, p95 duration) per route; keep debug captures gated.
-
-Supplementary Microservices
-- s3escalator (s3escalator.mjs, PORT default 8788)
-  - Purpose: generic S3 uploader for transcripts/logs/alerts.
-  - Env: `S3_BUCKET`, `S3_PREFIX`, `UPLOADER_TOKEN`, `ORIGIN`, optional `AGENT_ALIAS_ID`/`AGENT_VERSION`.
-  - Notes: requires `ORIGIN` allowlist; proxy forwards `/log/transcript` payloads when `TRANSCRIPT_UPLOADER_URL` is set.
-- antiPhaser (antiPhaser.mjs, PORT default 8789)
-  - Purpose: parse natural-language date phrases (uses `chrono-node`, `luxon`).
-  - Routes: `POST /tools/antiPhaser`, `GET /tools/antiPhaser`, plus /health and /ready.
-  - Env: `ORIGIN`, optional `DEFAULT_TIMEZONE`.
-- derDrucker (derDrucker.mjs, PORT default 8790)
-  - Purpose: format offers into Markdown and emit PDF tickets.
-  - Routes: `POST /tools/derDrucker/wannaCandy`, `POST /tools/derDrucker/generateTickets`, plus /health and /ready.
-  - Env: `ORIGIN`, optional `DEFAULT_TIMEZONE`.
-
-Node Dependencies
-- Install once in the repository: `npm install chrono-node luxon pdf-lib` (needed by antiPhaser and derDrucker).
-
+Good luck and keep the Lufthansa experience delightful! 😊

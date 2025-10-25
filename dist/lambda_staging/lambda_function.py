@@ -19,6 +19,12 @@ PROXY_BASE_URL = (os.getenv("PROXY_BASE_URL") or "https://origin-daisy.onrender.
 GOOGLE_BASE_URL = (os.getenv("GOOGLE_BASE_URL") or "https://google-api-daisy.onrender.com").rstrip("/")
 RC_MAX_HOPS = int(os.getenv("RETURN_CONTROL_MAX_HOPS") or "6")
 HTTP_TIMEOUT = int(os.getenv("PROXY_TIMEOUT_SECONDS") or "60")
+DEFAULT_EXPLORE_DEPARTURE = (os.getenv("DEFAULT_EXPLORE_DEPARTURE_ID") or "FRA").strip().upper() or "FRA"
+DEFAULT_EXPLORE_GL = (os.getenv("DEFAULT_EXPLORE_GL") or "DE").strip().upper() or "DE"
+DEFAULT_EXPLORE_HL = (os.getenv("DEFAULT_EXPLORE_HL") or "en-US").strip() or "en-US"
+LH_GROUP_AIRLINE_CODES = {"LH", "LX", "OS", "SN", "EW", "4Y", "EN"}
+LH_GROUP_AIRLINES_PARAM = ",".join(sorted(LH_GROUP_AIRLINE_CODES))
+MAX_LH_RESULTS = int(os.getenv("MAX_LH_RESULTS") or "10")
 
 def _as_set(raw: str | None) -> set[str]:
     if not raw:
@@ -105,6 +111,10 @@ def _is_valid_gl(value: str | None) -> bool:
     return isinstance(value, str) and len(value) == 2 and value.isalpha()
 
 
+def _is_iata_code(value: str | None) -> bool:
+    return isinstance(value, str) and len(value) == 3 and value.isalpha()
+
+
 def _normalize_time_period(value) -> str:
     if not value:
         return "one_week_trip_in_the_next_six_months"
@@ -130,6 +140,195 @@ def _normalize_time_period(value) -> str:
     if ".." in text or text.startswith("custom_dates:"):
         return text
     return "one_week_trip_in_the_next_six_months"
+
+
+def _parse_time_period_range(value: str | None) -> tuple[str | None, str | None]:
+    if not value:
+        return None, None
+    text = str(value).strip()
+    if ".." in text:
+        start, end = text.split("..", 1)
+        start = start.strip() or None
+        end = end.strip() or None
+        return start, end
+    return text, None
+
+
+def _is_iso_date(value: str | None) -> bool:
+    if not value:
+        return False
+    return bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(value).strip()))
+
+
+def _canonical_interest(value: str | None) -> str | None:
+    if not isinstance(value, str):
+        return None
+    interest = value.strip().lower()
+    if not interest:
+        return None
+    mapping = {
+        "beach": "beaches",
+        "beaches": "beaches",
+        "outdoor": "outdoors",
+        "outdoors": "outdoors",
+        "popular": "popular",
+        "museum": "museums",
+        "museums": "museums",
+        "history": "history",
+        "ski": "skiing",
+        "skiing": "skiing",
+    }
+    return mapping.get(interest, interest)
+
+
+def _convert_explore_to_flights(params: dict) -> dict | None:
+    if not isinstance(params, dict):
+        return None
+    departure = params.get("departure_id")
+    arrival = params.get("arrival_id")
+    # Require concrete IATA arrival (avoid global bounding boxes or empty)
+    if not isinstance(departure, str):
+        departure = DEFAULT_EXPLORE_DEPARTURE
+    departure = departure.strip().upper()
+    if not _is_iata_code(departure):
+        departure = DEFAULT_EXPLORE_DEPARTURE
+    if not isinstance(arrival, str):
+        return None
+    arrival_trimmed = arrival.strip().upper()
+    if len(arrival_trimmed) != 3 or not arrival_trimmed.isalpha():
+        return None
+
+    outbound_date = None
+    return_date = None
+    if _is_iso_date(params.get("outbound_date")):
+        outbound_date = str(params["outbound_date"]).strip()
+    if _is_iso_date(params.get("return_date")):
+        return_date = str(params["return_date"]).strip()
+
+    if not outbound_date:
+        start, end = _parse_time_period_range(params.get("time_period"))
+        if _is_iso_date(start):
+            outbound_date = start
+        if _is_iso_date(end) and end != outbound_date:
+            return_date = end
+
+    if not outbound_date:
+        return None
+
+    flight_type = "round_trip" if return_date else "one_way"
+    payload: dict[str, str] = {
+        "engine": "google_flights",
+        "flight_type": flight_type,
+        "departure_id": departure,
+        "arrival_id": arrival_trimmed,
+        "outbound_date": outbound_date,
+    }
+    if return_date:
+        payload["return_date"] = return_date
+    gl_value = params.get("gl")
+    if isinstance(gl_value, str):
+        gl_value = gl_value.strip().upper()
+    if not _is_valid_gl(gl_value):
+        gl_value = _country_for_iata(payload["departure_id"]) or DEFAULT_EXPLORE_GL
+    payload["gl"] = gl_value
+    payload["hl"] = str(params.get("hl") or DEFAULT_EXPLORE_HL)
+    payload["included_airlines"] = LH_GROUP_AIRLINES_PARAM
+    optional_keys = (
+        "adults",
+        "children",
+        "infants_in_seat",
+        "infants_on_lap",
+        "travel_class",
+        "currency",
+        "stops",
+        "max_price",
+        "gl",
+        "hl",
+        "nonstop",
+    )
+    for key in optional_keys:
+        value = params.get(key)
+        if value is None or value == "":
+            continue
+        payload[key] = str(value)
+    return payload
+
+
+def _extract_explore_airlines(destination) -> set[str]:
+    codes: set[str] = set()
+    if not isinstance(destination, dict):
+        return codes
+    flight = destination.get("flight")
+    if isinstance(flight, dict):
+        code = flight.get("airline_code")
+        if isinstance(code, str):
+            codes.add(code.strip().upper())
+        codes_field = flight.get("airline_codes")
+        if isinstance(codes_field, (list, tuple, set)):
+            for item in codes_field:
+                if isinstance(item, str):
+                    codes.add(item.strip().upper())
+    return codes
+
+
+def _extract_flight_airlines(flight) -> set[str]:
+    codes: set[str] = set()
+    if not isinstance(flight, dict):
+        return codes
+    for field in ("operating_airlines", "marketing_airlines", "airlines"):
+        values = flight.get(field)
+        if isinstance(values, (list, tuple, set)):
+            for item in values:
+                if isinstance(item, str):
+                    codes.add(item.strip().upper())
+    leg_sources = []
+    if isinstance(flight.get("legs"), list):
+        for leg in flight["legs"]:
+            if isinstance(leg, dict) and isinstance(leg.get("segments"), list):
+                leg_sources.extend(leg["segments"])
+    if isinstance(flight.get("segments"), list):
+        leg_sources.extend(flight["segments"])
+    for segment in leg_sources:
+        if not isinstance(segment, dict):
+            continue
+        seg_code = (
+            segment.get("airline_code")
+            or segment.get("operating_airline_code")
+            or segment.get("marketing_airline_code")
+        )
+        if isinstance(seg_code, str):
+            codes.add(seg_code.strip().upper())
+    return codes
+
+
+def _limit_lh_results(path: str, data):
+    if not isinstance(data, dict):
+        return data
+    if path.startswith("/google/explore/"):
+        destinations = data.get("destinations")
+        if isinstance(destinations, list):
+            filtered = []
+            for dest in destinations:
+                codes = _extract_explore_airlines(dest)
+                if not codes or codes.intersection(LH_GROUP_AIRLINE_CODES):
+                    filtered.append(dest)
+                if len(filtered) >= MAX_LH_RESULTS:
+                    break
+            data["destinations"] = filtered[:MAX_LH_RESULTS]
+    elif path.startswith("/google/flights/"):
+        candidate_keys = ["best_flights", "other_flights", "all_flights", "flights", "results"]
+        for key in candidate_keys:
+            flights = data.get(key)
+            if isinstance(flights, list):
+                filtered = []
+                for flight in flights:
+                    codes = _extract_flight_airlines(flight)
+                    if not codes or codes.intersection(LH_GROUP_AIRLINE_CODES):
+                        filtered.append(flight)
+                    if len(filtered) >= MAX_LH_RESULTS:
+                        break
+                data[key] = filtered[:MAX_LH_RESULTS]
+    return data
 
 
 def _event_to_dict(event) -> dict:
@@ -379,79 +578,88 @@ def _call_proxy(path: str, method: str, params: dict | None, body: dict | None) 
             query_pairs = list(params)
             param_dict = dict(query_pairs)
         if path.startswith("/google/explore/"):
-            inferred_gl = _country_for_iata(param_dict.get("departure_id"))
+            departure_id = param_dict.get("departure_id")
+            if not _is_iata_code(departure_id):
+                param_dict["departure_id"] = DEFAULT_EXPLORE_DEPARTURE
+                departure_id = param_dict["departure_id"]
+                try:
+                    print("[lambda] explore_departure_fallback", json.dumps({"setTo": departure_id}))
+                except Exception:
+                    pass
+            inferred_gl = _country_for_iata(departure_id)
             if inferred_gl:
                 param_dict["gl"] = inferred_gl
             else:
                 current_gl = param_dict.get("gl")
                 if not _is_valid_gl(current_gl):
-                    param_dict["gl"] = "US"
+                    param_dict["gl"] = DEFAULT_EXPLORE_GL
+                    try:
+                        print(
+                            "[lambda] explore_gl_fallback",
+                            json.dumps({"setTo": param_dict["gl"], "departure": departure_id}),
+                        )
+                    except Exception:
+                        pass
             if not param_dict.get("hl"):
-                param_dict["hl"] = "en-US"
+                param_dict["hl"] = DEFAULT_EXPLORE_HL
             if not param_dict.get("engine"):
                 param_dict["engine"] = "google_travel_explore"
             normalized_period = _normalize_time_period(param_dict.get("time_period"))
             param_dict["time_period"] = normalized_period
-            interest_value = param_dict.get("interests")
-            if interest_value:
-                interest_text = str(interest_value).strip().lower()
-                interest_aliases = {
-                    "beach": "beaches",
-                    "beaches": "beaches",
-                    "popular": "popular",
-                    "outdoor": "outdoors",
-                    "outdoors": "outdoors",
-                    "museum": "museums",
-                    "museums": "museums",
-                    "history": "history",
-                    "ski": "skiing",
-                    "skiing": "skiing",
+            canonical_interest = _canonical_interest(param_dict.get("interests"))
+            if canonical_interest:
+                param_dict["interests"] = canonical_interest
+            param_dict["included_airlines"] = LH_GROUP_AIRLINES_PARAM
+            flights_params = _convert_explore_to_flights(param_dict)
+            if flights_params:
+                path = "/google/flights/search"
+                param_dict = flights_params
+            else:
+                allowed_keys = {
+                    "engine",
+                    "departure_id",
+                    "arrival_id",
+                    "gl",
+                    "hl",
+                    "search_query",
+                    "time_period",
+                    "travel_mode",
+                    "adults",
+                    "currency",
+                    "interests",
+                    "travel_class",
+                    "max_price",
+                    "children",
+                    "infants_in_seat",
+                    "infants_on_lap",
+                    "stops",
                 }
-                canonical_interest = interest_aliases.get(interest_text)
-                if canonical_interest:
-                    param_dict["interests"] = canonical_interest
-            allowed_keys = {
-                "engine",
-                "departure_id",
-                "arrival_id",
-                "gl",
-                "hl",
-                "search_query",
-                "time_period",
-                "travel_mode",
-                "adults",
-                "currency",
-                "interests",
-                "travel_class",
-                "max_price",
-                "children",
-                "infants_in_seat",
-                "infants_on_lap",
-            }
-            for extra_key in list(param_dict.keys()):
-                if extra_key not in allowed_keys:
-                    param_dict.pop(extra_key, None)
-            arrival_value = param_dict.get("arrival_id")
-            if arrival_value:
-                arrival_str = str(arrival_value).strip()
-                valid_arrival = False
-                if arrival_str.startswith("/m/"):
-                    valid_arrival = True
-                elif arrival_str.startswith("[[") and arrival_str.endswith("]]"):
-                    valid_arrival = True
-                elif len(arrival_str) == 3 and arrival_str.isalpha():
-                    valid_arrival = True
-                if not valid_arrival:
-                    param_dict.pop("arrival_id", None)
-                    existing_query = param_dict.get("search_query")
-                    param_dict["search_query"] = f"{existing_query} {arrival_str}".strip() if existing_query else arrival_str
-            if not param_dict.get("travel_mode"):
-                param_dict["travel_mode"] = "flights_only"
-            if not param_dict.get("adults"):
-                param_dict["adults"] = "1"
-            if not param_dict.get("currency"):
-                param_dict["currency"] = "EUR"
-            query_pairs = list(param_dict.items())
+                for extra_key in list(param_dict.keys()):
+                    if extra_key not in allowed_keys:
+                        param_dict.pop(extra_key, None)
+                arrival_value = param_dict.get("arrival_id")
+                if arrival_value:
+                    arrival_str = str(arrival_value).strip()
+                    valid_arrival = False
+                    if arrival_str.startswith("/m/"):
+                        valid_arrival = True
+                    elif arrival_str.startswith("[[") and arrival_str.endswith("]]"):
+                        valid_arrival = True
+                    elif len(arrival_str) == 3 and arrival_str.isalpha():
+                        valid_arrival = True
+                    if not valid_arrival:
+                        param_dict.pop("arrival_id", None)
+                        existing_query = param_dict.get("search_query")
+                        param_dict["search_query"] = f"{existing_query} {arrival_str}".strip() if existing_query else arrival_str
+                if not param_dict.get("travel_mode"):
+                    param_dict["travel_mode"] = "flights_only"
+                if not param_dict.get("adults"):
+                    param_dict["adults"] = "1"
+                if not param_dict.get("currency"):
+                    param_dict["currency"] = "EUR"
+        elif path.startswith("/google/flights/"):
+            param_dict["included_airlines"] = LH_GROUP_AIRLINES_PARAM
+        query_pairs = list(param_dict.items())
         query_suffix = f"?{urllib.parse.urlencode(query_pairs, doseq=True)}" if query_pairs else ""
         try:
             print(
@@ -514,6 +722,8 @@ def _call_proxy(path: str, method: str, params: dict | None, body: dict | None) 
             data = json.loads(payload) if payload else {}
         except Exception:
             data = {"raw": payload}
+        if path.startswith("/google/"):
+            data = _limit_lh_results(path, data)
         result = {"ok": status < 400, "status": status, "data": data}
         if not result["ok"]:
             try:
