@@ -181,6 +181,21 @@ def _canonical_interest(value: str | None) -> str | None:
     return mapping.get(interest, interest)
 
 
+def _normalize_flights_locale(value: str | None) -> str | None:
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    text = text.replace("_", "-")
+    lang = text.split("-", 1)[0].strip().lower()
+    if len(lang) == 2 and lang.isalpha():
+        return lang
+    if lang:
+        return "".join(ch for ch in lang if ch.isalpha()) or None
+    return None
+
+
 def _convert_explore_to_flights(params: dict) -> dict | None:
     if not isinstance(params, dict):
         return None
@@ -231,7 +246,17 @@ def _convert_explore_to_flights(params: dict) -> dict | None:
     if not _is_valid_gl(gl_value):
         gl_value = _country_for_iata(payload["departure_id"]) or DEFAULT_EXPLORE_GL
     payload["gl"] = gl_value
-    payload["hl"] = str(params.get("hl") or DEFAULT_EXPLORE_HL)
+    hl_source = params.get("hl") or DEFAULT_EXPLORE_HL
+    normalized_hl = _normalize_flights_locale(hl_source) or "en"
+    if normalized_hl != hl_source:
+        try:
+            print(
+                "[lambda] flights_hl_normalized",
+                json.dumps({"input": hl_source, "normalized": normalized_hl}),
+            )
+        except Exception:
+            pass
+    payload["hl"] = normalized_hl
     payload["included_airlines"] = LH_GROUP_AIRLINES_PARAM
     optional_keys = (
         "adults",
@@ -242,8 +267,6 @@ def _convert_explore_to_flights(params: dict) -> dict | None:
         "currency",
         "stops",
         "max_price",
-        "gl",
-        "hl",
         "nonstop",
     )
     for key in optional_keys:
