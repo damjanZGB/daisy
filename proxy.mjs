@@ -260,27 +260,27 @@ async function executeInput(input) {
   }
   if (path.startsWith("/tools/antiPhaser")) {
     const base = ANTI_PHASER_BASE || TOOLS_BASE;
-    return await httpCall(base, verb, path, verb === "GET" ? q : b);
+    return await httpCall(base, method, path, method === "GET" ? q : b);
   }
   if (path.startsWith("/tools/datetime/interpret")) {
     const base = TOOLS_BASE || ANTI_PHASER_BASE;
-    return await httpCall(base, verb, path, verb === "GET" ? q : b);
+    return await httpCall(base, method, path, method === "GET" ? q : b);
   }
   if (path.startsWith("/tools/derDrucker")) {
     const base = DER_DRUCKER_BASE || TOOLS_BASE;
-    return await httpCall(base, verb, path, verb === "GET" ? q : b);
+    return await httpCall(base, method, path, method === "GET" ? q : b);
   }
   if (path === "/tools/s3escalator" || path.startsWith("/tools/s3escalator/")) {
     const base = S3_ESCALATOR_BASE || TOOLS_BASE;
-    return await httpCall(base, verb, path, verb === "GET" ? q : b);
+    return await httpCall(base, method, path, method === "GET" ? q : b);
   }
   if (path.startsWith("/tools/")) {
-    return await httpCall(TOOLS_BASE, verb, path, verb==="GET"?q:b);
+    return await httpCall(TOOLS_BASE, method, path, method === "GET" ? q : b);
   }
   if (path.startsWith("/google/")) {
-    return await httpCall(GOOGLE_BASE_URL, verb, path, verb==="GET"?q:b);
+    return await httpCall(GOOGLE_BASE_URL, method, path, method === "GET" ? q : b);
   }
-  return await httpCall(TOOLS_BASE, verb, path, verb==="GET"?q:b);
+  return await httpCall(TOOLS_BASE, method, path, method === "GET" ? q : b);
 }
 
 export async function handleChat({ sessionId, text, inputText, persona = {} }) {
