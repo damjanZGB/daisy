@@ -98,6 +98,7 @@ class TestExploreProxy(unittest.TestCase):
         self.assertIn("time_period=Summer+2026", request_obj.full_url)
         self.assertIn("travel_class=business", request_obj.full_url)
         self.assertIn("max_price=1200", request_obj.full_url)
+        self.assertIn("included_airlines=STAR_ALLIANCE", request_obj.full_url)
 
     def test_primary_error_surface_when_no_tool_fallback(self):
         error_fp = io.BytesIO(b"Cannot GET /google/explore/search")
@@ -156,12 +157,16 @@ class TestExploreProxy(unittest.TestCase):
         self.assertEqual(
             sent_params["time_period"], "one_week_trip_in_the_next_six_months"
         )
+        self.assertEqual(sent_params["included_airlines"], "STAR_ALLIANCE")
         self.assertNotIn("interests", sent_params)
         request = cands[0].get("flightSearchRequest")
         self.assertIsInstance(request, dict)
         self.assertEqual(request.get("origin"), "ZAG")
         self.assertEqual(request.get("destination"), "DEM")
         self.assertEqual(request.get("departureDate"), "2025-11-08")
+        self.assertTrue(request.get("lhGroupOnly"))
+        self.assertEqual(cands[0].get("alliance"), "STAR ALLIANCE")
+        self.assertEqual(cands[0].get("presentedCarriers"), "Lufthansa Group")
 
 
 if __name__ == "__main__":

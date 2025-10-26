@@ -46,8 +46,7 @@ Reference (SearchAPI documentation):
      this); if the lookup fails, fall back to `DE`. Always send `hl=en-GB` with no additional overrides.
      - Exclude the `interests` parameter whenever `travel_mode=flights_only` (SearchAPI ignores feature filters on flight-only results).
      - Log a warning when the fallback kicks in so we know how often it occurs.
-     - Always pass `included_airlines=LH,LX,OS,SN,EW,4Y,EN` and clamp results to
-       at most 10 entries before responding.
+     - Always pass `included_airlines=STAR_ALLIANCE`, then present only Lufthansa Group matches downstream. Clamp results to at most 10 entries before responding.
 
 2. **Propagate actionable errors**
    - If SearchAPI still returns 400, inject a structured error back to the

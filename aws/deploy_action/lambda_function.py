@@ -330,6 +330,7 @@ def _fetch_explore_candidates(
         "adults": "1",
         "currency": "EUR",
         "limit": str(max(10, max_candidates * 2)),
+        "included_airlines": "STAR_ALLIANCE",
     }
     period = _month_range_to_period_text(month_range_text, month_text)
     if period:
@@ -347,7 +348,7 @@ def _fetch_explore_candidates(
     meta: Dict[str, Any] = {
         "params": {
             key: params.get(key)
-            for key in ("departure_id", "time_period", "interests", "travel_mode", "currency", "hl", "gl")
+            for key in ("departure_id", "time_period", "interests", "travel_mode", "currency", "hl", "gl", "included_airlines")
             if key in params
         }
     }
@@ -396,6 +397,9 @@ def _fetch_explore_candidates(
                 reason_parts.append(f"from €{price}")
         if stops is not None:
             reason_parts.append("nonstop" if stops == 0 else f"{stops} stop{'s' if stops != 1 else ''}")
+        reason_parts.append("STAR ALLIANCE")
+        if airlines:
+            reason_parts.append("Lufthansa Group carrier")
         if isinstance(duration_txt, str) and duration_txt.strip():
             reason_parts.append(duration_txt.strip())
         elif isinstance(duration_minutes, (int, float)):
@@ -421,6 +425,8 @@ def _fetch_explore_candidates(
             "outboundDate": dest.get("outbound_date"),
             "returnDate": dest.get("return_date"),
             "source": "google_explore",
+            "alliance": "STAR ALLIANCE",
+            "presentedCarriers": "Lufthansa Group",
         }
         search_request = {
             "origin": departure,
@@ -2069,6 +2075,8 @@ def search_best_itineraries(
             "flightSearchRequest": {
                 k: v for k, v in search_request.items() if v not in (None, "", [])
             },
+            "alliance": "STAR ALLIANCE",
+            "presentedCarriers": "Lufthansa Group",
         })
 
     return options
@@ -2944,6 +2952,10 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 "candidates": [],
                 "message": "No destinations matched your filters. Try adjusting month or theme.",
                 "source": "google_explore" if explore_candidates else "catalog",
+                "filters": {
+                    "alliance": "STAR ALLIANCE",
+                    "presentedCarriers": "Lufthansa Group",
+                },
             }
             if explore_meta:
                 payload_empty["explore"] = explore_meta
@@ -2996,6 +3008,10 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             if data.get("returnDate"):
                 entry["returnDate"] = data.get("returnDate")
             entry["source"] = data.get("source") or ("google_explore" if explore_candidates else "catalog")
+            if data.get("alliance"):
+                entry["alliance"] = data.get("alliance")
+            if data.get("presentedCarriers"):
+                entry["presentedCarriers"] = data.get("presentedCarriers")
             candidates.append(entry)
 
         payload: Dict[str, Any] = {
@@ -3010,6 +3026,10 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             },
             "candidates": candidates,
             "source": "google_explore" if explore_candidates else ("catalog" if catalog_used else "hybrid"),
+        }
+        payload["filters"] = {
+            "alliance": "STAR ALLIANCE",
+            "presentedCarriers": "Lufthansa Group",
         }
         if explore_meta:
             payload["explore"] = explore_meta
@@ -3087,8 +3107,8 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 _log("Itinerary aggregator failed", error=str(exc))
 
         if not payload.get("message"):
-            header = "Inspiration — top matches (ASCII)"
-            msg_lines = [header]
+            header = "Inspiration — STAR ALLIANCE options (filtered to Lufthansa Group carriers)"
+            msg_lines = [header, "These results are Lufthansa Group-operated; let me know if you'd like broader STAR ALLIANCE options or to stay Lufthansa Group only."]
             for idx_msg, candidate in enumerate(candidates[:5], start=1):
                 city = candidate.get("city") or "?"
                 country = candidate.get("country") or "?"
