@@ -327,10 +327,11 @@ def _fetch_explore_candidates(
         "travel_mode": "flights_only",
         "adults": "1",
         "currency": currency or "EUR",
-        "hl": DEFAULT_GOOGLE_HL,
-        "gl": (_country_for_iata(departure) or DEFAULT_GOOGLE_GL).lower(),
         "limit": str(max(10, max_candidates * 2)),
     }
+    params["hl"] = DEFAULT_GOOGLE_HL
+    inferred_gl = _country_for_iata(departure)
+    params["gl"] = (inferred_gl or DEFAULT_GOOGLE_GL).strip().upper()
     period = _month_range_to_period_text(month_range_text, month_text)
     if period:
         params["time_period"] = period
@@ -1201,8 +1202,8 @@ def _resolve_iata_code(raw: Any) -> Tuple[Optional[str], List[str]]:
     return None, codes
 
 
-DEFAULT_GOOGLE_GL = (os.getenv("DEFAULT_GOOGLE_GL") or "de").strip().lower() or "de"
-DEFAULT_GOOGLE_HL = (os.getenv("DEFAULT_GOOGLE_HL") or "en-GB").strip() or "en-GB"
+DEFAULT_GOOGLE_GL = (os.getenv("DEFAULT_GOOGLE_GL") or "DE").strip().upper() or "DE"
+DEFAULT_GOOGLE_HL = (os.getenv("DEFAULT_GOOGLE_HL") or "en-GB").replace("_", "-").strip() or "en-GB"
 
 
 def _minutes_to_iso(minutes: Optional[int]) -> Optional[str]:
@@ -1438,7 +1439,7 @@ def google_search_flight_offers(
         params["travel_class"] = travel_class
     params = {k: v for k, v in params.items() if v not in (None, "")}
     params["hl"] = DEFAULT_GOOGLE_HL
-    params["gl"] = DEFAULT_GOOGLE_GL.lower()
+    params["gl"] = DEFAULT_GOOGLE_GL
     _log(
         "Google Flights search request prepared",
         origin=origin,
@@ -1453,24 +1454,7 @@ def google_search_flight_offers(
         maxResults=max_results,
     )
     effective_timeout = timeout if timeout is not None else GOOGLE_SEARCH_TIMEOUT
-    request_params = dict(params)
-    request_params["hl"] = "en"
-    request_params["gl"] = (request_params.get("gl") or DEFAULT_GOOGLE_GL).lower()
-    try:
-        payload = _proxy_get("/google/flights/search", request_params, timeout=effective_timeout, base_url=GOOGLE_BASE_URL)
-    except RuntimeError as exc:
-        msg = str(exc)
-        lowered = msg.lower()
-        if "unsupported value" in lowered and "`en-gb`" in lowered:
-            fallback_params = dict(request_params)
-            fallback_params["hl"] = "en"
-            try:
-                _log("Google Flights hl fallback", original=params.get("hl"), fallback=DEFAULT_GOOGLE_HL)
-            except Exception:
-                pass
-            payload = _proxy_get("/google/flights/search", fallback_params, timeout=effective_timeout, base_url=GOOGLE_BASE_URL)
-        else:
-            raise
+    payload = _proxy_get("/google/flights/search", params, timeout=effective_timeout, base_url=GOOGLE_BASE_URL)
     if not isinstance(payload, dict):
         payload = {}
     offers_payload = _google_flights_to_offers(payload, params.get("currency", "EUR"))

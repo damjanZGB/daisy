@@ -34,7 +34,7 @@ function collectParams(req){
 async function callSearchApi(engine, params){
   const url = new URL(SEARCHAPI_BASE);
   const final = { ...params, engine };
-  final.gl = "de";
+  final.gl = "DE";
   final.hl = "en-GB";
   final.currency = "EUR";
   final.curr = "EUR";
