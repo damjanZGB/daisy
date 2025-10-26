@@ -10,6 +10,7 @@ from __future__ import annotations
 import calendar
 import contextvars
 import json
+import math
 import os
 import re
 from datetime import date, datetime, timedelta
@@ -330,6 +331,7 @@ def _fetch_explore_candidates(
         "adults": "1",
         "currency": "EUR",
         "limit": str(max(10, max_candidates * 2)),
+        "included_airlines": "STAR_ALLIANCE",
     }
     period = _month_range_to_period_text(month_range_text, month_text)
     if period:
@@ -396,6 +398,9 @@ def _fetch_explore_candidates(
                 reason_parts.append(f"from €{price}")
         if stops is not None:
             reason_parts.append("nonstop" if stops == 0 else f"{stops} stop{'s' if stops != 1 else ''}")
+        reason_parts.append("STAR ALLIANCE")
+        if airlines:
+            reason_parts.append("Lufthansa Group carrier")
         if isinstance(duration_txt, str) and duration_txt.strip():
             reason_parts.append(duration_txt.strip())
         elif isinstance(duration_minutes, (int, float)):
@@ -421,6 +426,8 @@ def _fetch_explore_candidates(
             "outboundDate": dest.get("outbound_date"),
             "returnDate": dest.get("return_date"),
             "source": "google_explore",
+            "alliance": "STAR ALLIANCE",
+            "presentedCarriers": "Lufthansa Group",
         }
         search_request = {
             "origin": departure,
@@ -757,6 +764,18 @@ _ORIGIN_SENTINELS_NEAREST = {
     "nearest_airport_by_location",
     "nearest_lh_airport",
     "nearest_lufthansa_airport",
+}
+
+_LOCATION_PLACEHOLDERS = {
+    "current location",
+    "my location",
+    "my current location",
+    "use my location",
+    "use my current location",
+    "use current location",
+    "current position",
+    "my current position",
+    "here",
 }
 
 
@@ -1174,32 +1193,84 @@ def _call_proxy(
     http_method = (method or "GET").upper()
     base_url = GOOGLE_BASE_URL if path.startswith("/google/") else PROXY_BASE_URL
     if http_method == "GET":
-        return _proxy_get(path, params or {}, base_url=base_url)
+        query_params = dict(params or {})
+        if path.startswith("/google/explore"):
+            query_params.setdefault("included_airlines", "STAR_ALLIANCE")
+        return _proxy_get(path, query_params, base_url=base_url)
     payload = body or {}
     return _proxy_post(path, payload)
 
 
-def proxy_lookup_iata(term: str, limit: int = 20) -> List[Dict[str, Any]]:
+def proxy_lookup_iata(
+    term: Optional[str] = None,
+    *,
+    limit: int = 20,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+) -> List[Dict[str, Any]]:
+    def _format_coord(value: Any) -> Optional[str]:
+        if value is None:
+            return None
+        try:
+            if isinstance(value, str):
+                candidate = value.strip()
+                if not candidate:
+                    return None
+                candidate = candidate.replace(",", ".")
+                parsed = float(candidate)
+            else:
+                parsed = float(value)
+        except (TypeError, ValueError):
+            return None
+        if not math.isfinite(parsed):
+            return None
+        return f"{parsed:.6f}"
+
     text = (term or "").strip()
-    if not text:
-        _log("IATA lookup skipped (empty term)")
-        return []
-    _log("IATA lookup via proxy", term=text, limit=limit)
+    lat_formatted = _format_coord(lat)
+    lon_formatted = _format_coord(lon)
+    has_term = bool(text)
+    has_coords = lat_formatted is not None and lon_formatted is not None
+
     try:
-        response = _proxy_get(
-            "/tools/iata/lookup", {"term": text, "limit": str(limit)}
-        )
+        limit_value = int(limit)
+    except (TypeError, ValueError):
+        limit_value = 20
+    if limit_value <= 0:
+        limit_value = 20
+    limit_value = min(limit_value, 50)
+
+    if not has_term and not has_coords:
+        _log("IATA lookup skipped (missing search inputs)")
+        return []
+
+    params = {"limit": str(limit_value)}
+    if has_term:
+        params["term"] = text
+    if has_coords:
+        params["lat"] = lat_formatted
+        params["lon"] = lon_formatted
+
+    _log(
+        "IATA lookup via proxy",
+        term=text or None,
+        limit=limit_value,
+        lat=params.get("lat"),
+        lon=params.get("lon"),
+    )
+    try:
+        response = _proxy_get("/tools/iata/lookup", params)
     except (_urlerr.HTTPError, _urlerr.URLError) as exc:  # pragma: no cover - surface proxy error
-        _log("IATA lookup failed", term=text, error=str(exc))
+        _log("IATA lookup failed", term=text or None, lat=params.get("lat"), lon=params.get("lon"), error=str(exc))
         raise RuntimeError(f"IATA lookup failed: {exc}") from exc
     except Exception as exc:  # pragma: no cover - unexpected error
-        _log("IATA lookup unexpected error", term=text, error=str(exc))
+        _log("IATA lookup unexpected error", term=text or None, lat=params.get("lat"), lon=params.get("lon"), error=str(exc))
         raise RuntimeError(f"IATA lookup unexpected error: {exc}") from exc
     matches = response.get("matches")
     if isinstance(matches, list):
-        _log("IATA lookup success", term=text, matches=len(matches))
+        _log("IATA lookup success", term=text or None, lat=params.get("lat"), lon=params.get("lon"), matches=len(matches))
         return matches
-    _log("IATA lookup response missing 'matches'", term=text)
+    _log("IATA lookup response missing 'matches'", term=text or None, lat=params.get("lat"), lon=params.get("lon"))
     return []
 
 
@@ -2083,6 +2154,8 @@ def search_best_itineraries(
             "flightSearchRequest": {
                 k: v for k, v in search_request.items() if v not in (None, "", [])
             },
+            "alliance": "STAR ALLIANCE",
+            "presentedCarriers": "Lufthansa Group",
         })
 
     return options
@@ -2530,27 +2603,161 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         _log("OpenAPI normalized flight fields", normalized=normalized)
     api_path = (event.get("apiPath") or "").strip()
     if api_path == "/tools/iata/lookup":
-        term = body.get("term")
-        if not term or (isinstance(term, str) and term.strip().lower() in {"nearest airport", "closest airport", "nearest", "closest", "nearest airport to my location", "closest airport to me"}):
-            # Fall back to contextual default origin label if traveler said 'nearest/closest airport'
-            ctx = event.get("promptSessionAttributes") or event.get("sessionAttributes") or {}
-            label = ctx.get("default_origin_label") or ctx.get("default_origin")
-            if label:
-                _log("IATA lookup: substituting nearest/closest with context label", label=label)
-                term = label
-        if not term:
-            _log("OpenAPI validation error", reason="missing_term")
+        param_list = event.get("parameters")
+        parameters = param_list if isinstance(param_list, list) else []
+        session_attrs = event.get("sessionAttributes") or {}
+        prompt_attrs = event.get("promptSessionAttributes") or {}
+
+        def _coerce_float(value: Any) -> Optional[float]:
+            if value is None:
+                return None
+            try:
+                if isinstance(value, (int, float)):
+                    candidate = float(value)
+                elif isinstance(value, str):
+                    text_value = value.strip()
+                    if not text_value:
+                        return None
+                    candidate = float(text_value.replace(",", "."))
+                else:
+                    return None
+            except (TypeError, ValueError):
+                return None
+            if math.isnan(candidate) or math.isinf(candidate):
+                return None
+            return candidate
+
+        def _first_float(keys: List[str]) -> Optional[float]:
+            sources: List[Any] = []
+            for key in keys:
+                sources.append(body.get(key))
+            for key in keys:
+                if parameters:
+                    sources.append(_get_param(parameters, key))
+            for container in (session_attrs, prompt_attrs):
+                for key in keys:
+                    if isinstance(container, dict):
+                        sources.append(container.get(key))
+            if isinstance(event, dict):
+                for key in keys:
+                    sources.append(event.get(key))
+            for candidate in sources:
+                value = _coerce_float(candidate)
+                if value is not None:
+                    return value
+            return None
+
+        term_candidates: List[Any] = [
+            body.get("term"),
+            body.get("code"),
+            body.get("q"),
+            body.get("query"),
+        ]
+        if parameters:
+            term_candidates.extend(
+                [
+                    _get_param(parameters, "term"),
+                    _get_param(parameters, "code"),
+                    _get_param(parameters, "q"),
+                    _get_param(parameters, "query"),
+                ]
+            )
+        term_value = ""
+        for candidate in term_candidates:
+            if isinstance(candidate, str):
+                trimmed = candidate.strip()
+                if trimmed:
+                    term_value = trimmed
+                    break
+
+        lat_value = _first_float(["lat", "latitude", "location_lat", "locationLat"])
+        lon_value = _first_float(["lon", "longitude", "location_lon", "locationLon"])
+        coords_available = lat_value is not None and lon_value is not None
+
+        term_lower = term_value.lower()
+
+        def _is_location_placeholder() -> bool:
+            if not term_lower:
+                return False
+            if term_lower in _LOCATION_PLACEHOLDERS:
+                return True
+            if term_lower in _ORIGIN_SENTINELS_NEAREST:
+                return True
+            if "location" in term_lower and any(token in term_lower for token in {"my", "current"}):
+                return True
+            return False
+
+        is_placeholder = _is_location_placeholder()
+        if is_placeholder and coords_available:
+            _log("IATA lookup: ignoring placeholder term in favour of coordinates", term=term_value, lat=lat_value, lon=lon_value)
+            term_value = ""
+
+        fallback_label = (
+            prompt_attrs.get("default_origin_label")
+            or session_attrs.get("default_origin_label")
+            or prompt_attrs.get("default_origin")
+            or session_attrs.get("default_origin")
+            or ""
+        )
+        fallback_label = str(fallback_label).strip()
+
+        if (not term_value) and is_placeholder and fallback_label:
+            _log("IATA lookup: substituting placeholder with context label", label=fallback_label)
+            term_value = fallback_label
+
+        limit_candidates = [body.get("limit")]
+        if parameters:
+            limit_candidates.append(_get_param(parameters, "limit"))
+        limit_value = None
+        for candidate in limit_candidates:
+            if candidate is not None:
+                limit_value = candidate
+                break
+        try:
+            limit_int = int(str(limit_value).strip()) if limit_value is not None else 20
+        except (TypeError, ValueError):
+            limit_int = 20
+        if limit_int <= 0:
+            limit_int = 20
+        limit_int = min(limit_int, 50)
+
+        if not term_value and not coords_available:
+            _log("OpenAPI validation error", reason="missing_term_and_coordinates")
             return _wrap_openapi(
                 event,
                 400,
-                {"error": "Provide 'term' to perform an IATA lookup."},
+                {
+                    "error": "Provide 'term' or coordinates (lat/lon) to perform an IATA lookup.",
+                },
             )
+
+        if coords_available:
+            _log("IATA lookup: using coordinate fallback", lat=lat_value, lon=lon_value)
+
+        lookup_term = term_value or None
         try:
-            matches = proxy_lookup_iata(term)
+            matches = proxy_lookup_iata(
+                lookup_term,
+                limit=limit_int,
+                lat=lat_value,
+                lon=lon_value,
+            )
         except Exception as exc:
-            _log("OpenAPI proxy IATA lookup failed", term=term, error=str(exc))
+            _log(
+                "OpenAPI proxy IATA lookup failed",
+                term=lookup_term,
+                lat=lat_value,
+                lon=lon_value,
+                error=str(exc),
+            )
             return _wrap_openapi(event, 502, {"error": f"IATA lookup failed: {exc}"})
-        _log("OpenAPI proxy IATA lookup success", term=term, matches=len(matches))
+        _log(
+            "OpenAPI proxy IATA lookup success",
+            term=lookup_term,
+            lat=lat_value,
+            lon=lon_value,
+            matches=len(matches),
+        )
         return _wrap_openapi(event, 200, {"matches": matches})
 
     if api_path == "/tools/datetime/interpret":
@@ -2958,6 +3165,10 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 "candidates": [],
                 "message": "No destinations matched your filters. Try adjusting month or theme.",
                 "source": "google_explore" if explore_candidates else "catalog",
+                "filters": {
+                    "alliance": "STAR ALLIANCE",
+                    "presentedCarriers": "Lufthansa Group",
+                },
             }
             if explore_meta:
                 payload_empty["explore"] = explore_meta
@@ -3010,6 +3221,10 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             if data.get("returnDate"):
                 entry["returnDate"] = data.get("returnDate")
             entry["source"] = data.get("source") or ("google_explore" if explore_candidates else "catalog")
+            if data.get("alliance"):
+                entry["alliance"] = data.get("alliance")
+            if data.get("presentedCarriers"):
+                entry["presentedCarriers"] = data.get("presentedCarriers")
             candidates.append(entry)
 
         payload: Dict[str, Any] = {
@@ -3024,6 +3239,10 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             },
             "candidates": candidates,
             "source": "google_explore" if explore_candidates else ("catalog" if catalog_used else "hybrid"),
+        }
+        payload["filters"] = {
+            "alliance": "STAR ALLIANCE",
+            "presentedCarriers": "Lufthansa Group",
         }
         if explore_meta:
             payload["explore"] = explore_meta
@@ -3101,8 +3320,8 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 _log("Itinerary aggregator failed", error=str(exc))
 
         if not payload.get("message"):
-            header = "Inspiration — top matches (ASCII)"
-            msg_lines = [header]
+            header = "Inspiration — STAR ALLIANCE options (filtered to Lufthansa Group carriers)"
+            msg_lines = [header, "These results are Lufthansa Group-operated; let me know if you want to explore other STAR ALLIANCE carriers or keep only Lufthansa Group."]
             for idx_msg, candidate in enumerate(candidates[:5], start=1):
                 city = candidate.get("city") or "?"
                 country = candidate.get("country") or "?"

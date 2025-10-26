@@ -1,4 +1,5 @@
 import io
+import json
 import unittest
 from datetime import date
 from unittest import mock
@@ -167,6 +168,61 @@ class TestExploreProxy(unittest.TestCase):
         self.assertTrue(request.get("lhGroupOnly"))
         self.assertEqual(cands[0].get("alliance"), "STAR ALLIANCE")
         self.assertEqual(cands[0].get("presentedCarriers"), "Lufthansa Group")
+
+
+class TestIataLookup(unittest.TestCase):
+    @mock.patch("aws.lambda_function._proxy_get")
+    def test_proxy_lookup_iata_includes_coordinates(self, mock_proxy_get):
+        mock_proxy_get.return_value = {"matches": []}
+        lf.proxy_lookup_iata(
+            None,
+            limit=5,
+            lat=45.1234567,
+            lon=16.7654321,
+        )
+        mock_proxy_get.assert_called_once()
+        args, _ = mock_proxy_get.call_args
+        self.assertEqual(args[0], "/tools/iata/lookup")
+        params = args[1]
+        self.assertEqual(params.get("limit"), "5")
+        self.assertEqual(params.get("lat"), "45.123457")
+        self.assertEqual(params.get("lon"), "16.765432")
+
+    def test_openapi_iata_uses_session_coordinates_for_placeholders(self):
+        event = {
+            "apiPath": "/tools/iata/lookup",
+            "httpMethod": "GET",
+            "requestBody": {
+                "content": {
+                    "application/json": {
+                        "properties": [
+                            {"name": "term", "value": "current location"}
+                        ]
+                    }
+                }
+            },
+            "sessionAttributes": {
+                "location_lat": "45.868077",
+                "location_lon": "15.789857",
+            },
+            "promptSessionAttributes": {},
+            "parameters": [
+                {"name": "term", "value": "current location"},
+            ],
+        }
+        with mock.patch("aws.lambda_function.proxy_lookup_iata") as mock_lookup:
+            mock_lookup.return_value = [{"code": "ZAG"}]
+            response = lf._handle_openapi(event)
+        mock_lookup.assert_called_once()
+        args, kwargs = mock_lookup.call_args
+        self.assertIsNone(args[0])
+        self.assertAlmostEqual(kwargs.get("lat"), 45.868077)
+        self.assertAlmostEqual(kwargs.get("lon"), 15.789857)
+        self.assertEqual(kwargs.get("limit"), 20)
+        body = json.loads(
+            response["response"]["responseBody"]["application/json"]["body"]
+        )
+        self.assertEqual(body.get("matches"), [{"code": "ZAG"}])
 
 
 if __name__ == "__main__":
