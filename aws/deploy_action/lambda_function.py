@@ -275,6 +275,8 @@ def _parse_month_range(value: Optional[str], reference: Optional[date] = None) -
 
 def _month_range_to_period_text(month_range_text: Optional[str], month_text: Optional[str]) -> Optional[str]:
     source = month_range_text or month_text
+    if source is None:
+        return None
     try:
         (start_year, start_month), (end_year, end_month) = _parse_month_range(source)
     except Exception:
@@ -332,9 +334,13 @@ def _fetch_explore_candidates(
     period = _month_range_to_period_text(month_range_text, month_text)
     if period:
         params["time_period"] = period
+    if "time_period" not in params:
+        params["time_period"] = "one_week_trip_in_the_next_six_months"
     interests = ",".join(sorted({t for t in theme_tags if t})) if theme_tags else ""
     if interests:
         params["interests"] = interests
+    elif "interests" not in params:
+        params["interests"] = "popular"
     _enforce_google_defaults(params, "explore")
     meta: Dict[str, Any] = {
         "params": {

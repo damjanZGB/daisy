@@ -92,14 +92,11 @@ class TestExploreProxy(unittest.TestCase):
                 },
                 None,
             )
-        self.assertTrue(result["ok"])
-        self.assertEqual(result["status"], 200)
+        self.assertEqual(result, {"destinations": []})
         request_obj = mock_urlopen.call_args[0][0]
         self.assertTrue(request_obj.full_url.startswith(lf.GOOGLE_BASE_URL))
-        self.assertIn(
-            "time_period=2026-06-01..2026-08-31", request_obj.full_url
-        )
-        self.assertIn("interests=beaches", request_obj.full_url)
+        self.assertIn("time_period=Summer+2026", request_obj.full_url)
+        self.assertIn("interests=beach", request_obj.full_url)
         self.assertIn("travel_class=business", request_obj.full_url)
         self.assertIn("max_price=1200", request_obj.full_url)
 
@@ -114,21 +111,40 @@ class TestExploreProxy(unittest.TestCase):
         )
         with mock.patch("urllib.request.urlopen") as mock_urlopen:
             mock_urlopen.side_effect = [primary_error]
-            result = lf._call_proxy(
-                "/google/explore/search",
-                "GET",
-                {
-                    "departure_id": "ZAG",
-                    "time_period": "Summer 2026",
-                    "interests": "beach",
-                },
-                None,
-            )
-        self.assertFalse(result["ok"])
-        self.assertEqual(result["status"], 404)
+            with self.assertRaises(RuntimeError) as ctx:
+                lf._call_proxy(
+                    "/google/explore/search",
+                    "GET",
+                    {
+                        "departure_id": "ZAG",
+                        "time_period": "Summer 2026",
+                        "interests": "beach",
+                    },
+                    None,
+                )
+        self.assertIn("Proxy HTTP 404", str(ctx.exception))
         self.assertEqual(mock_urlopen.call_count, 1)
         first_request = mock_urlopen.call_args_list[0][0][0]
         self.assertTrue(first_request.full_url.startswith(lf.GOOGLE_BASE_URL))
+
+    def test_fetch_explore_candidates_applies_documented_defaults(self):
+        with mock.patch("aws.lambda_function._proxy_get") as mock_proxy_get:
+            mock_proxy_get.return_value = {"destinations": []}
+            lf._fetch_explore_candidates(
+                origin_code="ZAG",
+                month_range_text=None,
+                month_text=None,
+                theme_tags=[],
+                max_candidates=5,
+            )
+        args, kwargs = mock_proxy_get.call_args
+        self.assertEqual(args[0], "/google/explore/search")
+        sent_params = args[1]
+        self.assertEqual(sent_params["travel_mode"], "flights_only")
+        self.assertEqual(
+            sent_params["time_period"], "one_week_trip_in_the_next_six_months"
+        )
+        self.assertEqual(sent_params["interests"], "popular")
 
 
 if __name__ == "__main__":
