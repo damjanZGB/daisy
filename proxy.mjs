@@ -283,20 +283,106 @@ async function executeInput(input) {
   return await httpCall(TOOLS_BASE, method, path, method === "GET" ? q : b);
 }
 
-export async function handleChat({ sessionId, text, inputText, persona = {} }) {
+export async function handleChat(payload = {}) {
+  const {
+    sessionId,
+    text,
+    inputText,
+    persona = {},
+    locationLabel,
+    locationLat,
+    locationLon,
+    inferredOrigin,
+    defaultOrigin,
+    locationOrigin,
+    locationAirport,
+    ...rest
+  } = payload || {};
   let sid = sessionId || String(Date.now());
   let state = {};
+  const sessionAttrsRaw = {};
   const allToolResults = [];
+
+  const appendAttr = (key, value) => {
+    if (value === undefined || value === null) return;
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) return;
+      sessionAttrsRaw[key] = trimmed;
+      return;
+    }
+    if (typeof value === "number") {
+      if (Number.isFinite(value)) {
+        sessionAttrsRaw[key] = String(value);
+      }
+      return;
+    }
+    try {
+      sessionAttrsRaw[key] = JSON.stringify(value);
+    } catch {
+      sessionAttrsRaw[key] = String(value);
+    }
+  };
+
   try {
     if (persona && typeof persona === "object") {
-      const normalized = toSessionAttributes(persona);
-      const sessionAttrs = sanitizeSessionAttributes(normalized);
-      if (Object.keys(sessionAttrs).length > 0) {
-        state.sessionAttributes = sessionAttrs;
+      const normalizedPersona = toSessionAttributes(persona);
+      for (const [key, value] of Object.entries(normalizedPersona || {})) {
+        if (value === undefined || value === null || value === "") continue;
+        sessionAttrsRaw[key] = value;
       }
     }
   } catch (error) {
     console.warn("[proxy] persona processing failed", error);
+  }
+  const parsedLabel = typeof locationLabel === "string" ? locationLabel.trim() : "";
+  if (parsedLabel) {
+    appendAttr("default_origin_label", parsedLabel);
+  }
+  const airportCode =
+    (locationAirport && typeof locationAirport === "object" && locationAirport.code) ||
+    inferredOrigin ||
+    locationOrigin ||
+    defaultOrigin;
+  const latNum = Number(locationLat);
+  const lonNum = Number(locationLon);
+  let resolvedOrigin = typeof airportCode === "string" ? airportCode.trim().toUpperCase() : "";
+  if (!resolvedOrigin && Number.isFinite(latNum) && Number.isFinite(lonNum)) {
+    try {
+      const nearest = iataLookup({ lat: latNum, lon: lonNum, limit: 1 });
+      if (Array.isArray(nearest) && nearest.length > 0 && nearest[0]?.code) {
+        resolvedOrigin = String(nearest[0].code).trim().toUpperCase();
+        if (!parsedLabel && nearest[0]?.name) {
+          appendAttr("default_origin_label", nearest[0].name);
+        }
+      }
+    } catch (error) {
+      console.warn("[proxy] location lookup via coords failed", error);
+    }
+  }
+  if (!resolvedOrigin && parsedLabel) {
+    try {
+      const nearest = iataLookup({ term: parsedLabel, limit: 1 });
+      if (Array.isArray(nearest) && nearest.length > 0 && nearest[0]?.code) {
+        resolvedOrigin = String(nearest[0].code).trim().toUpperCase();
+      }
+    } catch (error) {
+      console.warn("[proxy] location lookup via label failed", error);
+    }
+  }
+  const fallbackOrigin =
+    (process.env.DEFAULT_ORIGIN_FALLBACK || process.env.DEFAULT_ORIGIN || "FRA")
+      .trim()
+      .toUpperCase() || "FRA";
+  appendAttr("default_origin", resolvedOrigin || fallbackOrigin);
+  if (Number.isFinite(latNum)) {
+    appendAttr("location_lat", latNum.toFixed(6));
+  }
+  if (Number.isFinite(lonNum)) {
+    appendAttr("location_lon", lonNum.toFixed(6));
+  }
+  if (Object.keys(sessionAttrsRaw).length > 0) {
+    state.sessionAttributes = sanitizeSessionAttributes(sessionAttrsRaw);
   }
   const initialText = (text ?? inputText ?? "").toString();
   const userText = initialText.trim();

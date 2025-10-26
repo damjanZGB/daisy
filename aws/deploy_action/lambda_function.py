@@ -83,10 +83,23 @@ def _load_iata_coords() -> dict:
             with open(p, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 coords = {}
-                for rec in data:
-                    code = rec.get("code") or rec.get("iata_code") or rec.get("iata")
-                    lat = rec.get("latitude")
-                    lon = rec.get("longitude")
+                if isinstance(data, dict):
+                    iterable = data.items()
+                elif isinstance(data, list):
+                    iterable = enumerate(data)
+                else:
+                    iterable = []
+                for key, rec in iterable:
+                    if isinstance(rec, dict):
+                        code = rec.get("code") or rec.get("iata_code") or rec.get("iata")
+                        lat = rec.get("latitude")
+                        lon = rec.get("longitude")
+                    else:
+                        code = None
+                        lat = None
+                        lon = None
+                    if not code and isinstance(key, str):
+                        code = key
                     if code and lat is not None and lon is not None:
                         coords[str(code).upper()] = (float(lat), float(lon))
                 _IATA_COORDS_CACHE = coords
@@ -97,6 +110,31 @@ def _load_iata_coords() -> dict:
     _IATA_COORDS_CACHE = {}
     _log("IATA coords not found", tried=candidates)
     return _IATA_COORDS_CACHE
+
+
+def _nearest_iata_from_coords(latitude: float | None, longitude: float | None) -> Optional[str]:
+    if latitude is None or longitude is None:
+        return None
+    coords = _load_iata_coords()
+    if not coords:
+        return None
+    best_code: Optional[str] = None
+    best_distance: Optional[float] = None
+    for code, pair in coords.items():
+        if not isinstance(pair, (list, tuple)) or len(pair) != 2:
+            continue
+        try:
+            ilat = float(pair[0])
+            ilon = float(pair[1])
+        except (TypeError, ValueError):
+            continue
+        distance = _haversine_km(latitude, longitude, ilat, ilon)
+        if best_distance is None or distance < best_distance:
+            best_distance = distance
+            best_code = str(code).upper()
+    if best_code:
+        _log("Nearest IATA resolved from coordinates", code=best_code, lat=latitude, lon=longitude, distance_km=best_distance)
+    return best_code
 
 
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -293,6 +331,7 @@ def _score_destination(dest: dict, theme_tags: set[str], target_month: int, orig
 LH_GROUP_CODES = ["LH", "LX", "OS", "SN", "EW", "4Y", "EN"]
 
 PROXY_BASE_URL = (os.getenv("PROXY_BASE_URL") or "http://localhost:8787").rstrip("/")
+GOOGLE_BASE_URL = (os.getenv("GOOGLE_BASE_URL") or PROXY_BASE_URL).rstrip("/")
 
 MAX_LOOKAHEAD_DAYS = 365
 
@@ -596,6 +635,51 @@ def _apply_contextual_defaults(
     elif default_origin:
         normalized["origin"] = default_origin
         _log("Context origin filled from defaults", resolved=default_origin)
+    else:
+        def _coerce_float(value: Any) -> Optional[float]:
+            try:
+                if value is None:
+                    return None
+                if isinstance(value, (int, float)):
+                    return float(value)
+                if isinstance(value, str) and value.strip():
+                    return float(value.strip())
+            except (TypeError, ValueError):
+                return None
+            return None
+
+        lat_sources = [
+            session_attrs.get("location_lat"),
+            session_attrs.get("locationLat"),
+            prompt_attrs.get("location_lat"),
+            prompt_attrs.get("locationLat"),
+            event.get("location_lat"),
+            event.get("locationLat"),
+        ]
+        lon_sources = [
+            session_attrs.get("location_lon"),
+            session_attrs.get("locationLon"),
+            prompt_attrs.get("location_lon"),
+            prompt_attrs.get("locationLon"),
+            event.get("location_lon"),
+            event.get("locationLon"),
+        ]
+        lat_value = next((value for value in lat_sources if _coerce_float(value) is not None), None)
+        lon_value = next((value for value in lon_sources if _coerce_float(value) is not None), None)
+        lat_float = _coerce_float(lat_value)
+        lon_float = _coerce_float(lon_value)
+        if lat_float is not None and lon_float is not None:
+            resolved = _nearest_iata_from_coords(lat_float, lon_float)
+            if resolved:
+                normalized["origin"] = resolved
+                _log("Context origin resolved from coordinates", resolved=resolved, lat=lat_float, lon=lon_float)
+
+    if not normalized.get("origin"):
+        fallback_origin = (
+            os.getenv("DEFAULT_ORIGIN") or os.getenv("DEFAULT_EXPLORE_DEPARTURE_ID") or "FRA"
+        ).strip().upper() or "FRA"
+        normalized["origin"] = fallback_origin
+        _log("Context origin fallback applied", fallback=fallback_origin)
     return normalized
 
 
@@ -837,11 +921,12 @@ def _proxy_post(
 
 
 def _proxy_get(
-    path: str, params: Dict[str, str], timeout: float = 5.0
+    path: str, params: Dict[str, str], timeout: float = 5.0, *, base_url: Optional[str] = None
 ) -> Dict[str, Any]:
 
     qs = _urlparse.urlencode(params)
-    url = f"{PROXY_BASE_URL}{path}"
+    target_base = (base_url or PROXY_BASE_URL).rstrip("/")
+    url = f"{target_base}{path}"
     if qs:
         url = f"{url}?{qs}"
     headers = {"Accept": "application/json"}
@@ -949,7 +1034,155 @@ def _resolve_iata_code(raw: Any) -> Tuple[Optional[str], List[str]]:
     return None, codes
 
 
-def amadeus_search_flight_offers(
+DEFAULT_GOOGLE_GL = (os.getenv("DEFAULT_GOOGLE_GL") or "DE").strip().lower() or "de"
+DEFAULT_GOOGLE_HL = (os.getenv("DEFAULT_GOOGLE_HL") or "en").strip().lower() or "en"
+
+
+def _minutes_to_iso(minutes: Optional[int]) -> Optional[str]:
+    if minutes is None:
+        return None
+    try:
+        total = int(minutes)
+    except (TypeError, ValueError):
+        return None
+    hours, mins = divmod(max(total, 0), 60)
+    parts = []
+    if hours:
+        parts.append(f"{hours}H")
+    parts.append(f"{mins}M")
+    return f"PT{''.join(parts)}"
+
+
+def _combine_local_datetime(date_str: Optional[str], time_str: Optional[str]) -> Optional[str]:
+    if not date_str or not time_str:
+        return None
+    date_str = str(date_str).strip()
+    time_str = str(time_str).strip()
+    if not date_str or not time_str:
+        return None
+    if len(time_str) == 5:
+        time_str = f"{time_str}:00"
+    return f"{date_str}T{time_str}"
+
+
+def _google_option_to_offer(option: Dict[str, Any], currency: str) -> Dict[str, Any]:
+    flights = option.get("flights") or []
+    segments: List[Dict[str, Any]] = []
+    carriers: List[str] = []
+
+    def carrier_code_from_flight_number(flight_number: Optional[str]) -> Optional[str]:
+        if not flight_number:
+            return None
+        parts = str(flight_number).split()
+        if parts:
+            prefix = parts[0].strip()
+            if prefix:
+                return prefix.upper()
+        return None
+
+    layovers = option.get("layovers") or []
+    layover_map: Dict[int, Dict[str, Any]] = {}
+    if isinstance(layovers, list):
+        for idx, lay in enumerate(layovers):
+            layover_map[idx] = lay if isinstance(lay, dict) else {}
+
+    for idx, flight in enumerate(flights):
+        if not isinstance(flight, dict):
+            continue
+        dep_air = flight.get("departure_airport") or {}
+        arr_air = flight.get("arrival_airport") or {}
+        departure_time = _combine_local_datetime(dep_air.get("date"), dep_air.get("time"))
+        arrival_time = _combine_local_datetime(arr_air.get("date"), arr_air.get("time"))
+        duration_iso = _minutes_to_iso(flight.get("duration"))
+        flight_number = flight.get("flight_number")
+        carrier_code = carrier_code_from_flight_number(flight_number) or flight.get("airline")
+        if carrier_code:
+            carriers.append(str(carrier_code))
+        services = []
+        extensions = flight.get("extensions")
+        if isinstance(extensions, list):
+            services = [str(item).strip() for item in extensions if str(item).strip()]
+        elif isinstance(extensions, str):
+            services = [extensions.strip()]
+        detected = flight.get("detected_extensions")
+        if isinstance(detected, dict):
+            for key, value in detected.items():
+                if isinstance(value, (str, int, float)) and value not in services:
+                    services.append(str(value))
+        segment = {
+            "carrier": carrier_code,
+            "marketingCarrier": carrier_code,
+            "operatingCarrier": carrier_code,
+            "flightNumber": flight_number,
+            "aircraft": flight.get("airplane"),
+            "cabin": flight.get("travel_class"),
+            "fareClass": None,
+            "from": dep_air.get("id"),
+            "fromTerminal": dep_air.get("terminal"),
+            "departureTime": departure_time,
+            "to": arr_air.get("id"),
+            "toTerminal": arr_air.get("terminal"),
+            "arrivalTime": arrival_time,
+            "duration": duration_iso,
+            "services": services,
+        }
+        segments.append(segment)
+        layover_info = layover_map.get(idx)
+        if layover_info and idx < len(flights) - 1:
+            duration = layover_info.get("duration")
+            if isinstance(duration, (int, float)):
+                segments[-1]["layoverDuration"] = _minutes_to_iso(int(duration))
+
+    carriers_unique = sorted({c for c in carriers if c})
+    fare_note = None
+    extensions = option.get("extensions")
+    if isinstance(extensions, list):
+        cleaned = [str(item).strip() for item in extensions if str(item).strip()]
+        if cleaned:
+            fare_note = "; ".join(dict.fromkeys(cleaned))
+    elif isinstance(extensions, str) and extensions.strip():
+        fare_note = extensions.strip()
+
+    carbon = option.get("carbon_emissions") or option.get("carbonEmissions")
+
+    itineraries = [{"segments": segments}] if segments else []
+
+    return {
+        "id": option.get("departure_token") or option.get("token"),
+        "oneWay": str(option.get("type") or "").lower() == "one way",
+        "totalPrice": option.get("price"),
+        "price": option.get("price"),
+        "currency": currency,
+        "carriers": carriers_unique,
+        "segments": segments,
+        "itineraries": itineraries,
+        "primaryCarrier": carriers_unique[0] if carriers_unique else None,
+        "departureAirport": segments[0].get("from") if segments else None,
+        "departureTime": segments[0].get("departureTime") if segments else None,
+        "arrivalAirport": segments[-1].get("to") if segments else None,
+        "arrivalTime": segments[-1].get("arrivalTime") if segments else None,
+        "duration": _minutes_to_iso(option.get("total_duration")),
+        "stops": max(len(segments) - 1, 0) if segments else None,
+        "carbon_emissions": carbon,
+        "fare_note": fare_note,
+    }
+
+
+def _google_flights_to_offers(payload: Dict[str, Any], currency: str) -> Dict[str, Any]:
+    if not isinstance(payload, dict):
+        return {}
+    best = payload.get("best_flights") or []
+    other = payload.get("other_flights") or []
+    if not best and not other:
+        return {}
+    offers: List[Dict[str, Any]] = []
+    for block in list(best) + list(other):
+        if isinstance(block, dict):
+            offers.append(_google_option_to_offer(block, currency))
+    return {"offers": offers}
+
+
+def google_search_flight_offers(
     origin: str,
     destination: str,
     departure_date: str,
@@ -963,25 +1196,29 @@ def amadeus_search_flight_offers(
     timeout: float = 8.0,
 ) -> Dict[str, Any]:
 
-    payload: Dict[str, Any] = {
-        "originLocationCode": origin,
-        "destinationLocationCode": destination,
-        "departureDate": departure_date,
-        "adults": max(1, adults),
-        "nonStop": nonstop,
-        "max": max(1, min(50, max_results)),
+    params: Dict[str, Any] = {
+        "engine": "google_flights",
+        "flight_type": "round_trip" if return_date else "one_way",
+        "departure_id": origin,
+        "arrival_id": destination,
+        "outbound_date": departure_date,
+        "adults": str(max(1, adults)),
+        "currency": (currency or "EUR"),
+        "included_airlines": ",".join(LH_GROUP_CODES) if lh_group_only else None,
+        "hl": DEFAULT_GOOGLE_HL,
+        "gl": DEFAULT_GOOGLE_GL,
+        "stops": "nonstop" if nonstop else "any",
     }
-    travel_class = cabin.upper()
-    if travel_class in {"ECONOMY", "PREMIUM_ECONOMY", "BUSINESS", "FIRST"}:
-        payload["travelClass"] = travel_class
+    if not lh_group_only:
+        params.pop("included_airlines", None)
     if return_date:
-        payload["returnDate"] = return_date
-    if currency:
-        payload["currencyCode"] = currency.upper()
-    if lh_group_only:
-        payload["includedAirlineCodes"] = ",".join(LH_GROUP_CODES)
+        params["return_date"] = return_date
+    travel_class = cabin.lower()
+    if travel_class in {"economy", "premium_economy", "business", "first"}:
+        params["travel_class"] = travel_class
+    params = {k: v for k, v in params.items() if v not in (None, "")}
     _log(
-        "Amadeus search request prepared",
+        "Google Flights search request prepared",
         origin=origin,
         destination=destination,
         departure=departure_date,
@@ -989,18 +1226,18 @@ def amadeus_search_flight_offers(
         adults=adults,
         nonstop=nonstop,
         cabin=cabin,
-        currency=currency,
+        currency=params.get("currency"),
         lhGroupOnly=lh_group_only,
         maxResults=max_results,
     )
-    response = _proxy_post("/tools/amadeus/search", payload, timeout=timeout)
-    if isinstance(response, dict):
-        offers = response.get("offers")
-        offer_count = len(offers) if isinstance(offers, list) else None
-    else:
-        offer_count = None
-    _log("Amadeus search completed", offers=offer_count)
-    return response
+    payload = _proxy_get("/google/flights/search", params, timeout=timeout, base_url=GOOGLE_BASE_URL)
+    if not isinstance(payload, dict):
+        payload = {}
+    offers_payload = _google_flights_to_offers(payload, params.get("currency", "EUR"))
+    offer_list = offers_payload.get("offers") if isinstance(offers_payload, dict) else None
+    offer_count = len(offer_list) if isinstance(offer_list, list) else 0
+    _log("Google Flights search completed", offers=offer_count)
+    return offers_payload
 
 
 def _nearest_date_alternatives(
@@ -1048,7 +1285,7 @@ def _nearest_date_alternatives(
         seen_dates.add(d2)
         r2 = (ret_dt + timedelta(days=off)).date().isoformat() if ret_dt else None
         try:
-            raw = amadeus_search_flight_offers(
+            raw = google_search_flight_offers(
                 origin,
                 destination,
                 d2,
@@ -1115,6 +1352,8 @@ def _summarize_offers(
 
         def _normalize_segment(segment: Dict[str, Any]) -> Dict[str, Any]:
             seg = dict(segment or {})
+            if "from" in seg and "to" in seg and ("departureTime" in seg or "depTime" in seg):
+                return seg
 
             def _extract_airport(data: Any, fallback_key: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
                 if isinstance(data, dict):
@@ -1387,7 +1626,7 @@ def search_best_itineraries(
                     continue
                 dep_date = dates[di]
                 try:
-                    raw = amadeus_search_flight_offers(
+                    raw = google_search_flight_offers(
                         origin,
                         code,
                         dep_date,
@@ -1546,79 +1785,293 @@ def search_best_itineraries(
     return options
 
 
-def _build_recommendation_message(direct_opts: List[Dict[str, Any]], conn_opts: List[Dict[str, Any]], take_direct: int, take_conn: int, currency: str) -> List[str]:
-    """Build recommendation message lines for flight options."""
+def _build_recommendation_message(
+    direct_opts: List[Dict[str, Any]],
+    conn_opts: List[Dict[str, Any]],
+    take_direct: int,
+    take_conn: int,
+    currency: str,
+) -> List[str]:
+    """Build rich, timeline-style recommendation lines for flight options."""
+
     def _fmt_price(val: Any, curr: Optional[str]) -> str:
         try:
             return f"{float(val):.0f} {curr or ''}".strip()
         except Exception:
-            return str(val)
-    
-    def _hhmm(ts: Optional[str]) -> str:
+            return str(val) if val is not None else ""
+
+    def _parse_dt(value: Optional[str]) -> Optional[datetime]:
+        if not value:
+            return None
         try:
-            if not ts:
-                return "?"
-            t = ts.replace("T", " ").replace("Z", "").split(" ")[1]
-            return t[:5]
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
         except Exception:
+            try:
+                return datetime.fromisoformat(value)
+            except Exception:
+                return None
+
+    def _hhmm(dt: Optional[datetime]) -> str:
+        if not dt:
             return "?"
-    
+        return dt.strftime("%H:%M")
+
+    def _format_iso_duration(value: Optional[str]) -> str:
+        if not isinstance(value, str) or not value.startswith("PT"):
+            return "duration n/a"
+        hours = minutes = 0
+        text = value[2:]
+        try:
+            if "H" in text:
+                parts = text.split("H", 1)
+                hours = int(parts[0] or 0)
+                text = parts[1]
+            if "M" in text:
+                minutes = int(text.replace("M", "") or 0)
+        except Exception:
+            return "duration n/a"
+        parts = []
+        if hours:
+            parts.append(f"{hours}h")
+        if minutes or not parts:
+            parts.append(f"{minutes}m")
+        return "".join(parts)
+
+    def _format_minutes(total_minutes: Optional[int]) -> str:
+        if total_minutes is None:
+            return "duration n/a"
+        if total_minutes < 0:
+            total_minutes = abs(total_minutes)
+        hours, minutes = divmod(int(total_minutes), 60)
+        parts = []
+        if hours:
+            parts.append(f"{hours}h")
+        if minutes or not parts:
+            parts.append(f"{minutes}m")
+        return "".join(parts)
+
+    def _format_services(services: Any) -> str:
+        if not services:
+            return "Not specified"
+        if isinstance(services, (list, tuple, set)):
+            collected = []
+            for item in services:
+                if isinstance(item, str) and item.strip():
+                    collected.append(item.strip())
+                elif isinstance(item, dict):
+                    name = item.get("name") or item.get("description")
+                    if name:
+                        collected.append(str(name).strip())
+            if collected:
+                return ", ".join(dict.fromkeys(collected))
+        if isinstance(services, str) and services.strip():
+            return services.strip()
+        return "Not specified"
+
+    def _infer_legroom(services: Any) -> str:
+        if isinstance(services, (list, tuple, set)):
+            for item in services:
+                if isinstance(item, str) and "legroom" in item.lower():
+                    return item.strip()
+                if isinstance(item, dict):
+                    desc = item.get("description") or item.get("detail")
+                    if isinstance(desc, str) and "legroom" in desc.lower():
+                        return desc.strip()
+        if isinstance(services, str) and "legroom" in services.lower():
+            return services.strip()
+        return "Not specified"
+
+    def _carbon_text(offer: Dict[str, Any]) -> str:
+        carbon = (
+            offer.get("carbonEmissions")
+            or offer.get("carbon_emissions")
+            or offer.get("carbon")
+        )
+        if isinstance(carbon, dict):
+            this_val = (
+                carbon.get("this_flight")
+                or carbon.get("thisFlight")
+                or carbon.get("this")
+            )
+            diff = carbon.get("difference_percent") or carbon.get("differencePercent")
+            try:
+                if this_val is not None:
+                    value = float(this_val)
+                    if value > 1000:
+                        value /= 1000.0
+                    text = f"{value:.0f} kg"
+                else:
+                    text = "Not available"
+            except Exception:
+                text = str(this_val)
+            if diff is not None:
+                try:
+                    diff_val = float(diff)
+                    if diff_val > 0:
+                        text += f" ({abs(diff_val):.0f}% above typical)"
+                    elif diff_val < 0:
+                        text += f" ({abs(diff_val):.0f}% below typical)"
+                    else:
+                        text += " (on par with typical)"
+                except Exception:
+                    pass
+            return text
+        return "Not available"
+
+    def _fare_note_text(offer: Dict[str, Any]) -> str:
+        raw = (
+            offer.get("fareNote")
+            or offer.get("fare_note")
+            or offer.get("fareConditions")
+            or offer.get("fare_conditions")
+            or offer.get("notes")
+        )
+        if isinstance(raw, (list, tuple, set)):
+            collected = [str(item).strip() for item in raw if str(item).strip()]
+            if collected:
+                return "; ".join(collected)
+        if isinstance(raw, str) and raw.strip():
+            return raw.strip()
+        return "Not available"
+
+    def _timeline_sections(offer: Dict[str, Any]) -> List[Dict[str, Any]]:
+        itineraries = offer.get("itineraries")
+        if isinstance(itineraries, list) and itineraries:
+            return itineraries
+        segments = offer.get("segments")
+        if isinstance(segments, list) and segments:
+            return [{"segments": segments}]
+        return []
+
+    def _flight_code(seg: Dict[str, Any]) -> str:
+        carrier = (
+            seg.get("carrier")
+            or seg.get("marketingCarrier")
+            or seg.get("operatingCarrier")
+        )
+        number = seg.get("flightNumber") or ""
+        combined = f"{carrier or ''} {number}".strip()
+        return combined or "Flight"
+
+    def _option_header(
+        index: int,
+        opt: Dict[str, Any],
+        offer: Dict[str, Any],
+        price_text: str,
+        stops_value: Optional[int],
+    ) -> str:
+        segments = offer.get("segments") or []
+        first_seg = segments[0] if segments else {}
+        primary = _flight_code(first_seg)
+        trip_type = "One way" if offer.get("oneWay") else "Round trip"
+        label = opt.get("label")
+        stops_txt = None
+        if stops_value is None:
+            stops_value = offer.get("stops")
+        try:
+            if stops_value is not None:
+                stops_value = int(stops_value)
+                if stops_value <= 0:
+                    stops_txt = "nonstop"
+                elif stops_value == 1:
+                    stops_txt = "1 stop"
+                else:
+                    stops_txt = f"{stops_value} stops"
+        except Exception:
+            stops_txt = None
+        parts = [f"{index}. **{primary}**", f"· {trip_type}"]
+        if stops_txt:
+            parts.append(f"· {stops_txt}")
+        if label:
+            parts.append(f"· {label}")
+        if price_text:
+            parts.append(f"· **{price_text}**")
+        return " ".join(parts)
+
+    combined_options: List[Dict[str, Any]] = []
+    if take_direct and direct_opts:
+        combined_options.extend(direct_opts[:take_direct])
+    if take_conn and conn_opts:
+        combined_options.extend(conn_opts[:take_conn])
+
+    if not combined_options:
+        return ["No matching flights were found. Try adjusting the dates or departure airport."]
+
     lines: List[str] = []
-    
-    if take_direct:
-        lines.append("Direct Flights")
-        for idx, opt in enumerate(direct_opts[:take_direct], start=1):
-            offer = opt.get("offer") or {}
-            price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
-            dep = offer.get("departureAirport") or "?"
-            arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
-            dur = offer.get("duration") or "?"
-            label = opt.get("label") or "Option"
-            carriers = offer.get("carriers") or []
-            carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
-            header = f"{idx}) {label} - {dep} -> {arr} | {opt.get('date')} | nonstop | {dur} | **{price}**"
-            lines.append(header)
-            if carriers_txt:
-                lines.append(f"    - Carriers: {carriers_txt}")
-            if RECOMMENDER_VERBOSE and isinstance(offer.get("segments"), list) and offer["segments"]:
-                for s in offer["segments"]:
-                    c = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
-                    fn = s.get("flightNumber") or ""
-                    s_dep = s.get("from") or "?"
-                    s_arr = s.get("to") or "?"
-                    s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
-                    s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
-                    lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} -> {s_arr} {s_at}")
-    
-    if take_conn:
-        if take_direct:
+    section_prefix = "   - "
+    segment_prefix = "     "
+    attribute_prefix = "       "
+
+    for idx, opt in enumerate(combined_options, start=1):
+        offer = opt.get("offer") or {}
+        price_text = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
+        header = _option_header(idx, opt, offer, price_text, opt.get("stops"))
+        lines.append(header)
+
+        sections = _timeline_sections(offer)
+        if not sections:
+            lines.append(f"{section_prefix}No segment details available.")
+        else:
+            for section_index, itinerary in enumerate(sections):
+                title = (
+                    "Outbound timeline"
+                    if section_index == 0
+                    else "Return timeline"
+                    if section_index == 1
+                    else f"Segment {section_index + 1} timeline"
+                )
+                lines.append(f"{section_prefix}{title}:")
+                segments = itinerary.get("segments") or []
+                if not segments:
+                    lines.append(f"{segment_prefix}No segment data provided.")
+                    continue
+                prev_arrival_dt = None
+                prev_arrival_airport = None
+                for seg_idx, seg in enumerate(segments):
+                    dep_dt = _parse_dt(seg.get("departureTime") or seg.get("depTime"))
+                    arr_dt = _parse_dt(seg.get("arrivalTime") or seg.get("arrTime"))
+                    dep_airport = seg.get("from") or "?"
+                    arr_airport = seg.get("to") or "?"
+                    dep_time_txt = _hhmm(dep_dt)
+                    arr_time_txt = _hhmm(arr_dt)
+                    if dep_dt and arr_dt and dep_dt.date() != arr_dt.date():
+                        arr_time_txt = f"{arr_time_txt} NEXT DAY"
+                    seg_duration = _format_iso_duration(seg.get("duration"))
+                    if prev_arrival_dt and dep_dt:
+                        layover_minutes = int((dep_dt - prev_arrival_dt).total_seconds() // 60)
+                        while layover_minutes < 0:
+                            layover_minutes += 1440
+                        layover_txt = _format_minutes(layover_minutes)
+                        location = prev_arrival_airport or "Layover airport"
+                        lines.append(f"{segment_prefix}Layover: {location} · {layover_txt}")
+                    timeline_line = (
+                        f"{segment_prefix}{dep_airport} {dep_time_txt} → {arr_airport} {arr_time_txt} ({seg_duration})"
+                    )
+                    lines.append(timeline_line)
+
+                    carrier_line = _flight_code(seg)
+                    aircraft = seg.get("aircraft") or "Not specified"
+                    cabin = seg.get("cabin") or "Not specified"
+                    services = seg.get("services") or []
+                    amenities = _format_services(services)
+                    legroom = _infer_legroom(services)
+
+                    lines.append(f"{attribute_prefix}Carrier: {carrier_line}")
+                    lines.append(f"{attribute_prefix}Aircraft: {aircraft}")
+                    lines.append(f"{attribute_prefix}Cabin: {cabin}")
+                    lines.append(f"{attribute_prefix}Amenities: {amenities}")
+                    lines.append(f"{attribute_prefix}Legroom: {legroom}")
+
+                    prev_arrival_dt = arr_dt
+                    prev_arrival_airport = arr_airport
+
+        carbon_line = _carbon_text(offer)
+        fare_note_line = _fare_note_text(offer)
+        lines.append(f"{section_prefix}Carbon: {carbon_line}")
+        lines.append(f"{section_prefix}Fare note: {fare_note_line}")
+        if idx < len(combined_options):
             lines.append("")
-        lines.append("Connecting Flights")
-        for idx, opt in enumerate(conn_opts[:take_conn], start=1):
-            offer = opt.get("offer") or {}
-            price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
-            dep = offer.get("departureAirport") or "?"
-            arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
-            dur = offer.get("duration") or "?"
-            label = opt.get("label") or "Option"
-            stops = opt.get("stops")
-            stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
-            carriers = offer.get("carriers") or []
-            carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
-            header = f"{idx}) {label} - {dep} -> {arr} | {opt.get('date')} | {stops_txt} | {dur} | **{price}**"
-            lines.append(header)
-            if carriers_txt:
-                lines.append(f"    - Carriers: {carriers_txt}")
-            if RECOMMENDER_VERBOSE and isinstance(offer.get("segments"), list) and offer["segments"]:
-                for s in offer["segments"][:3]:
-                    c = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
-                    fn = s.get("flightNumber") or ""
-                    s_dep = s.get("from") or "?"
-                    s_arr = s.get("to") or "?"
-                    s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
-                    s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
-                    lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} -> {s_arr} {s_at}")
-    
+
     return lines
 
 
@@ -1819,8 +2272,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
     adults = _to_int(normalized.get("adults", 1), 1)
     cabin = (normalized.get("cabin") or "ECONOMY").upper()
     nonstop = _to_bool(normalized.get("nonstop", False), False)
-    currency = (normalized.get("currency") or os.getenv(
-        "DEFAULT_CURRENCY") or "EUR").upper()
+    currency = "EUR"
     lh_group_only = _to_bool(
         normalized.get("lhGroupOnly", os.getenv("LH_GROUP_ONLY", "true")), True
     )
@@ -1875,7 +2327,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         _log("OpenAPI validation error", reason="window_error", detail=window_error)
         return _wrap_openapi(event, 400, {"error": window_error})
     try:
-        raw = amadeus_search_flight_offers(
+        raw = google_search_flight_offers(
             origin,
             destination,
             departure_date,
@@ -1891,7 +2343,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         # Fallback: if nonstop requested and none found, retry with connections allowed.
         if nonstop and not offers:
             _log("OpenAPI: No nonstop offers; retrying with connections allowed")
-            raw = amadeus_search_flight_offers(
+            raw = google_search_flight_offers(
                 origin,
                 destination,
                 departure_date,
@@ -2149,7 +2601,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
         max_candidates = _to_int(_get_param(params, "maxCandidates", 8), 8)
         # Default to True so suggestions always include flight options.
         with_itins = _to_bool(_get_param(params, "withItineraries", True), True)
-        currency = _get_param(params, "currency") or (os.getenv("DEFAULT_CURRENCY") or "EUR")
+        currency = "EUR"
 
         # Accept JSON array or comma-separated string for themeTags
         theme_tags: List[str] = []
@@ -2518,10 +2970,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
     adults = _to_int(normalized.get("adults", 1), 1)
     cabin = (normalized.get("cabin") or "ECONOMY").upper()
     nonstop = _to_bool(normalized.get("nonstop", False), False)
-    currency = (
-        normalized.get("currency") or os.getenv(
-            "DEFAULT_CURRENCY") or "EUR"
-    ).upper()
+    currency = "EUR"
     lh_group_only = _to_bool(
         normalized.get("lhGroupOnly", os.getenv(
             "LH_GROUP_ONLY", "true")), True
@@ -2577,7 +3026,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
         _log("Function validation error", reason="window_error", detail=window_error)
         return _wrap_function(event, 400, {"error": window_error})
     try:
-        raw = amadeus_search_flight_offers(
+        raw = google_search_flight_offers(
             origin,
             destination,
             departure_date,
@@ -2593,7 +3042,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
         # Fallback: if user asked for nonstop and none found, retry with connections allowed.
         if nonstop and not offers:
             _log("No nonstop offers; retrying with connections allowed")
-            raw = amadeus_search_flight_offers(
+            raw = google_search_flight_offers(
                 origin,
                 destination,
                 departure_date,
@@ -2672,77 +3121,13 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 except Exception:
                     return str(val)
             if offers:
-                # Partition into direct and connecting, enforce max 10 total
                 direct = [o for o in offers if (o.get("stops") == 0)]
                 conn = [o for o in offers if (o.get("stops") and o.get("stops") > 0) or o.get("stops") is None]
                 max_total = min(10, RECOMMENDER_MAX_OPTIONS)
-                take_direct = min(len(direct), max_total)
-                take_conn = min(len(conn), max_total - take_direct)
-                lines2: List[str] = []
-                if take_direct:
-                    lines2.append("Direct Flights")
-                    for idx, off in enumerate(direct[:take_direct], start=1):
-                        dep2 = off.get("departureAirport") or "?"
-                        arr2 = off.get("arrivalAirport") or "?"
-                        dt2 = _hhmm(off.get("departureTime"))
-                        dur2 = off.get("duration") or "?"
-                        price2 = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
-                        segs2 = off.get("segments")
-                        seg02 = segs2[0] if isinstance(segs2, list) and segs2 else None
-                        c02 = (seg02.get("carrier") or seg02.get("marketingCarrier") or seg02.get("operatingCarrier")) if isinstance(seg02, dict) else None
-                        fn02 = (seg02.get("flightNumber") if isinstance(seg02, dict) else None) or ""
-                        c02fn = f"{c02}{fn02}".strip() if (c02 or fn02) else None
-                        parts2 = [f"{idx}) {dep2} {dt2}", "->", f"{arr2}", "|", departure_date, "|", "nonstop", "|", dur2]
-                        if c02fn:
-                            parts2.extend(["|", c02fn])
-                        parts2.extend(["|", f"**{price2}**"])
-                        lines2.append(" ".join(str(p) for p in parts2 if str(p)))
-                        if isinstance(segs2, list) and segs2:
-                            for s in segs2[: (len(segs2) if return_date else 1)]:
-                                try:
-                                    sc = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
-                                    sfn = s.get("flightNumber") or ""
-                                    sfrom = s.get("from") or "?"
-                                    sdt = _hhmm(s.get("departureTime") or s.get("depTime"))
-                                    sto = s.get("to") or "?"
-                                    sat = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
-                                    lines2.append(f"    - THEN {sc}{sfn} {sfrom} {sdt} -> {sto} {sat}")
-                                except Exception:
-                                    continue
-                if take_conn:
-                    lines2.append("")
-                    lines2.append("Connecting Flights")
-                    for idx, off in enumerate(conn[:take_conn], start=1):
-                        dep2 = off.get("departureAirport") or "?"
-                        arr2 = off.get("arrivalAirport") or "?"
-                        dt2 = _hhmm(off.get("departureTime"))
-                        dur2 = off.get("duration") or "?"
-                        price2 = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
-                        stops2 = off.get("stops")
-                        stops_txt2 = "nonstop" if stops2 == 0 else (f"{stops2} stop" if stops2 == 1 else f"{stops2} stops")
-                        segs2 = off.get("segments")
-                        seg02 = segs2[0] if isinstance(segs2, list) and segs2 else None
-                        c02 = (seg02.get("carrier") or seg02.get("marketingCarrier") or seg02.get("operatingCarrier")) if isinstance(seg02, dict) else None
-                        fn02 = (seg02.get("flightNumber") if isinstance(seg02, dict) else None) or ""
-                        c02fn = f"{c02}{fn02}".strip() if (c02 or fn02) else None
-                        parts2 = [f"{idx}) {dep2} {dt2}", "->", f"{arr2}", "|", departure_date, "|", stops_txt2, "|", dur2]
-                        if c02fn:
-                            parts2.extend(["|", c02fn])
-                        parts2.extend(["|", f"**{price2}**"])
-                        lines2.append(" ".join(str(p) for p in parts2 if str(p)))
-                        if isinstance(segs2, list) and segs2:
-                            seg_limit = len(segs2) if return_date else 3
-                            for s in segs2[:seg_limit]:
-                                try:
-                                    sc = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
-                                    sfn = s.get("flightNumber") or ""
-                                    sfrom = s.get("from") or "?"
-                                    sdt = _hhmm(s.get("departureTime") or s.get("depTime"))
-                                    sto = s.get("to") or "?"
-                                    sat = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
-                                    lines2.append(f"    - THEN {sc}{sfn} {sfrom} {sdt} -> {sto} {sat}")
-                                except Exception:
-                                    continue
+                direct_wrapped = [{"offer": off, "label": off.get("label") or "Direct", "stops": off.get("stops")} for off in direct[:max_total]]
+                remaining = max_total - len(direct_wrapped)
+                conn_wrapped = [{"offer": off, "label": off.get("label") or "Connecting", "stops": off.get("stops")} for off in conn[:max(0, remaining)]]
+                lines2 = _build_recommendation_message(direct_wrapped, conn_wrapped, len(direct_wrapped), len(conn_wrapped), currency)
                 offer_text_block = "\n".join(lines2)
         except Exception:
             offer_text_block = None
