@@ -1,4 +1,4 @@
-// services/google-api.mjs — Google endpoints microservice backed by searchapi.io
+﻿// services/google-api.mjs — Google endpoints microservice backed by searchapi.io
 // Exposes GET/POST under /google/flights/*, /google/calendar/*, /google/explore/*
 
 import "dotenv/config";
@@ -34,10 +34,15 @@ function collectParams(req){
 async function callSearchApi(engine, params){
   const url = new URL(SEARCHAPI_BASE);
   const final = { ...params, engine };
-  final.gl = "DE";
-  final.hl = "en-GB";
-  final.currency = "EUR";
-  final.curr = "EUR";
+  final.gl = final.gl ? String(final.gl).trim() : "DE";
+  final.hl = final.hl ? String(final.hl).trim().replace(/_/g, "-") : "en-GB";
+  final.currency = final.currency ? String(final.currency).trim() : "EUR";
+  final.curr = final.curr ? String(final.curr).trim() : "EUR";
+  final.gl = final.gl.toUpperCase();
+  const [lang, region] = final.hl.split("-");
+  const normalizedLang = (lang || "en").toLowerCase();
+  const normalizedRegion = (region || "GB").toUpperCase();
+  final.hl = `${normalizedLang}-${normalizedRegion}`;
   if (!final.api_key && SEARCHAPI_KEY) final.api_key = SEARCHAPI_KEY;
   Object.entries(final).forEach(([k,v]) => v!=null && url.searchParams.set(k, String(v)));
   const r = await fetch(url, { method: "GET" });
@@ -65,3 +70,6 @@ app.all("/google/explore/*", async (req,res)=>{
 
 app.get("/healthz",(req,res)=>res.json({ ok:true, service:"google-api", provider:"searchapi.io" }));
 app.listen(Number(PORT), ()=>console.log(`[google-api] up on ${PORT}`));
+
+
+
