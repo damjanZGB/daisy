@@ -326,18 +326,16 @@ def _fetch_explore_candidates(
         "departure_id": departure,
         "travel_mode": "flights_only",
         "adults": "1",
-        "currency": currency or "EUR",
+        "currency": "EUR",
         "limit": str(max(10, max_candidates * 2)),
     }
-    params["hl"] = DEFAULT_GOOGLE_HL
-    inferred_gl = _country_for_iata(departure)
-    params["gl"] = (inferred_gl or DEFAULT_GOOGLE_GL).strip().upper()
     period = _month_range_to_period_text(month_range_text, month_text)
     if period:
         params["time_period"] = period
     interests = ",".join(sorted({t for t in theme_tags if t})) if theme_tags else ""
     if interests:
         params["interests"] = interests
+    _enforce_google_defaults(params)
     meta: Dict[str, Any] = {
         "params": {
             key: params.get(key)
@@ -1144,6 +1142,20 @@ def _proxy_get(
         raise RuntimeError(f"Proxy network error: {getattr(e, 'reason', e)}")
 
 
+def _call_proxy(
+    path: str,
+    method: str,
+    params: Optional[Dict[str, Any]],
+    body: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    http_method = (method or "GET").upper()
+    base_url = GOOGLE_BASE_URL if path.startswith("/google/") else PROXY_BASE_URL
+    if http_method == "GET":
+        return _proxy_get(path, params or {}, base_url=base_url)
+    payload = body or {}
+    return _proxy_post(path, payload)
+
+
 def proxy_lookup_iata(term: str, limit: int = 20) -> List[Dict[str, Any]]:
     text = (term or "").strip()
     if not text:
@@ -1202,8 +1214,18 @@ def _resolve_iata_code(raw: Any) -> Tuple[Optional[str], List[str]]:
     return None, codes
 
 
-DEFAULT_GOOGLE_GL = (os.getenv("DEFAULT_GOOGLE_GL") or "DE").strip().upper() or "DE"
-DEFAULT_GOOGLE_HL = (os.getenv("DEFAULT_GOOGLE_HL") or "en-GB").replace("_", "-").strip() or "en-GB"
+DEFAULT_GOOGLE_GL = (os.getenv("DEFAULT_GOOGLE_GL") or "de").strip().lower() or "de"
+DEFAULT_GOOGLE_HL = (os.getenv("DEFAULT_GOOGLE_HL") or "en").strip().lower() or "en"
+GOOGLE_DEFAULT_PARAMS = {
+    "currency": "EUR",
+    "hl": DEFAULT_GOOGLE_HL,
+    "gl": DEFAULT_GOOGLE_GL,
+}
+
+
+def _enforce_google_defaults(params: Dict[str, Any]) -> Dict[str, Any]:
+    params.update(GOOGLE_DEFAULT_PARAMS)
+    return params
 
 
 def _minutes_to_iso(minutes: Optional[int]) -> Optional[str]:
@@ -1424,10 +1446,7 @@ def google_search_flight_offers(
         "outbound_date": departure_date,
         "adults": str(max(1, adults)),
         "currency": "EUR",
-        "curr": "EUR",
         "included_airlines": ",".join(LH_GROUP_CODES) if lh_group_only else None,
-        "hl": DEFAULT_GOOGLE_HL,
-        "gl": DEFAULT_GOOGLE_GL,
         "stops": "nonstop" if nonstop else "any",
     }
     if not lh_group_only:
@@ -1438,8 +1457,7 @@ def google_search_flight_offers(
     if travel_class in {"economy", "premium_economy", "business", "first"}:
         params["travel_class"] = travel_class
     params = {k: v for k, v in params.items() if v not in (None, "")}
-    params["hl"] = DEFAULT_GOOGLE_HL
-    params["gl"] = DEFAULT_GOOGLE_GL
+    _enforce_google_defaults(params)
     _log(
         "Google Flights search request prepared",
         origin=origin,
