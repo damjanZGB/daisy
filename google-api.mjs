@@ -11,10 +11,22 @@ const {
   SEARCHAPI_BASE = "https://www.searchapi.io/api/v1/search"
 } = process.env;
 
-const SEARCH_DEFAULTS = Object.freeze({
-  currency: "EUR",
-  hl: "en",
-  gl: "de",
+const ENGINE_DEFAULTS = Object.freeze({
+  google_flights: Object.freeze({
+    currency: "EUR",
+    hl: "en",
+    gl: "de",
+  }),
+  google_flights_calendar: Object.freeze({
+    currency: "EUR",
+    hl: "en",
+    gl: "de",
+  }),
+  google_travel_explore: Object.freeze({
+    currency: "EUR",
+    hl: "en-GB",
+    gl: "DE",
+  }),
 });
 
 const app = express();
@@ -40,7 +52,8 @@ function collectParams(req){
 async function callSearchApi(engine, params){
   const url = new URL(SEARCHAPI_BASE);
   const final = { ...params, engine };
-  Object.entries(SEARCH_DEFAULTS).forEach(([key, value]) => {
+  const enforced = ENGINE_DEFAULTS[engine] || {};
+  Object.entries(enforced).forEach(([key, value]) => {
     final[key] = value;
   });
   if (!final.api_key && SEARCHAPI_KEY) final.api_key = SEARCHAPI_KEY;

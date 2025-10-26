@@ -335,7 +335,7 @@ def _fetch_explore_candidates(
     interests = ",".join(sorted({t for t in theme_tags if t})) if theme_tags else ""
     if interests:
         params["interests"] = interests
-    _enforce_google_defaults(params)
+    _enforce_google_defaults(params, "explore")
     meta: Dict[str, Any] = {
         "params": {
             key: params.get(key)
@@ -1142,6 +1142,20 @@ def _proxy_get(
         raise RuntimeError(f"Proxy network error: {getattr(e, 'reason', e)}")
 
 
+def _call_proxy(
+    path: str,
+    method: str,
+    params: Optional[Dict[str, Any]],
+    body: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    http_method = (method or "GET").upper()
+    base_url = GOOGLE_BASE_URL if path.startswith("/google/") else PROXY_BASE_URL
+    if http_method == "GET":
+        return _proxy_get(path, params or {}, base_url=base_url)
+    payload = body or {}
+    return _proxy_post(path, payload)
+
+
 def proxy_lookup_iata(term: str, limit: int = 20) -> List[Dict[str, Any]]:
     text = (term or "").strip()
     if not text:
@@ -1200,17 +1214,21 @@ def _resolve_iata_code(raw: Any) -> Tuple[Optional[str], List[str]]:
     return None, codes
 
 
-DEFAULT_GOOGLE_GL = (os.getenv("DEFAULT_GOOGLE_GL") or "de").strip().lower() or "de"
-DEFAULT_GOOGLE_HL = (os.getenv("DEFAULT_GOOGLE_HL") or "en").strip().lower() or "en"
-GOOGLE_DEFAULT_PARAMS = {
+GOOGLE_FLIGHTS_DEFAULTS = {
     "currency": "EUR",
-    "hl": DEFAULT_GOOGLE_HL,
-    "gl": DEFAULT_GOOGLE_GL,
+    "hl": "en",
+    "gl": "de",
+}
+GOOGLE_EXPLORE_DEFAULTS = {
+    "currency": "EUR",
+    "hl": "en-GB",
+    "gl": "DE",
 }
 
 
-def _enforce_google_defaults(params: Dict[str, Any]) -> Dict[str, Any]:
-    params.update(GOOGLE_DEFAULT_PARAMS)
+def _enforce_google_defaults(params: Dict[str, Any], mode: str = "flights") -> Dict[str, Any]:
+    defaults = GOOGLE_EXPLORE_DEFAULTS if mode == "explore" else GOOGLE_FLIGHTS_DEFAULTS
+    params.update(defaults)
     return params
 
 

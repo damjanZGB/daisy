@@ -1,7 +1,7 @@
 # Project Handoff
 
 ## Mission Snapshot
-- Goal: Lufthansa Group conversational agent that always returns truthful flight inspiration/search results with prices in EUR and locale locked to `hl=en`, `gl=de`.
+- Goal: Lufthansa Group conversational agent that always returns truthful flight inspiration/search results with prices in EUR. Google Flights/Calendar calls force `hl=en`, `gl=de`, and Explore calls force `hl=en-GB`, `gl=DE`.
 - Execution stack: Render-hosted proxy + microservices (Node/Express) fronting an Amazon Bedrock Agent, plus an AWS Lambda action group for Amadeus/Google flights.
 - Current status: Currency/locale enforcement and return-segment handling fixed in code; Google microservice must still be redeployed on Render to pick up the locked parameters. This document replaces the deleted handoff.
 
@@ -42,7 +42,7 @@ Client -> proxy.mjs -> Bedrock Agent <-> AWS Lambda (action group)
 
 ### Google SearchAPI Microservice (`google-api.mjs`)
 - Express service; endpoint groups: `/google/flights`, `/google/calendar`, `/google/explore`.
-- `callSearchApi` enforces `currency="EUR"`, `hl="en"`, and `gl="de"` for every request and ignores inbound overrides; attaches `SEARCHAPI_KEY`.
+- `callSearchApi` enforces `currency="EUR"`, `hl="en"`, `gl="de"` for Flights/Calendar lookups, and `currency="EUR"`, `hl="en-GB"`, `gl="DE"` for Explore; inbound overrides are ignored. Attaches `SEARCHAPI_KEY`.
 - To redeploy on Render: rebuild container, or for static service use Render dashboard “Manual Deploy” → “Clear build cache & deploy”.
 - Health check: `GET /healthz` returns `{ ok: true }`.
 
@@ -82,7 +82,7 @@ Client -> proxy.mjs -> Bedrock Agent <-> AWS Lambda (action group)
 1. Client POSTs `/invoke` with `text`, persona, and optional geo.
 2. Proxy enriches session attributes (persona, origin label, nearest IATA, lat/lon).
 3. Bedrock agent responds with text or `returnControl` instructions.
-4. Proxy executes tool calls sequentially; for Google endpoints, the enforced EUR/en/de params apply automatically.
+4. Proxy executes tool calls sequentially; Google Flights/Calendar requests enforce EUR/en/de while Explore requests enforce EUR/en-GB/DE automatically.
 5. Tool results propagate back to Bedrock via `returnControlInvocationResults`.
 6. Lambda formats flight lists into two sections (Direct / Connecting), enumerates options, and generates THEN lines for each segment. Currency is always EUR.
 7. Proxy streams final text to frontend; PDF pipeline consumes the standardized layout.
@@ -105,7 +105,7 @@ Client -> proxy.mjs -> Bedrock Agent <-> AWS Lambda (action group)
   - Deploy via `aws lambda update-function-code`.
   - Update environment variables with `aws lambda update-function-configuration` when toggling features (debug S3, timeouts).
   - Smoke invoke after deploy: `aws lambda invoke --function-name daisy_in_action-0k2c0 --payload fileb://aws/invoke_explore.json aws/invoke_explore_out.json`.
-- **Config Guarantees**: Treat `hl=en`, `gl=de`, `currency=EUR` as immutable. Any inbound request overriding them must be ignored (already enforced; document requirement in code reviews).
+- **Config Guarantees**: Flights/Calendar calls always send `currency=EUR`, `hl=en`, `gl=de`; Explore calls always send `currency=EUR`, `hl=en-GB`, `gl=DE`. Any inbound request overriding them must be ignored (already enforced; document requirement in code reviews).
 
 ## Testing & Verification
 - `npm test` (if configured) plus manual `node scripts/debug_invoke_agent.mjs --text "Find flights FRA to MLA in July"` to exercise the proxy locally.
@@ -127,7 +127,7 @@ Client -> proxy.mjs -> Bedrock Agent <-> AWS Lambda (action group)
   Debug outputs land under `s3://origin-daisy-bucket/debug-tool-io/YYYY/MM/DD/`.
 
 ## Known Issues & Follow-Ups
-- Pending action: Redeploy the Render `google-api` service so production respects the locked EUR/en/de params shipped in code.
+- Pending action: Redeploy the Render `google-api` service so production respects the locked Flights/Calendar (EUR/en/de) and Explore (EUR/en-GB/DE) params shipped in code.
 - Consider adding integration tests covering:
   1. Inspiration flow with catalog miss → Google SearchAPI fallback.
   2. No-return scenarios to ensure no phantom return section appears.
