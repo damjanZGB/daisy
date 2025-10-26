@@ -34,6 +34,10 @@ function collectParams(req){
 async function callSearchApi(engine, params){
   const url = new URL(SEARCHAPI_BASE);
   const final = { ...params, engine };
+  final.gl = "de";
+  final.hl = "en-GB";
+  final.currency = "EUR";
+  final.curr = "EUR";
   if (!final.api_key && SEARCHAPI_KEY) final.api_key = SEARCHAPI_KEY;
   Object.entries(final).forEach(([k,v]) => v!=null && url.searchParams.set(k, String(v)));
   const r = await fetch(url, { method: "GET" });
