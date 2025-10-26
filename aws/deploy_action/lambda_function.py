@@ -1035,7 +1035,7 @@ def _resolve_iata_code(raw: Any) -> Tuple[Optional[str], List[str]]:
     return None, codes
 
 
-DEFAULT_GOOGLE_GL = (os.getenv("DEFAULT_GOOGLE_GL") or "DE").strip().lower() or "de"
+DEFAULT_GOOGLE_GL = (os.getenv("DEFAULT_GOOGLE_GL") or "DE").strip().upper() or "DE"
 DEFAULT_GOOGLE_HL = (os.getenv("DEFAULT_GOOGLE_HL") or "en").strip().lower() or "en"
 
 
@@ -1087,6 +1087,9 @@ def _google_option_to_offer(option: Dict[str, Any], currency: str) -> Dict[str, 
         for idx, lay in enumerate(layovers):
             layover_map[idx] = lay if isinstance(lay, dict) else {}
 
+    outbound_segments: List[Dict[str, Any]] = []
+    return_segments: List[Dict[str, Any]] = []
+
     for idx, flight in enumerate(flights):
         if not isinstance(flight, dict):
             continue
@@ -1127,12 +1130,57 @@ def _google_option_to_offer(option: Dict[str, Any], currency: str) -> Dict[str, 
             "duration": duration_iso,
             "services": services,
         }
-        segments.append(segment)
+        outbound_segments.append(segment)
         layover_info = layover_map.get(idx)
         if layover_info and idx < len(flights) - 1:
             duration = layover_info.get("duration")
             if isinstance(duration, (int, float)):
-                segments[-1]["layoverDuration"] = _minutes_to_iso(int(duration))
+                outbound_segments[-1]["layoverDuration"] = _minutes_to_iso(int(duration))
+
+    return_flights = option.get("return_flights") or option.get("returnFlights") or []
+    for idx, flight in enumerate(return_flights):
+        if not isinstance(flight, dict):
+            continue
+        dep_air = flight.get("departure_airport") or {}
+        arr_air = flight.get("arrival_airport") or {}
+        departure_time = _combine_local_datetime(dep_air.get("date"), dep_air.get("time"))
+        arrival_time = _combine_local_datetime(arr_air.get("date"), arr_air.get("time"))
+        duration_iso = _minutes_to_iso(flight.get("duration"))
+        flight_number = flight.get("flight_number")
+        carrier_code = carrier_code_from_flight_number(flight_number) or flight.get("airline")
+        if carrier_code:
+            carriers.append(str(carrier_code))
+        services = []
+        extensions = flight.get("extensions")
+        if isinstance(extensions, list):
+            services = [str(item).strip() for item in extensions if str(item).strip()]
+        elif isinstance(extensions, str):
+            services = [extensions.strip()]
+        detected = flight.get("detected_extensions")
+        if isinstance(detected, dict):
+            for key, value in detected.items():
+                if isinstance(value, (str, int, float)) and value not in services:
+                    services.append(str(value))
+        segment = {
+            "carrier": carrier_code,
+            "marketingCarrier": carrier_code,
+            "operatingCarrier": carrier_code,
+            "flightNumber": flight_number,
+            "aircraft": flight.get("airplane"),
+            "cabin": flight.get("travel_class"),
+            "fareClass": None,
+            "from": dep_air.get("id"),
+            "fromTerminal": dep_air.get("terminal"),
+            "departureTime": departure_time,
+            "to": arr_air.get("id"),
+            "toTerminal": arr_air.get("terminal"),
+            "arrivalTime": arrival_time,
+            "duration": duration_iso,
+            "services": services,
+        }
+        return_segments.append(segment)
+
+    segments = outbound_segments + return_segments
 
     carriers_unique = sorted({c for c in carriers if c})
     fare_note = None
@@ -1146,7 +1194,11 @@ def _google_option_to_offer(option: Dict[str, Any], currency: str) -> Dict[str, 
 
     carbon = option.get("carbon_emissions") or option.get("carbonEmissions")
 
-    itineraries = [{"segments": segments}] if segments else []
+    itineraries: List[Dict[str, Any]] = []
+    if outbound_segments:
+        itineraries.append({"segments": outbound_segments})
+    if return_segments:
+        itineraries.append({"segments": return_segments})
 
     return {
         "id": option.get("departure_token") or option.get("token"),
@@ -1204,7 +1256,8 @@ def google_search_flight_offers(
         "arrival_id": destination,
         "outbound_date": departure_date,
         "adults": str(max(1, adults)),
-        "currency": (currency or "EUR"),
+        "currency": "EUR",
+        "curr": "EUR",
         "included_airlines": ",".join(LH_GROUP_CODES) if lh_group_only else None,
         "hl": DEFAULT_GOOGLE_HL,
         "gl": DEFAULT_GOOGLE_GL,
@@ -1236,6 +1289,11 @@ def google_search_flight_offers(
     if not isinstance(payload, dict):
         payload = {}
     offers_payload = _google_flights_to_offers(payload, params.get("currency", "EUR"))
+    offer_list = offers_payload.get("offers") if isinstance(offers_payload, dict) else None
+    if isinstance(offer_list, list):
+        for offer in offer_list:
+            if isinstance(offer, dict):
+                offer["currency"] = "EUR"
     offer_list = offers_payload.get("offers") if isinstance(offers_payload, dict) else None
     offer_count = len(offer_list) if isinstance(offer_list, list) else 0
     _log("Google Flights search completed", offers=offer_count)
