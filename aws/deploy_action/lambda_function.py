@@ -44,6 +44,7 @@ RECOMMENDER_VERBOSE = (os.getenv("RECOMMENDER_VERBOSE") or "true").strip().lower
 RECOMMENDER_MAX_OPTIONS = int((os.getenv("RECOMMENDER_MAX_OPTIONS") or "10").strip() or 10)
 # If the formatted message text exceeds this many bytes, switch to a compact format (limit options, drop THEN lines).
 RECOMMENDER_MAX_TEXT_BYTES = int((os.getenv("RECOMMENDER_MAX_TEXT_BYTES") or "4000").strip() or 4000)
+GOOGLE_SEARCH_TIMEOUT = float((os.getenv("GOOGLE_SEARCH_TIMEOUT") or "15").strip() or 15)
 
 # --------------- Destination Catalog (recommender) ----------------
 _DEST_CATALOG_PATHS = [
@@ -1193,7 +1194,7 @@ def google_search_flight_offers(
     currency: Optional[str],
     lh_group_only: bool,
     max_results: int = 10,
-    timeout: float = 8.0,
+    timeout: Optional[float] = None,
 ) -> Dict[str, Any]:
 
     params: Dict[str, Any] = {
@@ -1230,7 +1231,8 @@ def google_search_flight_offers(
         lhGroupOnly=lh_group_only,
         maxResults=max_results,
     )
-    payload = _proxy_get("/google/flights/search", params, timeout=timeout, base_url=GOOGLE_BASE_URL)
+    effective_timeout = timeout if timeout is not None else GOOGLE_SEARCH_TIMEOUT
+    payload = _proxy_get("/google/flights/search", params, timeout=effective_timeout, base_url=GOOGLE_BASE_URL)
     if not isinstance(payload, dict):
         payload = {}
     offers_payload = _google_flights_to_offers(payload, params.get("currency", "EUR"))
@@ -1253,7 +1255,7 @@ def _nearest_date_alternatives(
     *,
     nonstop: bool,
     limit: int = 5,
-    timeout: float = 7.0,
+    timeout: Optional[float] = None,
 ) -> List[Dict[str, Any]]:
     """When no offers are found for the requested dates, probe nearby dates and
     return up to `limit` alternative offers for the same route.
@@ -1296,7 +1298,7 @@ def _nearest_date_alternatives(
                 currency,
                 lh_group_only,
                 max_results,
-                timeout,
+                timeout or GOOGLE_SEARCH_TIMEOUT,
             )
             offers = _summarize_offers(raw, currency)
             if offers:
@@ -1553,7 +1555,7 @@ def search_best_itineraries(
     currency: Optional[str] = None,
     lh_group_only: bool = True,
     max_per_destination: int = 2,
-    timeout: float = 6.0,
+    timeout: Optional[float] = None,
 ) -> List[Dict[str, Any]]:
     """Search several dates per destination and return Good-Better-Best.
 
@@ -1637,7 +1639,7 @@ def search_best_itineraries(
                         currency=currency,
                         lh_group_only=lh_group_only,
                         max_results=10,
-                        timeout=timeout,
+                        timeout=timeout or GOOGLE_SEARCH_TIMEOUT,
                     )
                     api_calls += 1
                     offers = _summarize_offers(raw, currency)
