@@ -273,6 +273,171 @@ def _parse_month_range(value: Optional[str], reference: Optional[date] = None) -
     return (y, mon), (y, mon)
 
 
+def _month_range_to_period_text(month_range_text: Optional[str], month_text: Optional[str]) -> Optional[str]:
+    source = month_range_text or month_text
+    try:
+        (start_year, start_month), (end_year, end_month) = _parse_month_range(source)
+    except Exception:
+        return None
+    try:
+        start_date = date(start_year, start_month, 1)
+        end_day = calendar.monthrange(end_year, end_month)[1]
+        end_date = date(end_year, end_month, end_day)
+    except Exception:
+        return None
+    return f"{start_date.isoformat()}..{end_date.isoformat()}"
+
+
+def _explore_airline_codes(destination: Dict[str, Any]) -> set[str]:
+    codes: set[str] = set()
+    if not isinstance(destination, dict):
+        return codes
+    flight = destination.get("flight")
+    if isinstance(flight, dict):
+        code = flight.get("airline_code")
+        if isinstance(code, str) and code.strip():
+            codes.add(code.strip().upper())
+        alt_codes = flight.get("airline_codes")
+        if isinstance(alt_codes, (list, tuple, set)):
+            for item in alt_codes:
+                if isinstance(item, str) and item.strip():
+                    codes.add(item.strip().upper())
+        sold_by = flight.get("ticket_also_sold_by")
+        if isinstance(sold_by, (list, tuple, set)):
+            for item in sold_by:
+                if isinstance(item, str) and item.strip():
+                    codes.add(item.strip().upper())
+    return {code for code in codes if code}
+
+
+def _fetch_explore_candidates(
+    origin_code: Optional[str],
+    month_range_text: Optional[str],
+    month_text: Optional[str],
+    theme_tags: List[str],
+    max_candidates: int,
+    *,
+    currency: str = "EUR",
+    timeout: Optional[float] = None,
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    departure = _normalized_iata(str(origin_code or "").strip() or DEFAULT_EXPLORE_DEPARTURE) or DEFAULT_EXPLORE_DEPARTURE
+    params: Dict[str, Any] = {
+        "engine": "google_travel_explore",
+        "departure_id": departure,
+        "travel_mode": "flights_only",
+        "adults": "1",
+        "currency": currency or "EUR",
+        "hl": DEFAULT_GOOGLE_HL,
+        "gl": (_country_for_iata(departure) or DEFAULT_GOOGLE_GL).lower(),
+        "limit": str(max(10, max_candidates * 2)),
+    }
+    period = _month_range_to_period_text(month_range_text, month_text)
+    if period:
+        params["time_period"] = period
+    interests = ",".join(sorted({t for t in theme_tags if t})) if theme_tags else ""
+    if interests:
+        params["interests"] = interests
+    meta: Dict[str, Any] = {
+        "params": {
+            key: params.get(key)
+            for key in ("departure_id", "time_period", "interests", "travel_mode", "currency", "hl", "gl")
+            if key in params
+        }
+    }
+    payload = _proxy_get(
+        "/google/explore/search",
+        params,
+        timeout=timeout or GOOGLE_SEARCH_TIMEOUT,
+        base_url=GOOGLE_BASE_URL,
+    )
+    destinations = payload.get("destinations") if isinstance(payload, dict) else None
+    total_destinations = len(destinations) if isinstance(destinations, list) else 0
+    meta["destinationCount"] = total_destinations
+    if not isinstance(destinations, list):
+        return [], meta
+    filtered: List[Dict[str, Any]] = []
+    lh_allowed = set(LH_GROUP_CODES)
+    for dest in destinations:
+        if not isinstance(dest, dict):
+            continue
+        flight = dest.get("flight")
+        if not isinstance(flight, dict):
+            continue
+        raw_code = (
+            flight.get("airport_code")
+            or flight.get("destination_airport")
+            or dest.get("iata")
+            or dest.get("airport_code")
+            or ((dest.get("airport") or {}).get("id") if isinstance(dest.get("airport"), dict) else None)
+        )
+        code = _normalized_iata(str(raw_code or ""))
+        if not code:
+            continue
+        airlines = _explore_airline_codes(dest)
+        if airlines and not (airlines & lh_allowed):
+            continue
+        price = flight.get("price")
+        stops = flight.get("stops")
+        duration_txt = flight.get("flight_duration")
+        duration_minutes = flight.get("flight_duration_minutes")
+        reason_parts: List[str] = []
+        if price is not None:
+            try:
+                price_num = float(price)
+                reason_parts.append(f"from €{int(round(price_num))}")
+            except Exception:
+                reason_parts.append(f"from €{price}")
+        if stops is not None:
+            reason_parts.append("nonstop" if stops == 0 else f"{stops} stop{'s' if stops != 1 else ''}")
+        if isinstance(duration_txt, str) and duration_txt.strip():
+            reason_parts.append(duration_txt.strip())
+        elif isinstance(duration_minutes, (int, float)):
+            reason_parts.append(f"{int(duration_minutes)} min")
+        avg_night = dest.get("avg_cost_per_night")
+        if isinstance(avg_night, (int, float)):
+            reason_parts.append(f"stay ≈ €{int(round(float(avg_night)))} /night")
+        reason = ", ".join(reason_parts) if reason_parts else "Google Explore match"
+        candidate = {
+            "code": code,
+            "city": dest.get("name") or dest.get("city") or code,
+            "country": dest.get("country") or "",
+            "tags": list(theme_tags),
+            "reason": reason,
+            "price": price,
+            "currency": currency or "EUR",
+            "stops": stops,
+            "duration": duration_txt or (f"{int(duration_minutes)} min" if isinstance(duration_minutes, (int, float)) else None),
+            "carriers": sorted(airlines) if airlines else [],
+            "image": dest.get("image") or dest.get("thumbnail"),
+            "kgmid": dest.get("kgmid"),
+            "exploreFlight": flight,
+            "outboundDate": dest.get("outbound_date"),
+            "returnDate": dest.get("return_date"),
+            "source": "google_explore",
+        }
+        pitch = dest.get("description") or dest.get("blurb")
+        if isinstance(pitch, str) and pitch.strip():
+            candidate["pitch"] = pitch.strip()
+        filtered.append(candidate)
+        if len(filtered) >= max(20, max_candidates * 3):
+            break
+    final: List[Dict[str, Any]] = []
+    for idx, cand in enumerate(filtered[: max(1, max_candidates)], start=1):
+        shaped = dict(cand)
+        shaped["score"] = float(max(max_candidates - idx + 1, 1))
+        shaped["rank"] = idx
+        final.append(shaped)
+    meta["filteredCount"] = len(final)
+    _log(
+        "Google Explore candidates prepared",
+        origin=origin_code,
+        departure=departure,
+        requested=max_candidates,
+        returned=len(final),
+    )
+    return final, meta
+
+
 def _score_destination(dest: dict, theme_tags: set[str], target_month: int, origin_code: Optional[str]) -> tuple[float, str]:
     score = 0.0
     reasons = []
@@ -330,6 +495,7 @@ def _score_destination(dest: dict, theme_tags: set[str], target_month: int, orig
     return score, reason
 
 LH_GROUP_CODES = ["LH", "LX", "OS", "SN", "EW", "4Y", "EN"]
+DEFAULT_EXPLORE_DEPARTURE = (os.getenv("DEFAULT_EXPLORE_DEPARTURE_ID") or "FRA").strip().upper() or "FRA"
 
 PROXY_BASE_URL = (os.getenv("PROXY_BASE_URL") or "http://localhost:8787").rstrip("/")
 GOOGLE_BASE_URL = (os.getenv("GOOGLE_BASE_URL") or PROXY_BASE_URL).rstrip("/")
@@ -1035,8 +1201,8 @@ def _resolve_iata_code(raw: Any) -> Tuple[Optional[str], List[str]]:
     return None, codes
 
 
-DEFAULT_GOOGLE_GL = (os.getenv("DEFAULT_GOOGLE_GL") or "DE").strip().upper() or "DE"
-DEFAULT_GOOGLE_HL = (os.getenv("DEFAULT_GOOGLE_HL") or "en").strip().lower() or "en"
+DEFAULT_GOOGLE_GL = (os.getenv("DEFAULT_GOOGLE_GL") or "de").strip().lower() or "de"
+DEFAULT_GOOGLE_HL = (os.getenv("DEFAULT_GOOGLE_HL") or "en-GB").strip() or "en-GB"
 
 
 def _minutes_to_iso(minutes: Optional[int]) -> Optional[str]:
@@ -1271,6 +1437,8 @@ def google_search_flight_offers(
     if travel_class in {"economy", "premium_economy", "business", "first"}:
         params["travel_class"] = travel_class
     params = {k: v for k, v in params.items() if v not in (None, "")}
+    params["hl"] = DEFAULT_GOOGLE_HL
+    params["gl"] = DEFAULT_GOOGLE_GL.lower()
     _log(
         "Google Flights search request prepared",
         origin=origin,
@@ -1285,7 +1453,24 @@ def google_search_flight_offers(
         maxResults=max_results,
     )
     effective_timeout = timeout if timeout is not None else GOOGLE_SEARCH_TIMEOUT
-    payload = _proxy_get("/google/flights/search", params, timeout=effective_timeout, base_url=GOOGLE_BASE_URL)
+    request_params = dict(params)
+    request_params["hl"] = "en"
+    request_params["gl"] = (request_params.get("gl") or DEFAULT_GOOGLE_GL).lower()
+    try:
+        payload = _proxy_get("/google/flights/search", request_params, timeout=effective_timeout, base_url=GOOGLE_BASE_URL)
+    except RuntimeError as exc:
+        msg = str(exc)
+        lowered = msg.lower()
+        if "unsupported value" in lowered and "`en-gb`" in lowered:
+            fallback_params = dict(request_params)
+            fallback_params["hl"] = "en"
+            try:
+                _log("Google Flights hl fallback", original=params.get("hl"), fallback=DEFAULT_GOOGLE_HL)
+            except Exception:
+                pass
+            payload = _proxy_get("/google/flights/search", fallback_params, timeout=effective_timeout, base_url=GOOGLE_BASE_URL)
+        else:
+            raise
     if not isinstance(payload, dict):
         payload = {}
     offers_payload = _google_flights_to_offers(payload, params.get("currency", "EUR"))
@@ -2616,11 +2801,9 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
         theme_raw = _get_param(params, "themeTags")
         min_avg_high = _get_param(params, "minAvgHighC")
         max_candidates = _to_int(_get_param(params, "maxCandidates", 8), 8)
-        # Default to True so suggestions always include flight options.
         with_itins = _to_bool(_get_param(params, "withItineraries", True), True)
         currency = "EUR"
 
-        # Accept JSON array or comma-separated string for themeTags
         theme_tags: List[str] = []
         if isinstance(theme_raw, list):
             theme_tags = [str(x).strip().lower() for x in theme_raw if str(x).strip()]
@@ -2635,60 +2818,142 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 theme_tags = [str(x).strip().lower() for x in loaded if str(x).strip()]
             else:
                 theme_tags = [s.strip().lower() for s in txt.split(",") if s.strip()]
-        # Canonicalize/expand synonyms so 'skiing' etc. map to 'winter_sports'
         theme_tags = _canonicalize_theme_tags(theme_tags, month_text)
 
-        # Fallback to session default origin if not provided
         if not origin_code:
             origin_code = (event.get("sessionAttributes") or {}).get("default_origin")
+        origin_code = _normalized_iata(str(origin_code or "")) or origin_code
 
-        # Resolve target month for scoring
         (year, target_month), _ = _parse_month_range(month_range_text)
         theme_set = set(theme_tags)
-        catalog = _load_catalog()
-        if not catalog:
-            _log("Destination catalog is empty")
-            return _wrap_function(
-                event,
-                200,
-                {"message": "Destination catalog not available yet. Please try again later."},
+
+        explore_meta: Dict[str, Any] = {}
+        explore_candidates: List[Dict[str, Any]] = []
+        try:
+            explore_candidates, explore_meta = _fetch_explore_candidates(
+                origin_code,
+                month_range_text,
+                month_text,
+                theme_tags,
+                max_candidates,
+                currency=currency,
+                timeout=GOOGLE_SEARCH_TIMEOUT,
             )
-        # Filter by theme if provided
-        filtered = []
-        for dest in catalog:
-            tags = set(str(t).lower() for t in dest.get("tags", []))
-            if theme_set and not (theme_set & tags):
-                continue
-            if min_avg_high is not None:
-                try:
-                    min_val = float(min_avg_high)
-                except Exception:
-                    min_val = None
-                if min_val is not None:
-                    avg = (dest.get("avgHighCByMonth") or {}).get(str(target_month))
-                    if isinstance(avg, (int, float)) and float(avg) < min_val:
-                        continue
-            filtered.append(dest)
-        # If user intent was skiing but filter ended empty, relax to all winter_sports
-        if not filtered and ("winter_sports" in theme_set or any(t in theme_set for t in ("ski", "skiing"))):
-            filtered = [d for d in catalog if "winter_sports" in set(str(t).lower() for t in d.get("tags", []))]
+        except Exception as exc:
+            _log("Explore candidate fetch failed", error=str(exc))
+            explore_candidates = []
+            explore_meta = {"error": str(exc)}
+
         scored: List[Tuple[float, Dict[str, Any], str]] = []
-        for d in filtered:
-            s, reason = _score_destination(d, theme_set, target_month, origin_code)
-            scored.append((s, d, reason))
-        scored.sort(key=lambda t: t[0], reverse=True)
-        top = scored[: max(1, max_candidates)]
-        candidates = [
-            {
-                "code": d.get("code"),
-                "city": d.get("city"),
-                "country": d.get("country"),
-                "score": round(float(s), 3),
-                "reason": r,
-                "tags": d.get("tags") or [],
+        if explore_candidates:
+            total = len(explore_candidates)
+            for idx, candidate in enumerate(explore_candidates, start=1):
+                score_val = float(total - idx + 1)
+                reason_txt = candidate.get("reason") or "Google Explore match"
+                scored.append((score_val, candidate, reason_txt))
+
+        catalog_used = False
+        if not scored:
+            catalog = _load_catalog()
+            if not catalog:
+                _log("Destination catalog is empty")
+                return _wrap_function(
+                    event,
+                    200,
+                    {"message": "Destination catalog not available yet. Please try again later."},
+                )
+            filtered: List[Dict[str, Any]] = []
+            for dest in catalog:
+                tags = set(str(t).lower() for t in dest.get("tags", []))
+                if theme_set and not (theme_set & tags):
+                    continue
+                if min_avg_high is not None:
+                    try:
+                        min_val = float(min_avg_high)
+                    except Exception:
+                        min_val = None
+                    if min_val is not None:
+                        avg = (dest.get("avgHighCByMonth") or {}).get(str(target_month))
+                        if isinstance(avg, (int, float)) and float(avg) < min_val:
+                            continue
+                filtered.append(dest)
+            if not filtered and ("winter_sports" in theme_set or any(tag in theme_set for tag in ("ski", "skiing"))):
+                filtered = [
+                    dest for dest in catalog if "winter_sports" in set(str(t).lower() for t in dest.get("tags", []))
+                ]
+            for dest in filtered:
+                score_val, reason_txt = _score_destination(dest, theme_set, target_month, origin_code)
+                scored.append((score_val, dest, reason_txt))
+            catalog_used = True
+
+        if not scored:
+            payload_empty: Dict[str, Any] = {
+                "generatedAt": _now_iso(),
+                "query": {
+                    "originCode": origin_code,
+                    "month": month_text,
+                    "monthRange": month_range_text,
+                    "themeTags": theme_tags,
+                    "minAvgHighC": min_avg_high,
+                    "maxCandidates": max_candidates,
+                },
+                "candidates": [],
+                "message": "No destinations matched your filters. Try adjusting month or theme.",
+                "source": "google_explore" if explore_candidates else "catalog",
             }
-            for (s, d, r) in top
-        ]
+            if explore_meta:
+                payload_empty["explore"] = explore_meta
+            _log(
+                "Destination recommendations prepared",
+                origin=origin_code,
+                month=month_text,
+                monthRange=month_range_text,
+                themeTags=theme_tags,
+                candidates=0,
+                source=payload_empty["source"],
+                messageBytes=len(payload_empty["message"].encode("utf-8")),
+                responseBytes=len(json.dumps(payload_empty, ensure_ascii=False).encode("utf-8")),
+            )
+            return _wrap_function(event, 200, payload_empty)
+
+        scored.sort(key=lambda item: item[0], reverse=True)
+        top = scored[: max(1, max_candidates)]
+        top_dest_objects = [entry for (_score, entry, _reason) in top]
+
+        candidates: List[Dict[str, Any]] = []
+        for idx, (score_val, data, reason_txt) in enumerate(top, start=1):
+            entry: Dict[str, Any] = {
+                "code": data.get("code"),
+                "city": data.get("city"),
+                "country": data.get("country"),
+                "score": round(float(score_val), 3),
+                "reason": reason_txt,
+                "tags": data.get("tags") or list(theme_tags),
+                "rank": data.get("rank") or idx,
+            }
+            if data.get("price") is not None:
+                entry["price"] = data.get("price")
+            if data.get("currency"):
+                entry["currency"] = data.get("currency")
+            if data.get("stops") is not None:
+                entry["stops"] = data.get("stops")
+            if data.get("duration"):
+                entry["duration"] = data.get("duration")
+            if data.get("carriers"):
+                entry["carriers"] = data.get("carriers")
+            if data.get("image"):
+                entry["image"] = data.get("image")
+            if data.get("pitch"):
+                entry["pitch"] = data.get("pitch")
+            if data.get("exploreFlight"):
+                entry["exploreFlight"] = data.get("exploreFlight")
+            if data.get("outboundDate"):
+                entry["outboundDate"] = data.get("outboundDate")
+            if data.get("returnDate"):
+                entry["returnDate"] = data.get("returnDate")
+            entry["source"] = data.get("source") or ("google_explore" if explore_candidates else "catalog")
+            candidates.append(entry)
+
         payload: Dict[str, Any] = {
             "generatedAt": _now_iso(),
             "query": {
@@ -2700,52 +2965,51 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 "maxCandidates": max_candidates,
             },
             "candidates": candidates,
+            "source": "google_explore" if explore_candidates else ("catalog" if catalog_used else "hybrid"),
         }
-        # Optional: try aggregator if requested and origin is present
+        if explore_meta:
+            payload["explore"] = explore_meta
+
         if with_itins and origin_code and candidates:
             try:
                 options = search_best_itineraries(
                     origin_code,
-                    [d for (_, d, _) in top],
+                    top_dest_objects,
                     month_range_text,
                     currency=currency,
                     lh_group_only=True,
                 )
-                # Partition options into direct and connecting; enforce max 10 total
-                direct_opts = [o for o in options if (o.get("stops") == 0)]
-                conn_opts = [o for o in options if (o.get("stops") and o.get("stops") > 0) or o.get("stops") is None]
+                direct_opts = [opt for opt in options if (opt.get("stops") == 0)]
+                conn_opts = [opt for opt in options if (opt.get("stops") and opt.get("stops") > 0) or opt.get("stops") is None]
                 max_total = min(10, RECOMMENDER_MAX_OPTIONS)
                 take_direct = min(len(direct_opts), max_total)
                 take_conn = min(len(conn_opts), max_total - take_direct)
-                payload["options"] = (direct_opts[:take_direct] + conn_opts[:take_conn])
+                payload["options"] = direct_opts[:take_direct] + conn_opts[:take_conn]
                 lines = _build_recommendation_message(direct_opts, conn_opts, take_direct, take_conn, currency)
                 if lines:
-                    for idx, opt in enumerate(options, start=1):
+                    for idx_opt, opt in enumerate(options, start=1):
                         offer = opt.get("offer") or {}
-                        price = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
+                        price_txt = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
                         dep = offer.get("departureAirport") or "?"
                         arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
                         dep_time = offer.get("departureTime") or "?"
                         dur = offer.get("duration") or "?"
                         label = opt.get("label") or "Option"
                         pitch = opt.get("pitch") or ""
-                        stops = opt.get("stops")
-                        stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                        stops_val = opt.get("stops")
+                        stops_txt = "nonstop" if stops_val == 0 else (f"{stops_val} stop" if stops_val == 1 else f"{stops_val} stops")
                         carriers = offer.get("carriers") or []
                         carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
-                        # Header line with bold price
-                        header = f"{idx}) {label} - {dep} -> {arr} | {opt.get('date')} | {stops_txt} | {dur} | **{price}**"
-                        # Rebuild header to include first carrier/flight and departure HH:MM when available
+                        header = f"{idx_opt}) {label} - {dep} -> {arr} | {opt.get('date')} | {stops_txt} | {dur} | **{price_txt}**"
                         try:
                             segs = offer.get("segments")
                             seg0 = segs[0] if isinstance(segs, list) and segs else None
                             c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
                             fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
-                            # dep_time may be full ISO; convert to HH:MM
                             dt0 = _hhmm((seg0.get("departureTime") if isinstance(seg0, dict) else None) or dep_time)
                             c0fn = f"{c0}{fn0}".strip() if c0 or fn0 else (carriers[0] if isinstance(carriers, list) and carriers else "")
                             header_parts = [
-                                f"{idx}) {label} - {dep} {dt0}".strip(),
+                                f"{idx_opt}) {label} - {dep} {dt0}".strip(),
                                 "->",
                                 f"{arr}",
                                 "|",
@@ -2757,192 +3021,65 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                             ]
                             if c0fn:
                                 header_parts.extend(["|", c0fn])
-                            header_parts.extend(["|", f"**{price}**"])
-                            header = " ".join(str(p) for p in header_parts if str(p))
+                            header_parts.extend(["|", f"**{price_txt}**"])
+                            header = " ".join(str(part) for part in header_parts if str(part))
                         except Exception:
                             pass
                         lines.append(header)
                         if carriers_txt:
                             lines.append(f"    - Carriers: {carriers_txt}")
                         if RECOMMENDER_VERBOSE and isinstance(offer.get("segments"), list) and offer["segments"]:
-                            # Show up to 3 segments as THEN lines
-                            for s in offer["segments"][:3]:
-                                c = s.get("carrier") or s.get("marketingCarrier") or s.get("operatingCarrier") or "?"
-                                fn = s.get("flightNumber") or ""
-                                s_dep = s.get("from") or "?"
-                                s_arr = s.get("to") or "?"
-                                s_dt = _hhmm(s.get("departureTime") or s.get("depTime"))
-                                s_at = _hhmm(s.get("arrivalTime") or s.get("arrTime"))
+                            for segment in offer["segments"][:3]:
+                                c = segment.get("carrier") or segment.get("marketingCarrier") or segment.get("operatingCarrier") or "?"
+                                fn = segment.get("flightNumber") or ""
+                                s_dep = segment.get("from") or "?"
+                                s_arr = segment.get("to") or "?"
+                                s_dt = _hhmm(segment.get("departureTime") or segment.get("depTime"))
+                                s_at = _hhmm(segment.get("arrivalTime") or segment.get("arrTime"))
                                 lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} -> {s_arr} {s_at}")
                         if pitch:
                             lines.append(f"    - {pitch}")
-                if lines:
-                    closing = "Shall I hold Option 1 for 15 minutes or adjust dates?"
-                    m = "\n".join(lines + ["", closing])
-                    # Sanitize any non-ASCII separators that may slip in due to encoding
-                    m = m.replace("\u001a", "->").replace("\u0007", " | ")
-                    # Convert any HTML breaks to newlines and strip stray tags so the agent displays clean text
-                    try:
-                        m = re.sub(r"<br\s*/?>", "\n", m, flags=re.IGNORECASE)
-                        m = re.sub(r"<[^>]+>", "", m)
-                    except Exception:
-                        pass
-                    payload["message"] = m
-                    # Compact the message if it exceeds the configured byte threshold
-                    try:
-                        _msg_bytes = len(payload["message"].encode("utf-8")) if isinstance(payload.get("message"), str) else 0
-                    except Exception:
-                        _msg_bytes = len(str(payload.get("message", "")))
-                    if _msg_bytes > RECOMMENDER_MAX_TEXT_BYTES:
-                        compact_lines: List[str] = []
-                        _max_opts = min(RECOMMENDER_MAX_OPTIONS, 2)
-                        for _idx2, _opt2 in enumerate(options[:_max_opts], start=1):
-                            _offer2 = _opt2.get("offer") or {}
-                            _price2 = _fmt_price(_offer2.get("totalPrice"), _offer2.get("currency") or currency)
-                            _dep2 = _offer2.get("departureAirport") or "?"
-                            _arr2 = _offer2.get("arrivalAirport") or (_opt2.get("destination") or "?")
-                            _dur2 = _offer2.get("duration") or "?"
-                            _stops2 = _opt2.get("stops")
-                            _stops_txt2 = "nonstop" if _stops2 == 0 else (f"{_stops2} stop" if _stops2 == 1 else f"{_stops2} stops")
-                            # Add first segment carrier/flight and departure HH:MM when available in compact header
-                            _segs2 = _offer2.get("segments")
-                            _seg0 = _segs2[0] if isinstance(_segs2, list) and _segs2 else None
-                            _c0 = (_seg0.get("carrier") or _seg0.get("marketingCarrier") or _seg0.get("operatingCarrier")) if isinstance(_seg0, dict) else None
-                            _fn0 = (_seg0.get("flightNumber") if isinstance(_seg0, dict) else None) or ""
-                            _dt0 = _hhmm((_seg0.get("departureTime") if isinstance(_seg0, dict) else None) or _offer2.get("departureTime") or "")
-                            _c0fn = f"{_c0}{_fn0}".strip() if (_c0 or _fn0) else ""
-                            _pieces = [
-                                f"{_idx2}) {_opt2.get('label') or 'Option'} - {_dep2} {_dt0}".strip(),
-                                "->",
-                                f"{_arr2}",
-                                "|",
-                                f"{_opt2.get('date')}",
-                                "|",
-                                f"{_stops_txt2}",
-                                "|",
-                                f"{_dur2}",
-                            ]
-                            if _c0fn:
-                                _pieces.extend(["|", _c0fn])
-                            _pieces.extend(["|", f"**{_price2}**"])
-                            _header2 = " ".join(str(x) for x in _pieces if str(x))
-                            compact_lines.append(_header2)
-                            _carriers2 = _offer2.get("carriers") or []
-                            _carriers_txt2 = ",".join(_carriers2) if isinstance(_carriers2, list) else str(_carriers2 or "")
-                            if _carriers_txt2:
-                                compact_lines.append(f"    - Carriers: {_carriers_txt2}")
-                        _compact_msg = "\n".join(compact_lines + ["", closing])
-                        payload["message"] = _compact_msg
-                        _log(
-                            "Recommender message compacted",
-                            originalBytes=_msg_bytes,
-                            threshold=RECOMMENDER_MAX_TEXT_BYTES,
-                            maxOptions=RECOMMENDER_MAX_OPTIONS,
-                            verbose=RECOMMENDER_VERBOSE,
-                        )
-                    # Cache a minimal selection map in session for smoother follow-ups.
-                    try:
-                        sess = event.setdefault("sessionAttributes", {})
-                        sess["last_recommendation"] = {
-                            "origin": origin_code,
-                            "month": month_text or month_range_text,
-                            "options": [
-                                {
-                                    "label": o.get("label"),
-                                    "destination": o.get("destination"),
-                                    "date": o.get("date"),
-                                    "id": (o.get("offer") or {}).get("id"),
-                                    "price": (o.get("offer") or {}).get("totalPrice"),
-                                    "currency": (o.get("offer") or {}).get("currency") or currency,
-                                }
-                                for o in options[:3]
-                            ],
-                        }
-                    except Exception:
-                        pass
-                # Return minimal options only (avoid large payloads)
-                def _brief(o: Dict[str, Any]) -> Dict[str, Any]:
-                    off = o.get("offer") or {}
-                    first_seg = (off.get("segments") or [None])[0]
-                    dep_time0 = None
-                    carrier0 = None
-                    flight_no0 = None
-                    if isinstance(first_seg, dict):
-                        dep_time0 = first_seg.get("departureTime")
-                        carrier0 = first_seg.get("carrier") or first_seg.get("marketingCarrier") or first_seg.get("operatingCarrier")
-                        flight_no0 = first_seg.get("flightNumber")
-                    def _hhmm2(ts: Optional[str]) -> str:
-                        try:
-                            if not ts:
-                                return "?"
-                            t = str(ts).replace("T", " ").replace("Z", "").split(" ")[1]
-                            return t[:5]
-                        except Exception:
-                            return "?"
-                    c0fn2 = f"{carrier0 or ''}{flight_no0 or ''}".strip()
-                    dep_ap = off.get("departureAirport")
-                    arr_ap = off.get("arrivalAirport")
-                    dur0 = off.get("duration")
-                    price0 = off.get("totalPrice")
-                    curr0 = off.get("currency") or currency
-                    try:
-                        price_txt0 = f"{float(price0):.0f} {curr0}".strip() if price0 is not None else "?"
-                    except Exception:
-                        price_txt0 = f"{price0} {curr0}".strip()
-                    preview = " ".join(
-                        [
-                            f"{dep_ap or '?'} {_hhmm2(dep_time0 or off.get('departureTime'))}",
-                            "->",
-                            f"{arr_ap or '?'}",
-                            "|",
-                            f"{off.get('duration') or '?'}",
-                            "|",
-                            c0fn2 or "",
-                            "|",
-                            f"**{price_txt0}**",
-                        ]
-                    ).strip()
-                    return {
-                        "label": o.get("label"),
-                        "pitch": o.get("pitch"),
-                        "destination": o.get("destination"),
-                        "date": o.get("date"),
-                        "price": off.get("totalPrice"),
-                        "currency": off.get("currency") or currency,
-                        "duration": off.get("duration"),
-                        "stops": o.get("stops"),
-                        "carriers": off.get("carriers"),
-                        "departureAirport": off.get("departureAirport"),
-                        "arrivalAirport": off.get("arrivalAirport"),
-                        "departureTime": dep_time0 or off.get("departureTime"),
-                        "firstCarrier": carrier0,
-                        "firstFlightNumber": flight_no0,
-                        "previewText": preview,
-                        "id": off.get("id"),
-                    }
-                payload["options"] = [ _brief(o) for o in options[: max(1, RECOMMENDER_MAX_OPTIONS) ] ]
             except Exception as exc:
                 _log("Itinerary aggregator failed", error=str(exc))
-        # If we still don't have a message (no options), provide a short, clean candidate list
+
         if not payload.get("message"):
             header = "Inspiration — top matches (ASCII)"
             msg_lines = [header]
-            for idx, c in enumerate(candidates[:5], start=1):
-                city = c.get("city") or "?"
-                country = c.get("country") or "?"
-                code = c.get("code") or "?"
-                reason = (c.get("reason") or "").replace("°", " ").replace("\u00B0", " ")
-                msg_lines.append(f"{idx}) {city}, {country} ({code}) - {reason}")
+            for idx_msg, candidate in enumerate(candidates[:5], start=1):
+                city = candidate.get("city") or "?"
+                country = candidate.get("country") or "?"
+                code = candidate.get("code") or "?"
+                reason_text = (candidate.get("reason") or "").replace("°", " ").replace("\u00B0", " ")
+                extras: List[str] = []
+                price_val = candidate.get("price")
+                if price_val is not None:
+                    try:
+                        extras.append(f"approx €{int(round(float(price_val)))}")
+                    except Exception:
+                        extras.append(f"price {price_val}")
+                duration_val = candidate.get("duration")
+                if duration_val:
+                    extras.append(duration_val)
+                stops_val = candidate.get("stops")
+                if stops_val is not None:
+                    extras.append("nonstop" if stops_val == 0 else f"{stops_val} stop{'s' if stops_val != 1 else ''}")
+                line = f"{idx_msg}) {city}, {country} ({code}) - {reason_text}"
+                if extras:
+                    line = f"{line} | {' | '.join(extras)}"
+                msg_lines.append(line)
+                pitch_txt = candidate.get("pitch")
+                if isinstance(pitch_txt, str) and pitch_txt.strip():
+                    msg_lines.append(f"    - {pitch_txt.strip()}")
             payload["message"] = "\n".join(msg_lines)
-        # Log payload size to help diagnose occasional agent runtime size limits
+
         try:
-            _resp_bytes = len(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+            response_bytes = len(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
         except Exception:
-            _resp_bytes = None
+            response_bytes = None
         try:
-            _msg_bytes2 = len((payload.get("message") or "").encode("utf-8")) if isinstance(payload.get("message"), str) else None
+            message_bytes = len((payload.get("message") or "").encode("utf-8")) if isinstance(payload.get("message"), str) else None
         except Exception:
-            _msg_bytes2 = None
+            message_bytes = None
         _log(
             "Destination recommendations prepared",
             origin=origin_code,
@@ -2950,8 +3087,10 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             monthRange=month_range_text,
             themeTags=theme_tags,
             candidates=len(candidates),
-            messageBytes=_msg_bytes2,
-            responseBytes=_resp_bytes,
+            messageBytes=message_bytes,
+            responseBytes=response_bytes,
+            source=payload.get("source"),
+            exploreCount=len(explore_candidates),
         )
         return _wrap_function(event, 200, payload)
 
@@ -3273,6 +3412,12 @@ def lambda_handler(event, context):
         raise
     finally:
         _CURRENT_LOGGER.reset(token)
+
+
+
+
+
+
 
 
 

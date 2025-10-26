@@ -1,1007 +1,3425 @@
-# aws/lambda_function.py — Bedrock Return-Control bridge for Daisy microservices
-import base64
-import binascii
+﻿# lambda_function.py
+# AWS Lambda for Agents for Amazon Bedrock (Action Group).
+# Searches real flight offers via Amadeus Self-Service API and returns simplified offers.
+# Default filters to Lufthansa Group carriers unless overridden.
+# Runtime: Python 3.12
+# Deps: (none - stdlib only)
+
+from __future__ import annotations
+
 import calendar
-import re
+import contextvars
 import json
 import os
-import os.path
-import urllib.error
-import urllib.parse
-import urllib.request
+import re
+from datetime import date, datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple
+from urllib import error as _urlerr
+from urllib import parse as _urlparse
+from urllib import request as _urlreq
+import os
+import uuid
+from zoneinfo import ZoneInfo
 
-import boto3
+# Optional S3 debug capture for tool I/O
+try:
+    import boto3  # type: ignore
+except Exception:  # pragma: no cover
+    boto3 = None
 
-AWS_REGION = os.getenv("AWS_REGION", "us-west-2")
-AGENT_ID = os.getenv("AGENT_ID") or os.getenv("SUPERVISOR_AGENT_ID")
-AGENT_ALIAS_ID = os.getenv("AGENT_ALIAS_ID") or os.getenv("SUPERVISOR_AGENT_ALIAS_ID")
-PROXY_BASE_URL = (os.getenv("PROXY_BASE_URL") or "https://origin-daisy.onrender.com").rstrip("/")
-GOOGLE_BASE_URL = (os.getenv("GOOGLE_BASE_URL") or "https://google-api-daisy.onrender.com").rstrip("/")
-RC_MAX_HOPS = int(os.getenv("RETURN_CONTROL_MAX_HOPS") or "6")
-HTTP_TIMEOUT = int(os.getenv("PROXY_TIMEOUT_SECONDS") or "60")
-DEFAULT_EXPLORE_DEPARTURE = (os.getenv("DEFAULT_EXPLORE_DEPARTURE_ID") or "FRA").strip().upper() or "FRA"
-DEFAULT_EXPLORE_GL = (os.getenv("DEFAULT_EXPLORE_GL") or "DE").strip().upper() or "DE"
-DEFAULT_EXPLORE_HL = (os.getenv("DEFAULT_EXPLORE_HL") or "en-US").strip() or "en-US"
-LH_GROUP_AIRLINE_CODES = {"LH", "LX", "OS", "SN", "EW", "4Y", "EN"}
-LH_GROUP_AIRLINES_PARAM = ",".join(sorted(LH_GROUP_AIRLINE_CODES))
-MAX_LH_RESULTS = int(os.getenv("MAX_LH_RESULTS") or "10")
-
-def _as_set(raw: str | None) -> set[str]:
-    if not raw:
-        return set()
-    return {item.strip() for item in raw.split(",") if item.strip()}
-
-AGENT_ID_ALLOWLIST = _as_set(os.getenv("AGENT_ID_ALLOWLIST"))
-AGENT_ALIAS_ALLOWLIST = _as_set(os.getenv("AGENT_ALIAS_ALLOWLIST"))
-if AGENT_ID:
-    AGENT_ID_ALLOWLIST.add(AGENT_ID)
-if AGENT_ALIAS_ID:
-    AGENT_ALIAS_ALLOWLIST.add(AGENT_ALIAS_ID)
-
-IATA_PATHS = [
-    os.path.join(os.getcwd(), "backend", "iata.json"),
-    os.path.join(os.getcwd(), "data", "iata.json"),
-    os.path.join(os.getcwd(), "aws", "deploy_action", "data", "iata.json"),
-    os.path.join(os.getcwd(), "aws", "deploy_action", "iata.json"),
-    os.path.join(os.getcwd(), "iata.json"),
-]
-IATA_DATA = None
-
-bedrock = boto3.client("bedrock-agent-runtime", region_name=AWS_REGION)
-
-
-def _normalize_base64(value: str) -> str:
-    stripped = "".join(value.split())
-    if not stripped:
-        return ""
-    padding = len(stripped) % 4
-    if padding:
-        stripped += "=" * (4 - padding)
-    return stripped
-
-
-def _decode_chunk_payload(payload) -> str:
-    if payload is None:
-        return ""
+DEBUG_S3_BUCKET = (os.getenv("DEBUG_S3_BUCKET") or "").strip()
+DEBUG_S3_PREFIX = (os.getenv("DEBUG_S3_PREFIX") or "debug-tool-io").strip().strip("/")
+DEBUG_TOOL_IO = (os.getenv("DEBUG_TOOL_IO") or "").strip().lower() in {"1", "true", "yes", "on"}
+_S3_CLIENT = None
+if DEBUG_S3_BUCKET and boto3 is not None:  # pragma: no cover
     try:
-        if isinstance(payload, bytes):
-            try:
-                return payload.decode("utf-8", "ignore")
-            except Exception:
-                return base64.b64encode(payload).decode("ascii", "ignore")
-        if isinstance(payload, str):
-            normalized = _normalize_base64(payload)
-            try:
-                return base64.b64decode(normalized).decode("utf-8", "ignore")
-            except (binascii.Error, ValueError):
-                return payload
-        return json.dumps(payload, ensure_ascii=False)
+        _S3_CLIENT = boto3.client("s3", region_name=os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "us-west-2")
     except Exception:
-        return str(payload)
+        _S3_CLIENT = None
 
+# ------- Recommender verbosity and size controls -------
+# If false, omit THEN lines in recommender message to keep payloads small (useful in replay/stress).
+RECOMMENDER_VERBOSE = (os.getenv("RECOMMENDER_VERBOSE") or "true").strip().lower() in {"1", "true", "yes", "on"}
+# Max number of options to include in the recommender response.
+RECOMMENDER_MAX_OPTIONS = int((os.getenv("RECOMMENDER_MAX_OPTIONS") or "10").strip() or 10)
+# If the formatted message text exceeds this many bytes, switch to a compact format (limit options, drop THEN lines).
+RECOMMENDER_MAX_TEXT_BYTES = int((os.getenv("RECOMMENDER_MAX_TEXT_BYTES") or "4000").strip() or 4000)
+GOOGLE_SEARCH_TIMEOUT = float((os.getenv("GOOGLE_SEARCH_TIMEOUT") or "15").strip() or 15)
 
-def _load_iata_data():
-    global IATA_DATA
-    if IATA_DATA is not None:
-        return IATA_DATA
-    for candidate in IATA_PATHS:
+# --------------- Destination Catalog (recommender) ----------------
+_DEST_CATALOG_PATHS = [
+    os.path.join(os.getcwd(), "data", "lh_destinations_catalog.json"),
+    os.path.join(os.path.dirname(__file__), "..", "data", "lh_destinations_catalog.json"),
+]
+_DEST_CATALOG: Optional[list] = None
+_IATA_COORDS_CACHE: Optional[dict] = None
+
+def _load_catalog() -> list:
+    global _DEST_CATALOG
+    if _DEST_CATALOG is not None:
+        return _DEST_CATALOG
+    for p in _DEST_CATALOG_PATHS:
         try:
-            with open(candidate, "r", encoding="utf-8") as handle:
-                IATA_DATA = json.load(handle)
-                return IATA_DATA
+            with open(p, "r", encoding="utf-8") as f:
+                _DEST_CATALOG = json.load(f)
+                _log("Destination catalog loaded", entries=len(_DEST_CATALOG), path=p)
+                return _DEST_CATALOG
         except Exception:
             continue
-    IATA_DATA = {}
-    return IATA_DATA
+    _DEST_CATALOG = []
+    _log("Destination catalog missing", tried=_DEST_CATALOG_PATHS)
+    return _DEST_CATALOG
 
 
-def _country_for_iata(code: str | None) -> str | None:
-    if not code:
-        return None
-    data = _load_iata_data()
-    entry = data.get(str(code).upper())
-    if isinstance(entry, dict):
-        country = entry.get("country")
-        if isinstance(country, str) and len(country) == 2:
-            return country.upper()
-    return None
-
-
-def _is_valid_gl(value: str | None) -> bool:
-    return isinstance(value, str) and len(value) == 2 and value.isalpha()
-
-
-def _is_iata_code(value: str | None) -> bool:
-    return isinstance(value, str) and len(value) == 3 and value.isalpha()
-
-
-def _normalize_time_period(value) -> str:
-    if not value:
-        return "one_week_trip_in_the_next_six_months"
-    text = str(value).strip()
-    lower = text.lower()
-    year_match = None
-    for token in lower.split():
-        if token.isdigit() and len(token) == 4:
-            year_match = int(token)
-            break
-    if "summer" in lower and year_match:
-        return f"{year_match}-06-01..{year_match}-08-31"
-    if "winter" in lower and year_match:
-        return f"{year_match}-12-01..{year_match+1}-02-28"
-    if calendar_re := re.match(r"^(\d{4})-(\d{2})$", text):
-        year = int(calendar_re.group(1))
-        month = int(calendar_re.group(2))
-        last_day = calendar.monthrange(year, month)[1]
-        return f"{year:04d}-{month:02d}-01..{year:04d}-{month:02d}-{last_day:02d}"
-    if calendar_re := re.match(r"^(\d{4})-(\d{2})-(\d{2})$", text):
-        y, m, d = calendar_re.groups()
-        return f"{y}-{m}-{d}..{y}-{m}-{d}"
-    if ".." in text or text.startswith("custom_dates:"):
-        return text
-    return "one_week_trip_in_the_next_six_months"
-
-
-def _parse_time_period_range(value: str | None) -> tuple[str | None, str | None]:
-    if not value:
-        return None, None
-    text = str(value).strip()
-    if ".." in text:
-        start, end = text.split("..", 1)
-        start = start.strip() or None
-        end = end.strip() or None
-        return start, end
-    return text, None
-
-
-def _is_iso_date(value: str | None) -> bool:
-    if not value:
-        return False
-    return bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(value).strip()))
-
-
-def _canonical_interest(value: str | None) -> str | None:
-    if not isinstance(value, str):
-        return None
-    interest = value.strip().lower()
-    if not interest:
-        return None
-    mapping = {
-        "beach": "beaches",
-        "beaches": "beaches",
-        "outdoor": "outdoors",
-        "outdoors": "outdoors",
-        "popular": "popular",
-        "museum": "museums",
-        "museums": "museums",
-        "history": "history",
-        "ski": "skiing",
-        "skiing": "skiing",
-    }
-    return mapping.get(interest, interest)
-
-
-def _normalize_flights_locale(value: str | None) -> str | None:
-    if not isinstance(value, str):
-        return None
-    text = value.strip()
-    if not text:
-        return None
-    text = text.replace("_", "-")
-    lang = text.split("-", 1)[0].strip().lower()
-    if len(lang) == 2 and lang.isalpha():
-        return lang
-    if lang:
-        return "".join(ch for ch in lang if ch.isalpha()) or None
-    return None
-
-
-def _convert_explore_to_flights(params: dict) -> dict | None:
-    if not isinstance(params, dict):
-        return None
-    departure = params.get("departure_id")
-    arrival = params.get("arrival_id")
-    # Require concrete IATA arrival (avoid global bounding boxes or empty)
-    if not isinstance(departure, str):
-        departure = DEFAULT_EXPLORE_DEPARTURE
-    departure = departure.strip().upper()
-    if not _is_iata_code(departure):
-        departure = DEFAULT_EXPLORE_DEPARTURE
-    if not isinstance(arrival, str):
-        return None
-    arrival_trimmed = arrival.strip().upper()
-    if len(arrival_trimmed) != 3 or not arrival_trimmed.isalpha():
-        return None
-
-    outbound_date = None
-    return_date = None
-    if _is_iso_date(params.get("outbound_date")):
-        outbound_date = str(params["outbound_date"]).strip()
-    if _is_iso_date(params.get("return_date")):
-        return_date = str(params["return_date"]).strip()
-
-    if not outbound_date:
-        start, end = _parse_time_period_range(params.get("time_period"))
-        if _is_iso_date(start):
-            outbound_date = start
-        if _is_iso_date(end) and end != outbound_date:
-            return_date = end
-
-    if not outbound_date:
-        return None
-
-    flight_type = "round_trip" if return_date else "one_way"
-    payload: dict[str, str] = {
-        "engine": "google_flights",
-        "flight_type": flight_type,
-        "departure_id": departure,
-        "arrival_id": arrival_trimmed,
-        "outbound_date": outbound_date,
-    }
-    if return_date:
-        payload["return_date"] = return_date
-    gl_value = params.get("gl")
-    if isinstance(gl_value, str):
-        gl_value = gl_value.strip().upper()
-    if not _is_valid_gl(gl_value):
-        gl_value = _country_for_iata(payload["departure_id"]) or DEFAULT_EXPLORE_GL
-    payload["gl"] = gl_value
-    hl_source = params.get("hl") or DEFAULT_EXPLORE_HL
-    normalized_hl = _normalize_flights_locale(hl_source) or "en"
-    if normalized_hl != hl_source:
+def _load_iata_coords() -> dict:
+    global _IATA_COORDS_CACHE
+    if _IATA_COORDS_CACHE is not None:
+        return _IATA_COORDS_CACHE
+    candidates = [
+        os.path.join(os.getcwd(), "iata.json"),
+        os.path.join(os.getcwd(), "backend", "iata.json"),
+    ]
+    for p in candidates:
         try:
-            print(
-                "[lambda] flights_hl_normalized",
-                json.dumps({"input": hl_source, "normalized": normalized_hl}),
-            )
+            with open(p, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                coords = {}
+                if isinstance(data, dict):
+                    iterable = data.items()
+                elif isinstance(data, list):
+                    iterable = enumerate(data)
+                else:
+                    iterable = []
+                for key, rec in iterable:
+                    if isinstance(rec, dict):
+                        code = rec.get("code") or rec.get("iata_code") or rec.get("iata")
+                        lat = rec.get("latitude")
+                        lon = rec.get("longitude")
+                    else:
+                        code = None
+                        lat = None
+                        lon = None
+                    if not code and isinstance(key, str):
+                        code = key
+                    if code and lat is not None and lon is not None:
+                        coords[str(code).upper()] = (float(lat), float(lon))
+                _IATA_COORDS_CACHE = coords
+                _log("IATA coords loaded", count=len(coords), path=p)
+                return _IATA_COORDS_CACHE
         except Exception:
-            pass
-    payload["hl"] = normalized_hl
-    payload["included_airlines"] = LH_GROUP_AIRLINES_PARAM
-    optional_keys = (
-        "adults",
-        "children",
-        "infants_in_seat",
-        "infants_on_lap",
-        "travel_class",
-        "currency",
-        "stops",
-        "max_price",
-        "nonstop",
-    )
-    for key in optional_keys:
-        value = params.get(key)
-        if value is None or value == "":
             continue
-        payload[key] = str(value)
-    return payload
+    _IATA_COORDS_CACHE = {}
+    _log("IATA coords not found", tried=candidates)
+    return _IATA_COORDS_CACHE
 
 
-def _extract_explore_airlines(destination) -> set[str]:
+def _nearest_iata_from_coords(latitude: float | None, longitude: float | None) -> Optional[str]:
+    if latitude is None or longitude is None:
+        return None
+    coords = _load_iata_coords()
+    if not coords:
+        return None
+    best_code: Optional[str] = None
+    best_distance: Optional[float] = None
+    for code, pair in coords.items():
+        if not isinstance(pair, (list, tuple)) or len(pair) != 2:
+            continue
+        try:
+            ilat = float(pair[0])
+            ilon = float(pair[1])
+        except (TypeError, ValueError):
+            continue
+        distance = _haversine_km(latitude, longitude, ilat, ilon)
+        if best_distance is None or distance < best_distance:
+            best_distance = distance
+            best_code = str(code).upper()
+    if best_code:
+        _log("Nearest IATA resolved from coordinates", code=best_code, lat=latitude, lon=longitude, distance_km=best_distance)
+    return best_code
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    from math import radians, sin, cos, sqrt, atan2
+    R = 6371.0
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    return R * c
+
+
+def _month_from_phrase(phrase: Optional[str], reference: Optional[date] = None) -> tuple[int, int]:
+    """Return (year, month) from phrases like 'March 2026', '2026-03', 'next March'. Defaults to current/next.
+    """
+    if reference is None:
+        reference = datetime.utcnow().date()
+    if not phrase:
+        return reference.year, reference.month
+    txt = str(phrase).strip()
+    # ISO YYYY-MM
+    m = re.fullmatch(r"(\d{4})-(\d{2})", txt)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+    # Month name and optional year
+    months = [
+        "january","february","march","april","may","june","july","august","september","october","november","december"
+    ]
+    lower = txt.lower()
+    if "next year" in lower and any(mon in lower for mon in months):
+        for idx, mon in enumerate(months, start=1):
+            if mon in lower:
+                return reference.year + 1, idx
+    for idx, mon in enumerate(months, start=1):
+        # 'march 2026' or 'march'
+        m2 = re.search(mon, lower)
+        if m2:
+            ym = re.search(r"(\d{4})", lower)
+            y = int(ym.group(1)) if ym else reference.year
+            # if month already passed this year, roll to next year
+            if ym is None and idx < reference.month:
+                y += 1
+            return y, idx
+    # fallback: try YYYY-MM-DD
+    m3 = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", txt)
+    if m3:
+        return int(m3.group(1)), int(m3.group(2))
+    return reference.year, reference.month
+
+
+def _canonicalize_theme_tags(raw: List[str], phrase: Optional[str] = None) -> List[str]:
+    """Normalize theme tags to catalog tags.
+
+    Maps common synonyms like 'ski', 'skiing', 'snowboard' to 'winter_sports', etc.
+    """
+    aliases = {
+        "ski": ["winter_sports", "cold", "mountain"],
+        "skiing": ["winter_sports", "cold", "mountain"],
+        "snow": ["winter_sports", "cold", "mountain"],
+        "snowboard": ["winter_sports", "cold", "mountain"],
+        "alps": ["winter_sports", "cold", "mountain"],
+        "winter": ["winter_sports", "cold"],
+        "city": ["city_break"],
+        "city-break": ["city_break"],
+        "city_break": ["city_break"],
+        "weekend": ["city_break"],
+        "urban": ["city_break"],
+        "beach": ["beach", "warm"],
+        "sun": ["beach", "warm"],
+        "sunny": ["beach", "warm"],
+        "seaside": ["beach", "warm"],
+        "coast": ["beach", "warm"],
+        "island": ["beach", "warm"],
+        "resort": ["beach", "warm"],
+        "diving": ["diving", "beach", "warm"],
+        "scuba": ["diving", "beach", "warm"],
+        "snorkeling": ["diving", "beach", "warm"],
+        "fishing": ["fishing"],
+        "tuna": ["tuna_fishing", "fishing"],
+        "tuna_fishing": ["tuna_fishing", "fishing"],
+        "big_game_fishing": ["tuna_fishing", "fishing"],
+        "safari": ["safari", "wildlife"],
+        "wildlife": ["wildlife", "safari"],
+        "photo": ["wildlife_photography", "wildlife", "safari"],
+        "photography": ["wildlife_photography", "wildlife", "safari"],
+        "wildlife photography": ["wildlife_photography", "wildlife", "safari"],
+        "bike": ["cycling"],
+        "bicycle": ["cycling"],
+        "cycling": ["cycling"],
+        "mtb": ["cycling"],
+        "hunting": ["hunting"],
+    }
+    out: List[str] = []
+    seen = set()
+    def add(tag: str):
+        t = tag.strip().lower()
+        if t and t not in seen:
+            out.append(t)
+            seen.add(t)
+    for t in raw or []:
+        key = str(t).strip().lower()
+        if key in aliases:
+            for mapped in aliases[key]:
+                add(mapped)
+        else:
+            add(key)
+    # Phrase hint (if includes 'ski')
+    if phrase:
+        low = phrase.lower()
+        if any(k in low for k in ("ski", "skiing", "snowboard")):
+            for m in ("winter_sports", "cold", "mountain"):
+                add(m)
+    return out
+
+
+def _parse_month_range(value: Optional[str], reference: Optional[date] = None) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+    """Parse a month or month range and return ((start_year, start_month), (end_year, end_month)).
+
+    Supports:
+    - "YYYY-MM..YYYY-MM" explicit ranges
+    - Fallback to a single month via _month_from_phrase
+    """
+    if reference is None:
+        reference = datetime.utcnow().date()
+    if not value:
+        y, m = _month_from_phrase(None, reference)
+        return (y, m), (y, m)
+    text = str(value).strip()
+    m = re.fullmatch(r"(\d{4})-(\d{2})\.\.(\d{4})-(\d{2})", text)
+    if m:
+        y1, m1, y2, m2 = int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4))
+        return (y1, m1), (y2, m2)
+    # Minimal natural-language: just resolve first month and mirror
+    y, mon = _month_from_phrase(text, reference)
+    return (y, mon), (y, mon)
+
+
+def _month_range_to_period_text(month_range_text: Optional[str], month_text: Optional[str]) -> Optional[str]:
+    source = month_range_text or month_text
+    try:
+        (start_year, start_month), (end_year, end_month) = _parse_month_range(source)
+    except Exception:
+        return None
+    try:
+        start_date = date(start_year, start_month, 1)
+        end_day = calendar.monthrange(end_year, end_month)[1]
+        end_date = date(end_year, end_month, end_day)
+    except Exception:
+        return None
+    return f"{start_date.isoformat()}..{end_date.isoformat()}"
+
+
+def _explore_airline_codes(destination: Dict[str, Any]) -> set[str]:
     codes: set[str] = set()
     if not isinstance(destination, dict):
         return codes
     flight = destination.get("flight")
     if isinstance(flight, dict):
         code = flight.get("airline_code")
-        if isinstance(code, str):
+        if isinstance(code, str) and code.strip():
             codes.add(code.strip().upper())
-        codes_field = flight.get("airline_codes")
-        if isinstance(codes_field, (list, tuple, set)):
-            for item in codes_field:
-                if isinstance(item, str):
+        alt_codes = flight.get("airline_codes")
+        if isinstance(alt_codes, (list, tuple, set)):
+            for item in alt_codes:
+                if isinstance(item, str) and item.strip():
                     codes.add(item.strip().upper())
-    return codes
-
-
-def _extract_flight_airlines(flight) -> set[str]:
-    codes: set[str] = set()
-    if not isinstance(flight, dict):
-        return codes
-    for field in ("operating_airlines", "marketing_airlines", "airlines"):
-        values = flight.get(field)
-        if isinstance(values, (list, tuple, set)):
-            for item in values:
-                if isinstance(item, str):
+        sold_by = flight.get("ticket_also_sold_by")
+        if isinstance(sold_by, (list, tuple, set)):
+            for item in sold_by:
+                if isinstance(item, str) and item.strip():
                     codes.add(item.strip().upper())
-    leg_sources = []
-    if isinstance(flight.get("legs"), list):
-        for leg in flight["legs"]:
-            if isinstance(leg, dict) and isinstance(leg.get("segments"), list):
-                leg_sources.extend(leg["segments"])
-    if isinstance(flight.get("segments"), list):
-        leg_sources.extend(flight["segments"])
-    for segment in leg_sources:
-        if not isinstance(segment, dict):
-            continue
-        seg_code = (
-            segment.get("airline_code")
-            or segment.get("operating_airline_code")
-            or segment.get("marketing_airline_code")
-        )
-        if isinstance(seg_code, str):
-            codes.add(seg_code.strip().upper())
-    return codes
+    return {code for code in codes if code}
 
 
-def _limit_lh_results(path: str, data):
-    if not isinstance(data, dict):
-        return data
-    if path.startswith("/google/explore/"):
-        destinations = data.get("destinations")
-        if isinstance(destinations, list):
-            filtered = []
-            for dest in destinations:
-                codes = _extract_explore_airlines(dest)
-                if not codes or codes.intersection(LH_GROUP_AIRLINE_CODES):
-                    filtered.append(dest)
-                if len(filtered) >= MAX_LH_RESULTS:
-                    break
-            data["destinations"] = filtered[:MAX_LH_RESULTS]
-    elif path.startswith("/google/flights/"):
-        candidate_keys = ["best_flights", "other_flights", "all_flights", "flights", "results"]
-        for key in candidate_keys:
-            flights = data.get(key)
-            if isinstance(flights, list):
-                filtered = []
-                for flight in flights:
-                    codes = _extract_flight_airlines(flight)
-                    if not codes or codes.intersection(LH_GROUP_AIRLINE_CODES):
-                        filtered.append(flight)
-                    if len(filtered) >= MAX_LH_RESULTS:
-                        break
-                data[key] = filtered[:MAX_LH_RESULTS]
-    return data
-
-
-def _event_to_dict(event) -> dict:
-    if isinstance(event, dict):
-        return event
-    if hasattr(event, "to_dict"):
-        try:
-            return event.to_dict()
-        except Exception:
-            pass
-    plain = {}
-    for attr in (
-        "chunk",
-        "output_text",
-        "outputText",
-        "content_block",
-        "contentBlock",
-        "return_control",
-        "returnControl",
-    ):
-        if hasattr(event, attr):
-            plain[attr] = getattr(event, attr)
-    return plain
-
-
-def _resolve_agent_context(event: dict | None, session_state: dict | None = None) -> tuple[str, str]:
-    """Ensure the Bedrock agent identifiers are available from env or event payload."""
-    global AGENT_ID, AGENT_ALIAS_ID
-    candidate_agent_id = None
-    candidate_alias_id = None
-
-    def extract(container):
-        nonlocal candidate_agent_id, candidate_alias_id
-        if not isinstance(container, dict):
-            return
-        if not candidate_agent_id:
-            candidate_agent_id = (
-                container.get("agentId")
-                or container.get("id")
-                or container.get("agent_id")
-                or container.get("agent-id")
-            )
-        if not candidate_alias_id:
-            candidate_alias_id = (
-                container.get("agentAliasId")
-                or container.get("aliasId")
-                or container.get("agent_alias_id")
-                or container.get("agent-alias-id")
-                or container.get("alias")
-            )
-        nested_agent = container.get("agent")
-        if isinstance(nested_agent, dict):
-            extract(nested_agent)
-        nested_session = container.get("sessionState") or container.get("session_state")
-        if isinstance(nested_session, dict):
-            extract(nested_session)
-        nested_attrs = container.get("sessionAttributes") or container.get("session_attributes")
-        if isinstance(nested_attrs, dict):
-            extract(nested_attrs)
-        prompt_attrs = container.get("promptSessionAttributes") or container.get("prompt_session_attributes")
-        if isinstance(prompt_attrs, dict):
-            extract(prompt_attrs)
-
-    if isinstance(event, dict):
-        extract(event)
-        headers = event.get("headers")
-        if isinstance(headers, dict):
-            lowered = {str(k).lower(): v for k, v in headers.items()}
-            candidate_agent_id = candidate_agent_id or lowered.get("x-agent-id") or lowered.get("x-bedrock-agent-id")
-            candidate_alias_id = candidate_alias_id or lowered.get("x-agent-alias-id") or lowered.get("x-bedrock-agent-alias-id")
-        body = event.get("body")
-        parsed_body = None
-        if isinstance(body, str):
-            try:
-                parsed_body = json.loads(body)
-            except json.JSONDecodeError:
-                parsed_body = None
-        elif isinstance(body, dict):
-            parsed_body = body
-        if isinstance(parsed_body, dict):
-            extract(parsed_body)
-
-    if isinstance(session_state, dict):
-        extract(session_state)
-
-    if not AGENT_ID and candidate_agent_id:
-        AGENT_ID = candidate_agent_id
-    if not AGENT_ALIAS_ID and candidate_alias_id:
-        AGENT_ALIAS_ID = candidate_alias_id
-
-    def ensure_allowed(label: str, value: str | None, allowlist: set[str]) -> str | None:
-        if value and allowlist and value not in allowlist:
-            try:
-                print(
-                    f"[lambda] {label} {value} not in allowlist",
-                    json.dumps({"allowlist": sorted(allowlist)}),
-                )
-            except Exception:
-                print(f"[lambda] {label} {value} not in allowlist")
-        return value
-
-    AGENT_ID = ensure_allowed("agentId", AGENT_ID, AGENT_ID_ALLOWLIST)
-    AGENT_ALIAS_ID = ensure_allowed("agentAliasId", AGENT_ALIAS_ID, AGENT_ALIAS_ALLOWLIST)
-
-    if not isinstance(event, dict):
-        event = {}
-    if not AGENT_ID or not AGENT_ALIAS_ID:
-        try:
-            print(
-                "[lambda] missing agent context",
-                json.dumps(
-                    {
-                        "eventKeys": sorted(event.keys()),
-                        "agentShape": agent_blob,
-                        "agentId": candidate_agent_id,
-                        "agentAliasId": candidate_alias_id,
-                    }
-                ),
-            )
-        except Exception:
-            print("[lambda] missing agent context (unable to serialize diagnostics)")
-        raise ValueError("Missing agent identifiers (AGENT_ID / AGENT_ALIAS_ID). Set them via environment variables or include agent.id and agent.aliasId in the request.")
-    return AGENT_ID, AGENT_ALIAS_ID
-
-
-def _invoke_once(agent_id: str, agent_alias_id: str, session_id: str, text: str | None, session_state: dict | None):
-    response = bedrock.invoke_agent(
-        agentId=agent_id,
-        agentAliasId=agent_alias_id,
-        sessionId=session_id,
-        inputText=text or "",
-        enableTrace=True,
-        sessionState=session_state or {},
+def _fetch_explore_candidates(
+    origin_code: Optional[str],
+    month_range_text: Optional[str],
+    month_text: Optional[str],
+    theme_tags: List[str],
+    max_candidates: int,
+    *,
+    currency: str = "EUR",
+    timeout: Optional[float] = None,
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    departure = _normalized_iata(str(origin_code or "").strip() or DEFAULT_EXPLORE_DEPARTURE) or DEFAULT_EXPLORE_DEPARTURE
+    params: Dict[str, Any] = {
+        "engine": "google_travel_explore",
+        "departure_id": departure,
+        "travel_mode": "flights_only",
+        "adults": "1",
+        "currency": currency or "EUR",
+        "hl": DEFAULT_GOOGLE_HL,
+        "gl": (_country_for_iata(departure) or DEFAULT_GOOGLE_GL).lower(),
+        "limit": str(max(10, max_candidates * 2)),
+    }
+    period = _month_range_to_period_text(month_range_text, month_text)
+    if period:
+        params["time_period"] = period
+    interests = ",".join(sorted({t for t in theme_tags if t})) if theme_tags else ""
+    if interests:
+        params["interests"] = interests
+    meta: Dict[str, Any] = {
+        "params": {
+            key: params.get(key)
+            for key in ("departure_id", "time_period", "interests", "travel_mode", "currency", "hl", "gl")
+            if key in params
+        }
+    }
+    payload = _proxy_get(
+        "/google/explore/search",
+        params,
+        timeout=timeout or GOOGLE_SEARCH_TIMEOUT,
+        base_url=GOOGLE_BASE_URL,
     )
-    text_fragments: list[str] = []
-    return_control = None
-    completion_stream = getattr(response, "completion", None)
-    if completion_stream is None and isinstance(response, dict):
-        completion_stream = response.get("completion", [])
-    if completion_stream is None:
-        completion_stream = []
-    for event in completion_stream:
-        try:
-            event_dict = _event_to_dict(event)
-            chunk = None
-            chunk = event_dict.get("chunk")
-            if chunk is not None:
-                chunk_bytes = None
-                chunk_text = None
-                if isinstance(chunk, dict):
-                    chunk_bytes = chunk.get("bytes")
-                    chunk_text = chunk.get("text")
-                else:
-                    chunk_bytes = getattr(chunk, "bytes", None)
-                    chunk_text = getattr(chunk, "text", None)
-                if chunk_bytes is not None:
-                    text_fragments.append(_decode_chunk_payload(chunk_bytes))
-                if chunk_text:
-                    text_fragments.append(str(chunk_text))
-
-            output_text = None
-            output_text = event_dict.get("outputText") or event_dict.get("output_text")
-            if output_text is None and hasattr(event, "output_text"):
-                output_text = getattr(event, "output_text")
-            if output_text is None and hasattr(event, "outputText"):
-                output_text = getattr(event, "outputText")
-            items = None
-            if isinstance(output_text, dict):
-                items = output_text.get("items")
-            else:
-                items = getattr(output_text, "items", None)
-            if isinstance(items, list):
-                for item in items:
-                    if isinstance(item, dict):
-                        text_value = item.get("text")
-                    else:
-                        text_value = getattr(item, "text", item)
-                    if text_value:
-                        text_fragments.append(str(text_value))
-
-            content_block = event_dict.get("contentBlock") or event_dict.get("content_block")
-            if content_block is None and hasattr(event, "content_block"):
-                content_block = getattr(event, "content_block")
-            if content_block is None and hasattr(event, "contentBlock"):
-                content_block = getattr(event, "contentBlock")
-            if content_block:
-                if isinstance(content_block, dict):
-                    block_text = content_block.get("text")
-                else:
-                    block_text = getattr(content_block, "text", None)
-                if block_text:
-                    text_fragments.append(str(block_text))
-
-            rc_candidate = event_dict.get("returnControl") or event_dict.get("return_control")
-            if rc_candidate is None and hasattr(event, "return_control"):
-                rc_candidate = getattr(event, "return_control")
-            if rc_candidate is None and hasattr(event, "returnControl"):
-                rc_candidate = getattr(event, "returnControl")
-            if rc_candidate:
-                return_control = rc_candidate
-        except Exception as err:
-            try:
-                print("[lambda] chunk_processing_error", json.dumps({"error": str(err), "event": event}))
-            except Exception:
-                print(f"[lambda] chunk_processing_error {err}")
-    aggregated_text = "".join(text_fragments)
-    return aggregated_text, return_control, response.get("sessionState")
-
-
-def _target_bases(path: str) -> list[str]:
-    targets: list[str] = []
-    if path.startswith("/google/"):
-        if GOOGLE_BASE_URL:
-            targets.append(GOOGLE_BASE_URL)
-        elif PROXY_BASE_URL:
-            targets.append(PROXY_BASE_URL)
-    else:
-        if PROXY_BASE_URL:
-            targets.append(PROXY_BASE_URL)
-    return targets or [PROXY_BASE_URL or GOOGLE_BASE_URL]
-
-
-def _proxy_url(base: str, path: str) -> str:
-    base = (base or "").rstrip("/")
-    return f"{base}/{path.lstrip('/')}"
-
-
-def _call_proxy(path: str, method: str, params: dict | None, body: dict | None) -> dict:
-    method = (method or "POST").upper()
-    data = None
-    headers = {}
-    if method == "GET":
-        query_pairs = []
-        param_dict = {}
-        if isinstance(params, dict):
-            query_pairs = list(params.items())
-            param_dict = dict(query_pairs)
-        elif isinstance(params, list):
-            for item in params:
-                if isinstance(item, dict):
-                    key = item.get("name") or item.get("key") or item.get("param")
-                    value = item.get("value")
-                    if key and value is not None:
-                        query_pairs.append((key, value))
-                        param_dict[key] = value
-        elif isinstance(params, tuple):
-            query_pairs = list(params)
-            param_dict = dict(query_pairs)
-        if path.startswith("/google/explore/"):
-            departure_id = param_dict.get("departure_id")
-            if not _is_iata_code(departure_id):
-                param_dict["departure_id"] = DEFAULT_EXPLORE_DEPARTURE
-                departure_id = param_dict["departure_id"]
-                try:
-                    print("[lambda] explore_departure_fallback", json.dumps({"setTo": departure_id}))
-                except Exception:
-                    pass
-            inferred_gl = _country_for_iata(departure_id)
-            if inferred_gl:
-                param_dict["gl"] = inferred_gl
-            else:
-                current_gl = param_dict.get("gl")
-                if not _is_valid_gl(current_gl):
-                    param_dict["gl"] = DEFAULT_EXPLORE_GL
-                    try:
-                        print(
-                            "[lambda] explore_gl_fallback",
-                            json.dumps({"setTo": param_dict["gl"], "departure": departure_id}),
-                        )
-                    except Exception:
-                        pass
-            if not param_dict.get("hl"):
-                param_dict["hl"] = DEFAULT_EXPLORE_HL
-            if not param_dict.get("engine"):
-                param_dict["engine"] = "google_travel_explore"
-            normalized_period = _normalize_time_period(param_dict.get("time_period"))
-            param_dict["time_period"] = normalized_period
-            canonical_interest = _canonical_interest(param_dict.get("interests"))
-            if canonical_interest:
-                param_dict["interests"] = canonical_interest
-            param_dict["included_airlines"] = LH_GROUP_AIRLINES_PARAM
-            flights_params = _convert_explore_to_flights(param_dict)
-            if flights_params:
-                path = "/google/flights/search"
-                param_dict = flights_params
-            else:
-                allowed_keys = {
-                    "engine",
-                    "departure_id",
-                    "arrival_id",
-                    "gl",
-                    "hl",
-                    "search_query",
-                    "time_period",
-                    "travel_mode",
-                    "adults",
-                    "currency",
-                    "interests",
-                    "travel_class",
-                    "max_price",
-                    "children",
-                    "infants_in_seat",
-                    "infants_on_lap",
-                    "stops",
-                }
-                for extra_key in list(param_dict.keys()):
-                    if extra_key not in allowed_keys:
-                        param_dict.pop(extra_key, None)
-                arrival_value = param_dict.get("arrival_id")
-                if arrival_value:
-                    arrival_str = str(arrival_value).strip()
-                    valid_arrival = False
-                    if arrival_str.startswith("/m/"):
-                        valid_arrival = True
-                    elif arrival_str.startswith("[[") and arrival_str.endswith("]]"):
-                        valid_arrival = True
-                    elif len(arrival_str) == 3 and arrival_str.isalpha():
-                        valid_arrival = True
-                    if not valid_arrival:
-                        param_dict.pop("arrival_id", None)
-                        existing_query = param_dict.get("search_query")
-                        param_dict["search_query"] = f"{existing_query} {arrival_str}".strip() if existing_query else arrival_str
-                if not param_dict.get("travel_mode"):
-                    param_dict["travel_mode"] = "flights_only"
-                if not param_dict.get("adults"):
-                    param_dict["adults"] = "1"
-                if not param_dict.get("currency"):
-                    param_dict["currency"] = "EUR"
-        elif path.startswith("/google/flights/"):
-            param_dict["included_airlines"] = LH_GROUP_AIRLINES_PARAM
-        query_pairs = list(param_dict.items())
-        query_suffix = f"?{urllib.parse.urlencode(query_pairs, doseq=True)}" if query_pairs else ""
-        try:
-            print(
-                "[lambda] tool_query",
-                json.dumps(
-                    {"path": path, "method": method, "query": query_pairs},
-                    default=str,
-                ),
-            )
-        except Exception:
-            pass
-    else:
-        headers["content-type"] = "application/json"
-        payload_obj = body
-        if isinstance(body, str):
-            try:
-                payload_obj = json.loads(body)
-            except json.JSONDecodeError:
-                payload_obj = {"raw": body}
-        elif body is None:
-            payload_obj = {}
-        data = json.dumps(payload_obj or {}).encode("utf-8")
-        query_suffix = ""
-
-    targets = _target_bases(path or "")
-    last_failure: dict | None = None
-    for base in targets:
-        url = _proxy_url(base, path or "")
-        if method == "GET" and query_suffix:
-            url = f"{url}{query_suffix}"
-        request = urllib.request.Request(url, data=data, headers=headers, method=method)
-        try:
-            with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as resp:
-                payload = resp.read().decode("utf-8", "ignore")
-                status = resp.getcode()
-        except urllib.error.HTTPError as err:
-            payload = err.read().decode("utf-8", "ignore")
-            status = err.code
-            try:
-                data = json.loads(payload) if payload else {}
-            except Exception:
-                data = {"raw": payload}
-            last_failure = {"ok": status < 400, "status": status, "data": data}
+    destinations = payload.get("destinations") if isinstance(payload, dict) else None
+    total_destinations = len(destinations) if isinstance(destinations, list) else 0
+    meta["destinationCount"] = total_destinations
+    if not isinstance(destinations, list):
+        return [], meta
+    filtered: List[Dict[str, Any]] = []
+    lh_allowed = set(LH_GROUP_CODES)
+    for dest in destinations:
+        if not isinstance(dest, dict):
             continue
-        except Exception as exc:
-            try:
-                print(
-                    "[lambda] tool_exception",
-                    json.dumps(
-                        {"path": path, "url": url, "error": str(exc), "exc_type": type(exc).__name__},
-                        default=str,
-                    ),
-                )
-            except Exception:
-                pass
-            last_failure = {"ok": False, "error": str(exc)}
+        flight = dest.get("flight")
+        if not isinstance(flight, dict):
             continue
-
-        try:
-            data = json.loads(payload) if payload else {}
-        except Exception:
-            data = {"raw": payload}
-        if path.startswith("/google/"):
-            data = _limit_lh_results(path, data)
-        result = {"ok": status < 400, "status": status, "data": data}
-        if not result["ok"]:
+        raw_code = (
+            flight.get("airport_code")
+            or flight.get("destination_airport")
+            or dest.get("iata")
+            or dest.get("airport_code")
+            or ((dest.get("airport") or {}).get("id") if isinstance(dest.get("airport"), dict) else None)
+        )
+        code = _normalized_iata(str(raw_code or ""))
+        if not code:
+            continue
+        airlines = _explore_airline_codes(dest)
+        if airlines and not (airlines & lh_allowed):
+            continue
+        price = flight.get("price")
+        stops = flight.get("stops")
+        duration_txt = flight.get("flight_duration")
+        duration_minutes = flight.get("flight_duration_minutes")
+        reason_parts: List[str] = []
+        if price is not None:
             try:
-                print(
-                    "[lambda] tool_error_detail",
-                    json.dumps({"status": status, "data": data}, default=str),
-                )
+                price_num = float(price)
+                reason_parts.append(f"from €{int(round(price_num))}")
             except Exception:
-                pass
-        return result
-    if last_failure:
-        return last_failure
-    return {"ok": False, "status": 520, "data": {"error": "tool_call_failed"}}
+                reason_parts.append(f"from €{price}")
+        if stops is not None:
+            reason_parts.append("nonstop" if stops == 0 else f"{stops} stop{'s' if stops != 1 else ''}")
+        if isinstance(duration_txt, str) and duration_txt.strip():
+            reason_parts.append(duration_txt.strip())
+        elif isinstance(duration_minutes, (int, float)):
+            reason_parts.append(f"{int(duration_minutes)} min")
+        avg_night = dest.get("avg_cost_per_night")
+        if isinstance(avg_night, (int, float)):
+            reason_parts.append(f"stay ≈ €{int(round(float(avg_night)))} /night")
+        reason = ", ".join(reason_parts) if reason_parts else "Google Explore match"
+        candidate = {
+            "code": code,
+            "city": dest.get("name") or dest.get("city") or code,
+            "country": dest.get("country") or "",
+            "tags": list(theme_tags),
+            "reason": reason,
+            "price": price,
+            "currency": currency or "EUR",
+            "stops": stops,
+            "duration": duration_txt or (f"{int(duration_minutes)} min" if isinstance(duration_minutes, (int, float)) else None),
+            "carriers": sorted(airlines) if airlines else [],
+            "image": dest.get("image") or dest.get("thumbnail"),
+            "kgmid": dest.get("kgmid"),
+            "exploreFlight": flight,
+            "outboundDate": dest.get("outbound_date"),
+            "returnDate": dest.get("return_date"),
+            "source": "google_explore",
+        }
+        pitch = dest.get("description") or dest.get("blurb")
+        if isinstance(pitch, str) and pitch.strip():
+            candidate["pitch"] = pitch.strip()
+        filtered.append(candidate)
+        if len(filtered) >= max(20, max_candidates * 3):
+            break
+    final: List[Dict[str, Any]] = []
+    for idx, cand in enumerate(filtered[: max(1, max_candidates)], start=1):
+        shaped = dict(cand)
+        shaped["score"] = float(max(max_candidates - idx + 1, 1))
+        shaped["rank"] = idx
+        final.append(shaped)
+    meta["filteredCount"] = len(final)
+    _log(
+        "Google Explore candidates prepared",
+        origin=origin_code,
+        departure=departure,
+        requested=max_candidates,
+        returned=len(final),
+    )
+    return final, meta
 
 
-def _rc_result(invocation_id: str, inputs: list, results: list) -> list:
-    mapped = []
-    for idx, result in enumerate(results):
-        entry = inputs[idx] if idx < len(inputs) else {}
-        if isinstance(entry, dict):
-            action_group = entry.get("actionGroup", "unknown")
-            api_path = entry.get("apiPath") or entry.get("operation") or entry.get("endpoint") or "unknown"
-            http_method = entry.get("httpMethod") or "POST"
+def _score_destination(dest: dict, theme_tags: set[str], target_month: int, origin_code: Optional[str]) -> tuple[float, str]:
+    score = 0.0
+    reasons = []
+    tags = set(str(t).lower() for t in dest.get("tags", []))
+    if theme_tags & tags:
+        score += 0.2
+    # Warm/beach
+    if "beach" in theme_tags or "warm" in theme_tags:
+        avg = (dest.get("avgHighCByMonth") or {}).get(str(target_month))
+        if isinstance(avg, (int, float)):
+            temp_score = max(0.0, min(1.0, (float(avg) - 20.0) / 10.0))
+            score += temp_score
+            reasons.append(f"avgHighC={avg}C")
+        water = (dest.get("waterTempCByMonth") or {}).get(str(target_month))
+        if isinstance(water, (int, float)):
+            water_score = max(0.0, min(1.0, (float(water) - 18.0) / 8.0))
+            score += water_score
+            reasons.append(f"water={water}C")
+    # Winter sports
+    if "winter_sports" in theme_tags or "cold" in theme_tags:
+        snow = (dest.get("snowReliability") or {}).get(str(target_month))
+        if isinstance(snow, (int, float)):
+            snow_score = max(0.0, min(1.0, float(snow)))
+            score += snow_score
+            reasons.append(f"snowRel={snow}")
+        elif isinstance(dest.get("elevationM"), (int, float)):
+            elev = float(dest["elevationM"])
+            elev_score = max(0.0, min(1.0, (elev - 500.0) / 1500.0))
+            score += elev_score * 0.5
+            reasons.append(f"elev={elev}m")
+    # Activity-specific boosts
+    activity_tags = {"diving", "tuna_fishing", "fishing", "safari", "wildlife", "cycling", "hunting"}
+    for tag in activity_tags:
+        if tag in theme_tags and tag in (dest.get("tags") or []):
+            score += 0.2
+            reasons.append(tag)
+    # Carrier bias (prefer LHâ€‘Group presence)
+    brands = set(str(x) for x in dest.get("lhGroupCarriers", []))
+    if brands:
+        score += 0.1
+        if any(b in brands for b in ("EW","4Y")):
+            score += 0.1
+    # Distance penalty (heavier for short city breaks)
+    if origin_code:
+        coords = _load_iata_coords()
+        o = coords.get(origin_code.upper())
+        d = coords.get(str(dest.get("code", "")).upper())
+        if o and d:
+            km = _haversine_km(o[0], o[1], d[0], d[1])
+            penalty_cap = 0.6 if ("city_break" in theme_tags) else 0.4
+            penalty = min(penalty_cap, max(0.0, km / 5000.0 * penalty_cap))
+            score -= penalty
+            reasons.append(f"dist~{int(km)}km")
+    reason = ", ".join(reasons) if reasons else "tag match"
+    return score, reason
+
+LH_GROUP_CODES = ["LH", "LX", "OS", "SN", "EW", "4Y", "EN"]
+DEFAULT_EXPLORE_DEPARTURE = (os.getenv("DEFAULT_EXPLORE_DEPARTURE_ID") or "FRA").strip().upper() or "FRA"
+
+PROXY_BASE_URL = (os.getenv("PROXY_BASE_URL") or "http://localhost:8787").rstrip("/")
+GOOGLE_BASE_URL = (os.getenv("GOOGLE_BASE_URL") or PROXY_BASE_URL).rstrip("/")
+
+MAX_LOOKAHEAD_DAYS = 365
+
+_MONTH_LOOKUP = {
+    "jan": 1,
+    "january": 1,
+    "feb": 2,
+    "february": 2,
+    "mar": 3,
+    "march": 3,
+    "apr": 4,
+    "april": 4,
+    "may": 5,
+    "jun": 6,
+    "june": 6,
+    "jul": 7,
+    "july": 7,
+    "aug": 8,
+    "august": 8,
+    "sep": 9,
+    "sept": 9,
+    "september": 9,
+    "oct": 10,
+    "october": 10,
+    "nov": 11,
+    "november": 11,
+    "dec": 12,
+    "december": 12,
+}
+_WEEKDAY_LOOKUP = {
+    "monday": 0,
+    "tuesday": 1,
+    "wednesday": 2,
+    "thursday": 3,
+    "friday": 4,
+    "saturday": 5,
+    "sunday": 6,
+}
+
+_STOPWORDS = {"in", "on", "the", "of"}
+_PUNCT_TRAILING_RE = re.compile(r"[.!?]+$")
+_NON_WORD_RE = re.compile(r"[^\w\s]")
+
+
+def _strip_trailing_punctuation(text: str) -> str:
+    if not text:
+        return ""
+    return _PUNCT_TRAILING_RE.sub("", text.strip())
+
+
+def _normalise_phrase_tokens(raw: str) -> List[str]:
+    if not raw:
+        return []
+    text = _strip_trailing_punctuation(raw)
+    # Replace unicode dashes with spaces before stripping separators so �next�Saturday� works.
+    text = text.replace("�", " ").replace("�", " ")
+    text = text.replace("�", "'")
+    text = re.sub(r"[,\-/]", " ", text)
+    text = re.sub(r"[()]", " ", text)
+    text = _NON_WORD_RE.sub(" ", text)
+    tokens = [tok for tok in text.lower().split() if tok]
+    return tokens
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    v = os.getenv(name, "")
+    if not v:
+        return default
+    v = v.strip().lower()
+    if v in ("1", "true", "t", "yes", "y", "on"):
+        return True
+    if v in ("0", "false", "f", "no", "n", "off"):
+        return False
+    return default
+
+
+def _now_iso() -> str:
+    return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+
+def _safe_detail(value: Any, *, limit: int = 400) -> str:
+    try:
+        if isinstance(value, (dict, list, tuple)):
+            text = json.dumps(value, default=str, ensure_ascii=False)
         else:
-            action_group = "unknown"
-            api_path = "unknown"
-            http_method = "POST"
-        mapped.append(
+            text = str(value)
+    except Exception:
+        text = repr(value)
+    text = text.replace("\n", " ").replace("\r", " ")
+    if len(text) > limit:
+        return text[: limit - 3] + "..."
+    return text
+
+
+class InvocationLogger:
+    def __init__(self) -> None:
+        self.entries: List[Dict[str, Any]] = []
+
+    def log(self, message: str, **details: Any) -> None:
+        timestamp = _now_iso()
+        entry: Dict[str, Any] = {"time": timestamp, "message": str(message)}
+        if details:
+            safe_details = {
+                key: _safe_detail(value) for key, value in details.items() if value is not None
+            }
+            if safe_details:
+                entry["details"] = safe_details
+        self.entries.append(entry)
+        pretty = entry["message"]
+        if "details" in entry:
+            try:
+                pretty_details = json.dumps(entry["details"], ensure_ascii=False)
+            except Exception:
+                pretty_details = str(entry["details"])
+            pretty = f"{pretty} | {pretty_details}"
+        print(f"[lambda] {timestamp} {pretty}")
+
+    def has_entries(self) -> bool:
+        return bool(self.entries)
+
+    def export(self) -> List[Dict[str, Any]]:
+        return list(self.entries)
+
+    def as_text(self) -> str:
+        lines = []
+        for entry in self.entries:
+            line = f"{entry['time']} - {entry['message']}"
+            details = entry.get("details")
+            if details:
+                try:
+                    details_txt = json.dumps(details, ensure_ascii=False)
+                except Exception:
+                    details_txt = str(details)
+                line = f"{line} | {details_txt}"
+            lines.append(line)
+        return "\n".join(lines)
+
+
+_CURRENT_LOGGER: contextvars.ContextVar[Optional[InvocationLogger]] = contextvars.ContextVar(
+    "current_invocation_logger", default=None
+)
+
+
+def _get_logger() -> Optional[InvocationLogger]:
+    return _CURRENT_LOGGER.get()
+
+
+def _log(message: str, **details: Any) -> None:
+    logger = _get_logger()
+    if logger:
+        logger.log(message, **details)
+
+
+def _attach_logs(payload: Dict[str, Any], logger: Optional[InvocationLogger]) -> Dict[str, Any]:
+    if not logger or not logger.has_entries():
+        return payload
+    enriched = dict(payload)
+    enriched["debugLog"] = logger.export()
+    enriched["debugLogText"] = logger.as_text()
+    return enriched
+
+
+_FLIGHT_FIELD_ALIASES = {
+    "origin": ("origin", "originLocationCode", "origin_code", "originCode"),
+    "destination": ("destination", "destinationLocationCode", "destination_code", "destinationCode"),
+    "departureDate": (
+        "departureDate",
+        "departure_date",
+        "departure",
+        "outboundDate",
+        "outbound_date",
+    ),
+    "returnDate": ("returnDate", "return_date", "return", "inboundDate", "inbound_date"),
+    "adults": ("adults", "adultCount", "numberOfAdults"),
+    "children": ("children", "childCount", "numberOfChildren"),
+    "infants": ("infants", "infantCount", "numberOfInfants"),
+    "nonstop": ("nonstop", "nonStop", "non_stop", "direct"),
+    "cabin": ("cabin", "travelClass", "class"),
+    "currency": ("currency", "currencyCode", "currency_code"),
+    "max": ("max", "maxResults", "limit", "topK"),
+    "lhGroupOnly": ("lhGroupOnly", "lh_group_only", "lufthansaOnly", "lufthansaGroupOnly"),
+    "sessionId": ("sessionId", "session_id"),
+}
+
+
+def _value_present(value: Any) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return value.strip() != ""
+    if isinstance(value, (list, tuple, dict, set)):
+        return bool(value)
+    return True
+
+
+def _extract_alias_value(data: Dict[str, Any], aliases: Tuple[str, ...]) -> Any:
+    if not data:
+        return None
+    for alias in aliases:
+        if alias in data and _value_present(data[alias]):
+            return data[alias]
+        if isinstance(alias, str):
+            alias_lower = alias.lower()
+            for key, value in data.items():
+                if isinstance(key, str) and key.lower() == alias_lower and _value_present(value):
+                    return value
+    return None
+
+
+def _normalize_flight_request_fields(data: Dict[str, Any]) -> Dict[str, Any]:
+    normalized: Dict[str, Any] = {}
+    if not isinstance(data, dict):
+        return normalized
+    for canonical, aliases in _FLIGHT_FIELD_ALIASES.items():
+        value = _extract_alias_value(data, aliases)
+        if value is not None:
+            normalized[canonical] = value
+    return normalized
+
+
+_ORIGIN_SENTINELS_DEFAULT = {
+    "default_departure_airport",
+    "default_airport",
+    "default_origin",
+    "defaultdepartureairport",
+    "system_default_airport",
+    "infer_origin",
+}
+_ORIGIN_SENTINELS_NEAREST = {
+    "nearest_airport",
+    "nearest_airport_within_100km",
+    "nearest_airport_within_100 kilometres",
+    "nearest_airport_100km",
+    "nearest_airport_by_location",
+    "nearest_lh_airport",
+    "nearest_lufthansa_airport",
+}
+
+
+def _lookup_origin_from_label(label: Optional[str]) -> Optional[str]:
+    if not label:
+        return None
+    text = str(label).strip()
+    if not text:
+        return None
+    try:
+        matches = proxy_lookup_iata(text)
+    except Exception as exc:
+        _log("Context origin lookup failed", label=text, error=str(exc))
+        return None
+    for match in matches:
+        if isinstance(match, dict):
+            code = match.get("code")
+            if code:
+                resolved = str(code).strip().upper()
+                if resolved:
+                    _log("Context origin lookup resolved", label=text, code=resolved)
+                    return resolved
+    _log("Context origin lookup returned no codes", label=text)
+    return None
+
+
+def _apply_contextual_defaults(
+    normalized: Dict[str, Any],
+    event: Dict[str, Any],
+) -> Dict[str, Any]:
+    if not isinstance(normalized, dict) or not normalized:
+        return normalized
+    session_attrs = event.get("sessionAttributes") or {}
+    prompt_attrs = event.get("promptSessionAttributes") or {}
+    default_origin = (
+        str(session_attrs.get("default_origin") or prompt_attrs.get("default_origin") or "")
+        .strip()
+        .upper()
+    )
+    default_label = (
+        str(
+            prompt_attrs.get("default_origin_label")
+            or session_attrs.get("default_origin_label")
+            or ""
+        ).strip()
+    )
+
+    raw_origin = normalized.get("origin")
+    if raw_origin:
+        origin_text = str(raw_origin).strip()
+        origin_lower = origin_text.lower()
+        resolved_origin: Optional[str] = None
+        if origin_lower in _ORIGIN_SENTINELS_DEFAULT or origin_lower == "default":
+            resolved_origin = default_origin or _lookup_origin_from_label(default_label)
+        elif origin_lower in _ORIGIN_SENTINELS_NEAREST:
+            resolved_origin = default_origin or _lookup_origin_from_label(default_label)
+        if resolved_origin:
+            normalized["origin"] = resolved_origin
+            _log(
+                "Context origin substituted",
+                sentinel=origin_text,
+                resolved=resolved_origin,
+                default_label=default_label or None,
+            )
+    elif default_origin:
+        normalized["origin"] = default_origin
+        _log("Context origin filled from defaults", resolved=default_origin)
+    else:
+        def _coerce_float(value: Any) -> Optional[float]:
+            try:
+                if value is None:
+                    return None
+                if isinstance(value, (int, float)):
+                    return float(value)
+                if isinstance(value, str) and value.strip():
+                    return float(value.strip())
+            except (TypeError, ValueError):
+                return None
+            return None
+
+        lat_sources = [
+            session_attrs.get("location_lat"),
+            session_attrs.get("locationLat"),
+            prompt_attrs.get("location_lat"),
+            prompt_attrs.get("locationLat"),
+            event.get("location_lat"),
+            event.get("locationLat"),
+        ]
+        lon_sources = [
+            session_attrs.get("location_lon"),
+            session_attrs.get("locationLon"),
+            prompt_attrs.get("location_lon"),
+            prompt_attrs.get("locationLon"),
+            event.get("location_lon"),
+            event.get("locationLon"),
+        ]
+        lat_value = next((value for value in lat_sources if _coerce_float(value) is not None), None)
+        lon_value = next((value for value in lon_sources if _coerce_float(value) is not None), None)
+        lat_float = _coerce_float(lat_value)
+        lon_float = _coerce_float(lon_value)
+        if lat_float is not None and lon_float is not None:
+            resolved = _nearest_iata_from_coords(lat_float, lon_float)
+            if resolved:
+                normalized["origin"] = resolved
+                _log("Context origin resolved from coordinates", resolved=resolved, lat=lat_float, lon=lon_float)
+
+    if not normalized.get("origin"):
+        fallback_origin = (
+            os.getenv("DEFAULT_ORIGIN") or os.getenv("DEFAULT_EXPLORE_DEPARTURE_ID") or "FRA"
+        ).strip().upper() or "FRA"
+        normalized["origin"] = fallback_origin
+        _log("Context origin fallback applied", fallback=fallback_origin)
+    return normalized
+
+
+def _to_bool(val: Any, default: bool = False) -> bool:
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, (int, float)):
+        return bool(val)
+    if isinstance(val, str):
+        v = val.strip().lower()
+        if v in {"1", "true", "t", "yes", "y", "on"}:
+            return True
+        if v in {"0", "false", "f", "no", "n", "off"}:
+            return False
+    return default
+
+
+def _to_int(val: Any, default: int = 1) -> int:
+    try:
+        return int(val)
+    except Exception:
+        return default
+
+
+def _iso_date(val: str) -> Optional[str]:
+    if val is None:
+        return None
+    text = str(val).strip()
+    if not text:
+        return None
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+        return text
+    return None
+
+
+def _parse_iso_date(val: str) -> Optional[date]:
+    try:
+        return datetime.strptime(val, "%Y-%m-%d").date()
+    except Exception:
+        return None
+
+
+
+
+
+
+
+
+
+
+
+
+
+def _roll_forward_recent_past_date(date_str: Optional[str], *, threshold: int = 6) -> Optional[str]:
+    """If the provided date is within the last `threshold` days, roll it forward by one week.
+
+    This guards against natural-language interpretations like "next Saturday" being resolved
+    to the most recent occurrence instead of the upcoming one.
+    """
+    if not date_str:
+        return date_str
+    parsed = _parse_iso_date(date_str)
+    if parsed is None:
+        return date_str
+    today = datetime.utcnow().date()
+    if parsed < today:
+        delta = (today - parsed).days
+        if 0 < delta <= threshold:
+            adjusted = parsed + timedelta(days=7)
+            new_value = adjusted.strftime("%Y-%m-%d")
+            _log(
+                "Rolled forward recent past date",
+                original=date_str,
+                adjusted=new_value,
+                delta_days=delta,
+            )
+            return new_value
+    return date_str
+
+
+def _advance_far_past_date(date_str: Optional[str]) -> Optional[str]:
+    """For ISO dates far in the past, advance by whole years until it lands in the future.
+
+    Occasionally upstream natural-language parsing produces a prior-year date (for example,
+    "next Saturday" resolving to 2023 when the current year is 2025). Rather than failing
+    the request outright, promote the date in 1-year increments while ensuring it remains
+    within the allowed booking window.
+    """
+
+    if not date_str:
+        return date_str
+    parsed = _parse_iso_date(date_str)
+    if parsed is None:
+        return date_str
+    today = datetime.utcnow().date()
+    if parsed >= today:
+        return date_str
+    max_date = today + timedelta(days=MAX_LOOKAHEAD_DAYS)
+    candidate = parsed
+    years_added = 0
+    while candidate < today:
+        years_added += 1
+        try:
+            candidate = candidate.replace(year=candidate.year + 1)
+        except ValueError:
+            # Handle leap-day edge cases by stepping back to Feb 28.
+            candidate = candidate.replace(month=2, day=28, year=candidate.year + 1)
+        if candidate > max_date:
+            _log(
+                "Advance far past date aborted",
+                original=date_str,
+                promoted=candidate.isoformat(),
+                reason="exceeds_booking_window",
+            )
+            return date_str
+    promoted = candidate.strftime("%Y-%m-%d")
+    _log(
+        "Advanced far past date",
+        original=date_str,
+        promoted=promoted,
+        years_added=years_added,
+    )
+    return promoted
+
+
+def _validate_booking_window(
+    departure: str, return_date: Optional[str]
+) -> Optional[str]:
+
+    _log("Validate booking window", departure=departure, return_date=return_date)
+    today = datetime.utcnow().date()
+    max_date = today + timedelta(days=MAX_LOOKAHEAD_DAYS)
+    dep = _parse_iso_date(departure)
+    if dep is None:
+        _log("Validate booking window failed", reason="invalid_departure_format")
+        return "Provide 'departureDate' in YYYY-MM-DD."
+    if dep < today:
+        _log("Validate booking window failed", reason="departure_in_past", departure=departure)
+        return "Departure date must be today or later. Please use the TimePhraseParser action group to confirm the correct year."
+    if dep > max_date:
+        _log("Validate booking window failed", reason="departure_too_far", departure=departure)
+        return "Departure date must be within the next 12 months."
+    if return_date:
+        ret = _parse_iso_date(return_date)
+        if ret is None:
+            _log("Validate booking window failed", reason="invalid_return_format")
+            return "Provide 'returnDate' in YYYY-MM-DD."
+        if ret < dep:
+            _log("Validate booking window failed", reason="return_before_departure")
+            return "Return date must be on or after the departure date."
+        if ret > max_date:
+            _log("Validate booking window failed", reason="return_too_far")
+            return "Return date must be within the next 12 months."
+    _log("Validate booking window passed", departure=departure, return_date=return_date)
+    return None
+
+
+def _normalized_iata(s: str) -> Optional[str]:
+    if s and re.fullmatch(r"[A-Za-z]{3}", s):
+        return s.upper()
+    return None
+
+
+def _get_param(parameters: List[Dict[str, Any]], name: str, default=None):
+    for p in parameters or []:
+        if p.get("name") == name:
+            return p.get("value", default)
+    return default
+
+
+def _props_to_dict(props: List[Dict[str, Any]]) -> Dict[str, Any]:
+    out = {}
+    for item in props or []:
+        name = item.get("name")
+        if not isinstance(name, str) or not name:
+            continue
+        value = item.get("value")
+        if isinstance(value, dict) and "value" in value and len(value) == 1:
+            value = value["value"]
+        out[name] = value
+    return out
+
+
+def _proxy_post(
+    path: str, payload: Dict[str, Any], timeout: float = 8.0
+) -> Dict[str, Any]:
+
+    url = f"{PROXY_BASE_URL}{path}"
+    data = json.dumps(payload).encode("utf-8")
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    req = _urlreq.Request(url, data=data, headers=headers, method="POST")
+    _log("Proxy POST request", path=path, url=url, timeout=timeout, payload=payload)
+    try:
+        with _urlreq.urlopen(req, timeout=timeout) as resp:
+            raw_bytes = resp.read()
+            text = raw_bytes.decode("utf-8")
+            status = getattr(resp, "status", None)
+            _log(
+                "Proxy POST response received",
+                path=path,
+                status=status,
+                bytes=len(raw_bytes),
+            )
+            try:
+                parsed = json.loads(text)
+            except Exception:
+                parsed = {"raw": text}
+            # Optional S3 debug capture
+            if DEBUG_TOOL_IO and _S3_CLIENT and DEBUG_S3_BUCKET:
+                try:
+                    key = f"{DEBUG_S3_PREFIX}/{datetime.utcnow().strftime('%Y/%m/%d')}/{uuid.uuid4().hex}_post.json"
+                    body = json.dumps({
+                        "path": path,
+                        "url": url,
+                        "request_payload": payload,
+                        "status": status,
+                        "response": parsed,
+                    }, default=str).encode("utf-8")
+                    _S3_CLIENT.put_object(Bucket=DEBUG_S3_BUCKET, Key=key, Body=body, ContentType="application/json")
+                    _log("Tool I/O debug stored", key=key, bytes=len(body))
+                except Exception as exc:  # pragma: no cover
+                    _log("Tool I/O debug store failed", error=str(exc))
+            return parsed if isinstance(parsed, dict) else {"raw": text}
+    except _urlerr.HTTPError as e:
+        body = (e.read() or b"").decode("utf-8", errors="replace")
+        _log(
+            "Proxy POST HTTP error",
+            path=path,
+            status=e.code,
+            body_preview=body[:200],
+        )
+        raise RuntimeError(f"Proxy HTTP {e.code}: {body[:500]}")
+    except _urlerr.URLError as e:
+        _log("Proxy POST network error", path=path, error=getattr(e, "reason", e))
+        raise RuntimeError(f"Proxy network error: {getattr(e, 'reason', e)}")
+
+
+def _proxy_get(
+    path: str, params: Dict[str, str], timeout: float = 5.0, *, base_url: Optional[str] = None
+) -> Dict[str, Any]:
+
+    qs = _urlparse.urlencode(params)
+    target_base = (base_url or PROXY_BASE_URL).rstrip("/")
+    url = f"{target_base}{path}"
+    if qs:
+        url = f"{url}?{qs}"
+    headers = {"Accept": "application/json"}
+    req = _urlreq.Request(url, headers=headers, method="GET")
+    _log("Proxy GET request", path=path, url=url, timeout=timeout, params=params)
+    try:
+        with _urlreq.urlopen(req, timeout=timeout) as resp:
+            raw_bytes = resp.read()
+            text = raw_bytes.decode("utf-8")
+            status = getattr(resp, "status", None)
+            _log(
+                "Proxy GET response received",
+                path=path,
+                status=status,
+                bytes=len(raw_bytes),
+            )
+            try:
+                parsed = json.loads(text)
+            except Exception:
+                parsed = {"raw": text}
+            if DEBUG_TOOL_IO and _S3_CLIENT and DEBUG_S3_BUCKET:
+                try:
+                    key = f"{DEBUG_S3_PREFIX}/{datetime.utcnow().strftime('%Y/%m/%d')}/{uuid.uuid4().hex}_get.json"
+                    body = json.dumps({
+                        "path": path,
+                        "url": url,
+                        "request_params": params,
+                        "status": status,
+                        "response": parsed,
+                    }, default=str).encode("utf-8")
+                    _S3_CLIENT.put_object(Bucket=DEBUG_S3_BUCKET, Key=key, Body=body, ContentType="application/json")
+                    _log("Tool I/O debug stored", key=key, bytes=len(body))
+                except Exception as exc:  # pragma: no cover
+                    _log("Tool I/O debug store failed", error=str(exc))
+            return parsed if isinstance(parsed, dict) else {"raw": text}
+    except _urlerr.HTTPError as e:
+        body = (e.read() or b"").decode("utf-8", errors="replace")
+        _log(
+            "Proxy GET HTTP error",
+            path=path,
+            status=e.code,
+            body_preview=body[:200],
+        )
+        raise RuntimeError(f"Proxy HTTP {e.code}: {body[:500]}")
+    except _urlerr.URLError as e:
+        _log("Proxy GET network error", path=path, error=getattr(e, "reason", e))
+        raise RuntimeError(f"Proxy network error: {getattr(e, 'reason', e)}")
+
+
+def proxy_lookup_iata(term: str, limit: int = 20) -> List[Dict[str, Any]]:
+    text = (term or "").strip()
+    if not text:
+        _log("IATA lookup skipped (empty term)")
+        return []
+    _log("IATA lookup via proxy", term=text, limit=limit)
+    try:
+        response = _proxy_get(
+            "/tools/iata/lookup", {"term": text, "limit": str(limit)}
+        )
+    except (_urlerr.HTTPError, _urlerr.URLError) as exc:  # pragma: no cover - surface proxy error
+        _log("IATA lookup failed", term=text, error=str(exc))
+        raise RuntimeError(f"IATA lookup failed: {exc}") from exc
+    except Exception as exc:  # pragma: no cover - unexpected error
+        _log("IATA lookup unexpected error", term=text, error=str(exc))
+        raise RuntimeError(f"IATA lookup unexpected error: {exc}") from exc
+    matches = response.get("matches")
+    if isinstance(matches, list):
+        _log("IATA lookup success", term=text, matches=len(matches))
+        return matches
+    _log("IATA lookup response missing 'matches'", term=text)
+    return []
+
+
+def _resolve_iata_code(raw: Any) -> Tuple[Optional[str], List[str]]:
+    if raw is None:
+        _log("Resolve IATA: no value provided")
+        return None, []
+    raw_text = str(raw).strip()
+    if not raw_text:
+        _log("Resolve IATA: empty string provided")
+        return None, []
+    _log("Resolve IATA: attempting normalization", raw=raw_text)
+    normalized = _normalized_iata(raw_text)
+    if normalized:
+        _log("Resolve IATA: normalized successfully", code=normalized)
+        return normalized, []
+    try:
+        matches = proxy_lookup_iata(raw_text)
+    except Exception as exc:
+        _log("Resolve IATA: lookup failed", raw=raw_text, error=str(exc))
+        return None, []
+    codes: List[str] = []
+    for match in matches:
+        if isinstance(match, dict):
+            code = match.get("code")
+            if code:
+                code_norm = code.upper()
+                if code_norm not in codes:
+                    codes.append(code_norm)
+    if len(codes) == 1:
+        resolved = _normalized_iata(codes[0])
+        _log("Resolve IATA: unique suggestion", raw=raw_text, code=resolved)
+        return resolved, codes
+    _log("Resolve IATA: ambiguous suggestions", raw=raw_text, suggestions=codes)
+    return None, codes
+
+
+DEFAULT_GOOGLE_GL = (os.getenv("DEFAULT_GOOGLE_GL") or "de").strip().lower() or "de"
+DEFAULT_GOOGLE_HL = (os.getenv("DEFAULT_GOOGLE_HL") or "en-GB").strip() or "en-GB"
+
+
+def _minutes_to_iso(minutes: Optional[int]) -> Optional[str]:
+    if minutes is None:
+        return None
+    try:
+        total = int(minutes)
+    except (TypeError, ValueError):
+        return None
+    hours, mins = divmod(max(total, 0), 60)
+    parts = []
+    if hours:
+        parts.append(f"{hours}H")
+    parts.append(f"{mins}M")
+    return f"PT{''.join(parts)}"
+
+
+def _combine_local_datetime(date_str: Optional[str], time_str: Optional[str]) -> Optional[str]:
+    if not date_str or not time_str:
+        return None
+    date_str = str(date_str).strip()
+    time_str = str(time_str).strip()
+    if not date_str or not time_str:
+        return None
+    if len(time_str) == 5:
+        time_str = f"{time_str}:00"
+    return f"{date_str}T{time_str}"
+
+
+def _google_option_to_offer(option: Dict[str, Any], currency: str) -> Dict[str, Any]:
+    flights = option.get("flights") or []
+    segments: List[Dict[str, Any]] = []
+    carriers: List[str] = []
+
+    def carrier_code_from_flight_number(flight_number: Optional[str]) -> Optional[str]:
+        if not flight_number:
+            return None
+        parts = str(flight_number).split()
+        if parts:
+            prefix = parts[0].strip()
+            if prefix:
+                return prefix.upper()
+        return None
+
+    layovers = option.get("layovers") or []
+    layover_map: Dict[int, Dict[str, Any]] = {}
+    if isinstance(layovers, list):
+        for idx, lay in enumerate(layovers):
+            layover_map[idx] = lay if isinstance(lay, dict) else {}
+
+    outbound_segments: List[Dict[str, Any]] = []
+    return_segments: List[Dict[str, Any]] = []
+
+    for idx, flight in enumerate(flights):
+        if not isinstance(flight, dict):
+            continue
+        dep_air = flight.get("departure_airport") or {}
+        arr_air = flight.get("arrival_airport") or {}
+        departure_time = _combine_local_datetime(dep_air.get("date"), dep_air.get("time"))
+        arrival_time = _combine_local_datetime(arr_air.get("date"), arr_air.get("time"))
+        duration_iso = _minutes_to_iso(flight.get("duration"))
+        flight_number = flight.get("flight_number")
+        carrier_code = carrier_code_from_flight_number(flight_number) or flight.get("airline")
+        if carrier_code:
+            carriers.append(str(carrier_code))
+        services = []
+        extensions = flight.get("extensions")
+        if isinstance(extensions, list):
+            services = [str(item).strip() for item in extensions if str(item).strip()]
+        elif isinstance(extensions, str):
+            services = [extensions.strip()]
+        detected = flight.get("detected_extensions")
+        if isinstance(detected, dict):
+            for key, value in detected.items():
+                if isinstance(value, (str, int, float)) and value not in services:
+                    services.append(str(value))
+        segment = {
+            "carrier": carrier_code,
+            "marketingCarrier": carrier_code,
+            "operatingCarrier": carrier_code,
+            "flightNumber": flight_number,
+            "aircraft": flight.get("airplane"),
+            "cabin": flight.get("travel_class"),
+            "fareClass": None,
+            "from": dep_air.get("id"),
+            "fromTerminal": dep_air.get("terminal"),
+            "departureTime": departure_time,
+            "to": arr_air.get("id"),
+            "toTerminal": arr_air.get("terminal"),
+            "arrivalTime": arrival_time,
+            "duration": duration_iso,
+            "services": services,
+        }
+        outbound_segments.append(segment)
+        layover_info = layover_map.get(idx)
+        if layover_info and idx < len(flights) - 1:
+            duration = layover_info.get("duration")
+            if isinstance(duration, (int, float)):
+                outbound_segments[-1]["layoverDuration"] = _minutes_to_iso(int(duration))
+
+    return_flights = option.get("return_flights") or option.get("returnFlights") or []
+    for idx, flight in enumerate(return_flights):
+        if not isinstance(flight, dict):
+            continue
+        dep_air = flight.get("departure_airport") or {}
+        arr_air = flight.get("arrival_airport") or {}
+        departure_time = _combine_local_datetime(dep_air.get("date"), dep_air.get("time"))
+        arrival_time = _combine_local_datetime(arr_air.get("date"), arr_air.get("time"))
+        duration_iso = _minutes_to_iso(flight.get("duration"))
+        flight_number = flight.get("flight_number")
+        carrier_code = carrier_code_from_flight_number(flight_number) or flight.get("airline")
+        if carrier_code:
+            carriers.append(str(carrier_code))
+        services = []
+        extensions = flight.get("extensions")
+        if isinstance(extensions, list):
+            services = [str(item).strip() for item in extensions if str(item).strip()]
+        elif isinstance(extensions, str):
+            services = [extensions.strip()]
+        detected = flight.get("detected_extensions")
+        if isinstance(detected, dict):
+            for key, value in detected.items():
+                if isinstance(value, (str, int, float)) and value not in services:
+                    services.append(str(value))
+        segment = {
+            "carrier": carrier_code,
+            "marketingCarrier": carrier_code,
+            "operatingCarrier": carrier_code,
+            "flightNumber": flight_number,
+            "aircraft": flight.get("airplane"),
+            "cabin": flight.get("travel_class"),
+            "fareClass": None,
+            "from": dep_air.get("id"),
+            "fromTerminal": dep_air.get("terminal"),
+            "departureTime": departure_time,
+            "to": arr_air.get("id"),
+            "toTerminal": arr_air.get("terminal"),
+            "arrivalTime": arrival_time,
+            "duration": duration_iso,
+            "services": services,
+        }
+        return_segments.append(segment)
+
+    segments = outbound_segments + return_segments
+
+    carriers_unique = sorted({c for c in carriers if c})
+    fare_note = None
+    extensions = option.get("extensions")
+    if isinstance(extensions, list):
+        cleaned = [str(item).strip() for item in extensions if str(item).strip()]
+        if cleaned:
+            fare_note = "; ".join(dict.fromkeys(cleaned))
+    elif isinstance(extensions, str) and extensions.strip():
+        fare_note = extensions.strip()
+
+    carbon = option.get("carbon_emissions") or option.get("carbonEmissions")
+
+    itineraries: List[Dict[str, Any]] = []
+    if outbound_segments:
+        itineraries.append({"segments": outbound_segments})
+    if return_segments:
+        itineraries.append({"segments": return_segments})
+
+    return {
+        "id": option.get("departure_token") or option.get("token"),
+        "oneWay": str(option.get("type") or "").lower() == "one way",
+        "totalPrice": option.get("price"),
+        "price": option.get("price"),
+        "currency": currency,
+        "carriers": carriers_unique,
+        "segments": segments,
+        "itineraries": itineraries,
+        "primaryCarrier": carriers_unique[0] if carriers_unique else None,
+        "departureAirport": segments[0].get("from") if segments else None,
+        "departureTime": segments[0].get("departureTime") if segments else None,
+        "arrivalAirport": segments[-1].get("to") if segments else None,
+        "arrivalTime": segments[-1].get("arrivalTime") if segments else None,
+        "duration": _minutes_to_iso(option.get("total_duration")),
+        "stops": max(len(segments) - 1, 0) if segments else None,
+        "carbon_emissions": carbon,
+        "fare_note": fare_note,
+    }
+
+
+def _google_flights_to_offers(payload: Dict[str, Any], currency: str) -> Dict[str, Any]:
+    if not isinstance(payload, dict):
+        return {}
+    best = payload.get("best_flights") or []
+    other = payload.get("other_flights") or []
+    if not best and not other:
+        return {}
+    offers: List[Dict[str, Any]] = []
+    for block in list(best) + list(other):
+        if isinstance(block, dict):
+            offers.append(_google_option_to_offer(block, currency))
+    return {"offers": offers}
+
+
+def google_search_flight_offers(
+    origin: str,
+    destination: str,
+    departure_date: str,
+    return_date: Optional[str],
+    adults: int,
+    cabin: str,
+    nonstop: bool,
+    currency: Optional[str],
+    lh_group_only: bool,
+    max_results: int = 10,
+    timeout: Optional[float] = None,
+) -> Dict[str, Any]:
+
+    params: Dict[str, Any] = {
+        "engine": "google_flights",
+        "flight_type": "round_trip" if return_date else "one_way",
+        "departure_id": origin,
+        "arrival_id": destination,
+        "outbound_date": departure_date,
+        "adults": str(max(1, adults)),
+        "currency": "EUR",
+        "curr": "EUR",
+        "included_airlines": ",".join(LH_GROUP_CODES) if lh_group_only else None,
+        "hl": DEFAULT_GOOGLE_HL,
+        "gl": DEFAULT_GOOGLE_GL,
+        "stops": "nonstop" if nonstop else "any",
+    }
+    if not lh_group_only:
+        params.pop("included_airlines", None)
+    if return_date:
+        params["return_date"] = return_date
+    travel_class = cabin.lower()
+    if travel_class in {"economy", "premium_economy", "business", "first"}:
+        params["travel_class"] = travel_class
+    params = {k: v for k, v in params.items() if v not in (None, "")}
+    params["hl"] = DEFAULT_GOOGLE_HL
+    params["gl"] = DEFAULT_GOOGLE_GL.lower()
+    _log(
+        "Google Flights search request prepared",
+        origin=origin,
+        destination=destination,
+        departure=departure_date,
+        returnDate=return_date,
+        adults=adults,
+        nonstop=nonstop,
+        cabin=cabin,
+        currency=params.get("currency"),
+        lhGroupOnly=lh_group_only,
+        maxResults=max_results,
+    )
+    effective_timeout = timeout if timeout is not None else GOOGLE_SEARCH_TIMEOUT
+    request_params = dict(params)
+    request_params["hl"] = "en"
+    request_params["gl"] = (request_params.get("gl") or DEFAULT_GOOGLE_GL).lower()
+    try:
+        payload = _proxy_get("/google/flights/search", request_params, timeout=effective_timeout, base_url=GOOGLE_BASE_URL)
+    except RuntimeError as exc:
+        msg = str(exc)
+        lowered = msg.lower()
+        if "unsupported value" in lowered and "`en-gb`" in lowered:
+            fallback_params = dict(request_params)
+            fallback_params["hl"] = "en"
+            try:
+                _log("Google Flights hl fallback", original=params.get("hl"), fallback=DEFAULT_GOOGLE_HL)
+            except Exception:
+                pass
+            payload = _proxy_get("/google/flights/search", fallback_params, timeout=effective_timeout, base_url=GOOGLE_BASE_URL)
+        else:
+            raise
+    if not isinstance(payload, dict):
+        payload = {}
+    offers_payload = _google_flights_to_offers(payload, params.get("currency", "EUR"))
+    offer_list = offers_payload.get("offers") if isinstance(offers_payload, dict) else None
+    if isinstance(offer_list, list):
+        for offer in offer_list:
+            if isinstance(offer, dict):
+                offer["currency"] = "EUR"
+    offer_list = offers_payload.get("offers") if isinstance(offers_payload, dict) else None
+    offer_count = len(offer_list) if isinstance(offer_list, list) else 0
+    _log("Google Flights search completed", offers=offer_count)
+    return offers_payload
+
+
+def _nearest_date_alternatives(
+    origin: str,
+    destination: str,
+    departure_date: str,
+    return_date: Optional[str],
+    adults: int,
+    cabin: str,
+    currency: Optional[str],
+    lh_group_only: bool,
+    max_results: int,
+    *,
+    nonstop: bool,
+    limit: int = 5,
+    timeout: Optional[float] = None,
+) -> List[Dict[str, Any]]:
+    """When no offers are found for the requested dates, probe nearby dates and
+    return up to `limit` alternative offers for the same route.
+
+    Offsets searched (in days): -1,+1,-2,+2,-3,+3,-7,+7,-14,+14
+    
+    We allow connections in this fallback to maximize chance of results.
+    """
+    try:
+        dep_dt = datetime.fromisoformat(str(departure_date))
+    except Exception:
+        return []
+    ret_dt: Optional[datetime] = None
+    if return_date:
+        try:
+            ret_dt = datetime.fromisoformat(str(return_date))
+        except Exception:
+            ret_dt = None
+
+    seen_dates: set[str] = set()
+    results: List[Dict[str, Any]] = []
+    offsets = [-1, 1, -2, 2, -3, 3, -7, 7, -14, 14, -21, 21, -28, 28]
+    for off in offsets:
+        if len(results) >= max(1, limit):
+            break
+        d2 = (dep_dt + timedelta(days=off)).date().isoformat()
+        if d2 in seen_dates:
+            continue
+        seen_dates.add(d2)
+        r2 = (ret_dt + timedelta(days=off)).date().isoformat() if ret_dt else None
+        try:
+            raw = google_search_flight_offers(
+                origin,
+                destination,
+                d2,
+                r2,
+                adults,
+                cabin,
+                False,  # allow connections in fallback
+                currency,
+                lh_group_only,
+                max_results,
+                timeout or GOOGLE_SEARCH_TIMEOUT,
+            )
+            offers = _summarize_offers(raw, currency)
+            if offers:
+                best = offers[0]
+                # brief form to keep payload small
+                brief = {
+                    "id": best.get("id"),
+                    "departureAirport": best.get("departureAirport"),
+                    "arrivalAirport": best.get("arrivalAirport"),
+                    "departureTime": best.get("departureTime"),
+                    "arrivalTime": best.get("arrivalTime"),
+                    "duration": best.get("duration"),
+                    "stops": best.get("stops"),
+                    "carriers": best.get("carriers"),
+                    "totalPrice": best.get("totalPrice"),
+                    "currency": best.get("currency") or currency,
+                }
+                results.append({
+                    "date": d2,
+                    **({"returnDate": r2} if r2 else {}),
+                    "offer": brief,
+                })
+        except Exception as exc:
+            _log("Nearest-date alternative probe failed", offset=off, error=str(exc))
+            continue
+    _log("Nearest-date alternatives prepared", count=len(results))
+    return results
+
+def iata_lookup_via_proxy(term: Optional[str]) -> Dict[str, Any]:
+    if not term:
+        _log("Proxy IATA lookup helper called without term")
+        return {"matches": []}
+    _log("Proxy IATA lookup helper executing", term=term)
+    result = _proxy_get("/tools/iata/lookup", {"term": term}, timeout=5.0)
+    matches = result.get("matches")
+    count = len(matches) if isinstance(matches, list) else None
+    _log("Proxy IATA lookup helper completed", term=term, matches=count)
+    return result
+
+
+def _summarize_offers(
+    amadeus_json: Dict[str, Any], currency_hint: Optional[str]
+) -> List[Dict[str, Any]]:
+
+    _log(
+        "Summarizing offers",
+        keys=list(amadeus_json.keys()),
+        currency_hint=currency_hint,
+    )
+    offers = amadeus_json.get("offers")
+    if isinstance(offers, list) and offers:
+        normalized = []
+
+        def _normalize_segment(segment: Dict[str, Any]) -> Dict[str, Any]:
+            seg = dict(segment or {})
+            if "from" in seg and "to" in seg and ("departureTime" in seg or "depTime" in seg):
+                return seg
+
+            def _extract_airport(data: Any, fallback_key: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+                if isinstance(data, dict):
+                    return data.get("iataCode"), data.get("terminal"), data.get("at")
+                airport = seg.get(fallback_key) or seg.get(fallback_key.capitalize())
+                terminal = seg.get(f"{fallback_key}Terminal") or seg.get(f"{fallback_key}terminal")
+                time = seg.get(f"{fallback_key}Time") or seg.get(f"{fallback_key.capitalize()}Time")
+                return airport, terminal, time
+
+            dep_airport, dep_terminal, dep_time = _extract_airport(seg.get("departure"), "departure")
+            arr_airport, arr_terminal, arr_time = _extract_airport(seg.get("arrival"), "arrival")
+
+            carrier = (
+                seg.get("carrier")
+                or seg.get("carrierCode")
+                or seg.get("marketingCarrier")
+                or seg.get("operatingCarrier")
+            )
+            aircraft = seg.get("aircraft")
+            aircraft_code = aircraft.get("code") if isinstance(aircraft, dict) else aircraft
+            services = seg.get("services")
+            if isinstance(services, str):
+                services = [services]
+            elif not isinstance(services, list):
+                services = []
+
+            segment_duration = seg.get("duration")
+            if not segment_duration and dep_time and arr_time:
+                try:
+                    dep_dt = datetime.fromisoformat(dep_time.replace("Z", "+00:00"))
+                    arr_dt = datetime.fromisoformat(arr_time.replace("Z", "+00:00"))
+                    delta = arr_dt - dep_dt
+                    if delta.total_seconds() < 0:
+                        delta += timedelta(days=1)
+                    total_minutes = int(delta.total_seconds() // 60)
+                    hours, minutes = divmod(total_minutes, 60)
+                    segment_duration = f"PT{hours}H{minutes}M"
+                except Exception:
+                    segment_duration = seg.get("duration")
+
+            return {
+                "carrier": carrier,
+                "marketingCarrier": seg.get("marketingCarrier"),
+                "operatingCarrier": seg.get("operatingCarrier"),
+                "flightNumber": seg.get("number") or seg.get("flightNumber"),
+                "aircraft": aircraft_code,
+                "cabin": seg.get("cabin"),
+                "fareClass": seg.get("fareClass") or seg.get("class"),
+                "from": dep_airport,
+                "fromTerminal": dep_terminal,
+                "departureTime": dep_time,
+                "to": arr_airport,
+                "toTerminal": arr_terminal,
+                "arrivalTime": arr_time,
+                "duration": segment_duration,
+                "mileage": seg.get("mileage"),
+                "stops": seg.get("numberOfStops"),
+                "layoverDuration": seg.get("layoverDuration"),
+                "services": services,
+            }
+
+        for item in offers:
+            total_price = item.get("price") or item.get("totalPrice")
+            currency = item.get("currency") or currency_hint
+            carriers_set: set[str] = set()
+            itineraries_source = item.get("itineraries") or []
+            normalized_itineraries: List[Dict[str, Any]] = []
+            aggregated_segments: List[Dict[str, Any]] = []
+
+            for itin in itineraries_source:
+                normalized_segments: List[Dict[str, Any]] = []
+                for seg in itin.get("segments") or []:
+                    seg_normalized = _normalize_segment(seg)
+                    if seg_normalized["carrier"]:
+                        carriers_set.add(seg_normalized["carrier"])
+                    normalized_segments.append(seg_normalized)
+                    aggregated_segments.append(seg_normalized)
+                normalized_itineraries.append(
+                    {
+                        "duration": itin.get("duration"),
+                        "segments": normalized_segments,
+                    }
+                )
+
+            if not aggregated_segments:
+                for seg in item.get("segments") or []:
+                    seg_normalized = _normalize_segment(seg)
+                    if seg_normalized["carrier"]:
+                        carriers_set.add(seg_normalized["carrier"])
+                    aggregated_segments.append(seg_normalized)
+
+            carriers = sorted(carriers_set)
+            first_segment = aggregated_segments[0] if aggregated_segments else {}
+            last_segment = aggregated_segments[-1] if aggregated_segments else {}
+            total_duration = (
+                item.get("duration")
+                or (normalized_itineraries[0].get("duration") if normalized_itineraries else None)
+            )
+            stop_count = max(len(aggregated_segments) - 1, 0) if aggregated_segments else None
+
+            normalized.append(
+                {
+                    "id": item.get("id"),
+                    "oneWay": item.get("oneWay"),
+                    "totalPrice": total_price,
+                    "currency": currency,
+                    "carriers": carriers,
+                    "segments": aggregated_segments,
+                    "itineraries": normalized_itineraries or None,
+                    "primaryCarrier": carriers[0] if carriers else None,
+                    "departureAirport": first_segment.get("from"),
+                    "departureTime": first_segment.get("departureTime"),
+                    "arrivalAirport": last_segment.get("to"),
+                    "arrivalTime": last_segment.get("arrivalTime"),
+                    "duration": total_duration,
+                    "stops": stop_count,
+                }
+            )
+        filtered = _filter_lh_group_offers(normalized)
+        removed = len(normalized) - len(filtered)
+        if removed:
+            _log("Filtered non-LH offers", removed=removed)
+        filtered.sort(key=lambda o: float(o.get("totalPrice") or 0))
+        _log("Summarized offers (modern payload)", count=len(filtered))
+        return filtered
+    # Fallback for legacy Amadeus payloads
+    data = amadeus_json.get("data") or []
+    dictionaries = amadeus_json.get("dictionaries") or {}
+    carriers_map = dictionaries.get("carriers") or {}
+    legacy = []
+    for item in data:
+        price_block = item.get("price") or {}
+        total_price = price_block.get("grandTotal") or price_block.get("total")
+        currency = price_block.get("currency") or currency_hint
+        itineraries = item.get("itineraries") or []
+        segments_summary: List[Dict[str, Any]] = []
+        marketing_carriers = set()
+        for itin in itineraries:
+            for s in itin.get("segments") or []:
+                carrier_code = s.get("carrierCode") or s.get(
+                    "marketingCarrier")
+                if carrier_code:
+                    marketing_carriers.add(carrier_code)
+                segments_summary.append(
+                    {
+                        "carrier": carrier_code,
+                        "carrierName": carriers_map.get(carrier_code, carrier_code),
+                        "flightNumber": s.get("number"),
+                        "from": s.get("departure", {}).get("iataCode"),
+                        "to": s.get("arrival", {}).get("iataCode"),
+                        "depTime": s.get("departure", {}).get("at"),
+                        "arrTime": s.get("arrival", {}).get("at"),
+                        "duration": s.get("duration"),
+                        "numberOfStops": s.get("numberOfStops"),
+                    }
+                )
+        legacy.append(
             {
-                "actionGroup": action_group,
-                "apiPath": api_path,
-                "httpMethod": http_method,
-                "result": result,
+                "id": item.get("id"),
+                "oneWay": len(itineraries) == 1,
+                "totalPrice": total_price,
+                "currency": currency,
+                "carriers": sorted(list(marketing_carriers)),
+                "segments": segments_summary,
             }
         )
-    return [{"invocationId": invocation_id, "returnControlInvocationResults": mapped}]
+    filtered = _filter_lh_group_offers(legacy)
+    removed = len(legacy) - len(filtered)
+    if removed:
+        _log("Filtered non-LH offers (legacy payload)", removed=removed)
+    filtered.sort(key=lambda o: float(o.get("totalPrice") or 0))
+    _log("Summarized offers (legacy payload)", count=len(filtered))
+    return filtered
 
 
-def _extract_payload(event: dict) -> tuple[str, str, dict | None]:
-    body = {}
-    if isinstance(event, dict):
-        raw_body = event.get("body")
-        if isinstance(raw_body, str):
+def _filter_lh_group_offers(offers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    allowed = set(LH_GROUP_CODES)
+    filtered: List[Dict[str, Any]] = []
+    for offer in offers:
+        carriers = set(offer.get("carriers") or [])
+        for seg in offer.get("segments") or []:
+            for key in ("carrier", "marketingCarrier", "operatingCarrier"):
+                value = seg.get(key)
+                if value:
+                    carriers.add(value)
+        if carriers and not carriers.issubset(allowed):
+            continue
+        filtered.append(offer)
+    return filtered
+
+
+def search_best_itineraries(
+    origin: str,
+    candidates: List[Dict[str, Any]],
+    month_range_text: Optional[str],
+    *,
+    currency: Optional[str] = None,
+    lh_group_only: bool = True,
+    max_per_destination: int = 2,
+    timeout: Optional[float] = None,
+) -> List[Dict[str, Any]]:
+    """Search several dates per destination and return Good-Better-Best.
+
+    - Samples up to 3 dates around mid-month (15th, nearest Saturday, +3 days).
+    - Ranks offers by price, duration, and stops to produce a varied top set.
+    - Adds lightweight microcopy labels.
+    """
+    (start_y, start_m), _end = _parse_month_range(month_range_text)
+
+    def _iso(y: int, m: int, d: int) -> str:
+        return f"{y:04d}-{m:02d}-{d:02d}"
+
+    def _month_len(y: int, m: int) -> int:
+        return calendar.monthrange(y, m)[1]
+
+    def _nearest_saturday(y: int, m: int, d: int) -> int:
+        from datetime import date as _d
+        target = _d(y, m, min(d, _month_len(y, m)))
+        # weekday: Monday=0..Sunday=6; Saturday=5
+        wd = target.weekday()
+        delta = (5 - wd) % 7
+        candidate = target.day + delta
+        if candidate > _month_len(y, m):
+            candidate = max(1, target.day - ((wd - 5) % 7))
+        return candidate
+
+    mid = 15
+    dates: List[str] = []
+    ml = _month_len(start_y, start_m)
+    # Weekend-biased ±14d elasticity around mid-month
+    cands_days = [
+        max(1, mid - 14),
+        max(1, mid - 7),
+        _nearest_saturday(start_y, start_m, max(1, mid - 7)),
+        max(1, mid - 3),
+        min(ml, mid),
+        _nearest_saturday(start_y, start_m, mid),
+        min(ml, mid + 3),
+        min(ml, mid + 7),
+        min(ml, _nearest_saturday(start_y, start_m, min(ml, mid + 7))),
+        min(ml, mid + 14),
+    ]
+    for day in cands_days:
+        d = _iso(start_y, start_m, min(ml, max(1, int(day))))
+        if d not in dates:
+            dates.append(d)
+
+    results: List[Dict[str, Any]] = []
+    from datetime import datetime
+    started = datetime.utcnow()
+    time_budget_s = float(os.getenv("AGGR_TIME_BUDGET_S", "75") or 75)
+    api_calls = 0
+    max_calls = int(os.getenv("AGGR_MAX_CALLS", "30") or 30)
+
+    def time_left() -> bool:
+        return (datetime.utcnow() - started).total_seconds() < time_budget_s
+
+    # Two-phase sampling: first pass on the main weekend date for each destination
+    date_indices = list(range(len(dates)))
+    for phase in (0, 1):
+        idxs = [0] if phase == 0 else date_indices[1:]
+        for di in idxs:
+            if not time_left():
+                break
+            for dest in candidates:
+                if not time_left() or api_calls >= max_calls:
+                    break
+                code = dest.get("code")
+                if not code:
+                    continue
+                dep_date = dates[di]
+                try:
+                    raw = google_search_flight_offers(
+                        origin,
+                        code,
+                        dep_date,
+                        None,
+                        adults=1,
+                        cabin="ECONOMY",
+                        nonstop=False,
+                        currency=currency,
+                        lh_group_only=lh_group_only,
+                        max_results=10,
+                        timeout=timeout or GOOGLE_SEARCH_TIMEOUT,
+                    )
+                    api_calls += 1
+                    offers = _summarize_offers(raw, currency)
+                    if offers:
+                        top = offers[: max(1, max_per_destination)]
+                        results.append({"destination": code, "date": dep_date, "offers": top})
+                except Exception as exc:
+                    _log(
+                        "Aggregator search failed for destination",
+                        destination=code,
+                        date=dep_date,
+                        error=str(exc),
+                    )
+                    continue
+            # Early exit if we already have enough pools
+            if sum(len(b.get("offers") or []) for b in results) >= 5:
+                break
+
+    # Build pool and destination availability counts
+    pool: List[Dict[str, Any]] = []
+    dest_hits: Dict[str, int] = {}
+    for block in results:
+        dest_code = block.get("destination")
+        date_used = block.get("date")
+        if dest_code:
+            dest_hits[dest_code] = dest_hits.get(dest_code, 0) + len(block.get("offers") or [])
+        for offer in block.get("offers") or []:
+            o = dict(offer)
+            o["destination"] = dest_code
+            o["date"] = date_used
+            pool.append(o)
+
+    def _price(o: Dict[str, Any]) -> float:
+        try:
+            return float(o.get("totalPrice") or 0)
+        except Exception:
+            return 0.0
+
+    def _duration_minutes(dur: Optional[str]) -> Optional[int]:
+        if not isinstance(dur, str) or not dur.startswith("PT"):
+            return None
+        # Parse very simple PT#H#M or PT#H
+        h = 0
+        m = 0
+        text = dur[2:]
+        try:
+            if "H" in text and "M" in text:
+                h_part, m_part = text.split("H", 1)
+                h = int(h_part or 0)
+                m = int(m_part.replace("M", "") or 0)
+            elif "H" in text:
+                h = int(text.replace("H", "") or 0)
+            elif "M" in text:
+                m = int(text.replace("M", "") or 0)
+            else:
+                return None
+            return h * 60 + m
+        except Exception:
+            return None
+
+    def _stops(o: Dict[str, Any]) -> int:
+        v = o.get("stops")
+        try:
+            return int(v)
+        except Exception:
+            return 0
+
+    # Rankers (availability-first bias and gentle nonstop boost)
+    by_price = sorted(
+        pool,
+        key=lambda o: (
+            _price(o),
+            _stops(o),
+            -(dest_hits.get(str(o.get("destination") or ""), 0)),
+        ),
+    )
+    with_dur = [o for o in pool if _duration_minutes(o.get("duration")) is not None]
+    by_dur = sorted(with_dur, key=lambda o: _duration_minutes(o.get("duration")) or 10**9)
+    by_flex = sorted(pool, key=lambda o: (_stops(o), _price(o), -(dest_hits.get(str(o.get("destination") or ""), 0))))
+
+    # Composite "best" rank: price + stops*50 + duration*0.1 - dest_hits*10
+    def _rank(o: Dict[str, Any]) -> float:
+        pr = _price(o)
+        st = _stops(o)
+        dm = _duration_minutes(o.get("duration")) or 0
+        avail = dest_hits.get(str(o.get("destination") or ""), 0)
+        return pr + st * 50 + dm * 0.1 - avail * 10
+
+    by_best = sorted(pool, key=_rank)
+
+    # Select Good-Better-Best ensuring uniqueness
+    picked: List[Dict[str, Any]] = []
+    seen = set()
+
+    def _key(o: Dict[str, Any]) -> str:
+        return f"{o.get('destination')}|{o.get('id') or o.get('departureTime')}|{o.get('date')}"
+
+    def _pick_from(lst: List[Dict[str, Any]]):
+        for o in lst:
+            k = _key(o)
+            if k not in seen:
+                seen.add(k)
+                picked.append(o)
+                return
+
+    _pick_from(by_best)
+    _pick_from(by_dur)
+    _pick_from(by_flex)
+    # Fill up to 5
+    for o in by_best:
+        if len(picked) >= 5:
+            break
+        if _key(o) not in seen:
+            seen.add(_key(o))
+            picked.append(o)
+
+    # Add labels and microcopy
+    label_map = ["Best Value", "Shortest Travel Time", "Flex"]
+    options: List[Dict[str, Any]] = []
+    # Quick lookup for tags by destination
+    tag_lookup = {str(d.get("code")): set(str(t).lower() for t in (d.get("tags") or [])) for d in candidates}
+
+    def _pitch(tags: set[str]) -> str:
+        if "beach" in tags or "warm" in tags:
+            return "Great value for a sunny beach break."
+        if "winter_sports" in tags:
+            return "Maximize slope time with sensible travel."
+        if "city_break" in tags:
+            return "Perfect for a quick city escape."
+        return "Solid choice based on your preferences."
+
+    for idx, o in enumerate(picked):
+        code = str(o.get("destination") or "")
+        tags = tag_lookup.get(code, set())
+        label = label_map[idx] if idx < len(label_map) else "Also Noteworthy"
+        options.append({
+            "label": label,
+            "pitch": _pitch(tags),
+            "destination": code,
+            "date": o.get("date"),
+            "offer": o,
+            "stops": _stops(o),
+        })
+
+    return options
+
+
+def _build_recommendation_message(
+    direct_opts: List[Dict[str, Any]],
+    conn_opts: List[Dict[str, Any]],
+    take_direct: int,
+    take_conn: int,
+    currency: str,
+) -> List[str]:
+    """Build rich, timeline-style recommendation lines for flight options."""
+
+    def _fmt_price(val: Any, curr: Optional[str]) -> str:
+        try:
+            return f"{float(val):.0f} {curr or ''}".strip()
+        except Exception:
+            return str(val) if val is not None else ""
+
+    def _parse_dt(value: Optional[str]) -> Optional[datetime]:
+        if not value:
+            return None
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except Exception:
             try:
-                body = json.loads(raw_body or "{}")
-            except json.JSONDecodeError:
-                body = {}
-        elif isinstance(raw_body, dict):
-            body = raw_body
+                return datetime.fromisoformat(value)
+            except Exception:
+                return None
+
+    def _hhmm(dt: Optional[datetime]) -> str:
+        if not dt:
+            return "?"
+        return dt.strftime("%H:%M")
+
+    def _format_iso_duration(value: Optional[str]) -> str:
+        if not isinstance(value, str) or not value.startswith("PT"):
+            return "duration n/a"
+        hours = minutes = 0
+        text = value[2:]
+        try:
+            if "H" in text:
+                parts = text.split("H", 1)
+                hours = int(parts[0] or 0)
+                text = parts[1]
+            if "M" in text:
+                minutes = int(text.replace("M", "") or 0)
+        except Exception:
+            return "duration n/a"
+        parts = []
+        if hours:
+            parts.append(f"{hours}h")
+        if minutes or not parts:
+            parts.append(f"{minutes}m")
+        return "".join(parts)
+
+    def _format_minutes(total_minutes: Optional[int]) -> str:
+        if total_minutes is None:
+            return "duration n/a"
+        if total_minutes < 0:
+            total_minutes = abs(total_minutes)
+        hours, minutes = divmod(int(total_minutes), 60)
+        parts = []
+        if hours:
+            parts.append(f"{hours}h")
+        if minutes or not parts:
+            parts.append(f"{minutes}m")
+        return "".join(parts)
+
+    def _format_services(services: Any) -> str:
+        if not services:
+            return "Not specified"
+        if isinstance(services, (list, tuple, set)):
+            collected = []
+            for item in services:
+                if isinstance(item, str) and item.strip():
+                    collected.append(item.strip())
+                elif isinstance(item, dict):
+                    name = item.get("name") or item.get("description")
+                    if name:
+                        collected.append(str(name).strip())
+            if collected:
+                return ", ".join(dict.fromkeys(collected))
+        if isinstance(services, str) and services.strip():
+            return services.strip()
+        return "Not specified"
+
+    def _infer_legroom(services: Any) -> str:
+        if isinstance(services, (list, tuple, set)):
+            for item in services:
+                if isinstance(item, str) and "legroom" in item.lower():
+                    return item.strip()
+                if isinstance(item, dict):
+                    desc = item.get("description") or item.get("detail")
+                    if isinstance(desc, str) and "legroom" in desc.lower():
+                        return desc.strip()
+        if isinstance(services, str) and "legroom" in services.lower():
+            return services.strip()
+        return "Not specified"
+
+    def _carbon_text(offer: Dict[str, Any]) -> str:
+        carbon = (
+            offer.get("carbonEmissions")
+            or offer.get("carbon_emissions")
+            or offer.get("carbon")
+        )
+        if isinstance(carbon, dict):
+            this_val = (
+                carbon.get("this_flight")
+                or carbon.get("thisFlight")
+                or carbon.get("this")
+            )
+            diff = carbon.get("difference_percent") or carbon.get("differencePercent")
+            try:
+                if this_val is not None:
+                    value = float(this_val)
+                    if value > 1000:
+                        value /= 1000.0
+                    text = f"{value:.0f} kg"
+                else:
+                    text = "Not available"
+            except Exception:
+                text = str(this_val)
+            if diff is not None:
+                try:
+                    diff_val = float(diff)
+                    if diff_val > 0:
+                        text += f" ({abs(diff_val):.0f}% above typical)"
+                    elif diff_val < 0:
+                        text += f" ({abs(diff_val):.0f}% below typical)"
+                    else:
+                        text += " (on par with typical)"
+                except Exception:
+                    pass
+            return text
+        return "Not available"
+
+    def _fare_note_text(offer: Dict[str, Any]) -> str:
+        raw = (
+            offer.get("fareNote")
+            or offer.get("fare_note")
+            or offer.get("fareConditions")
+            or offer.get("fare_conditions")
+            or offer.get("notes")
+        )
+        if isinstance(raw, (list, tuple, set)):
+            collected = [str(item).strip() for item in raw if str(item).strip()]
+            if collected:
+                return "; ".join(collected)
+        if isinstance(raw, str) and raw.strip():
+            return raw.strip()
+        return "Not available"
+
+    def _timeline_sections(offer: Dict[str, Any]) -> List[Dict[str, Any]]:
+        itineraries = offer.get("itineraries")
+        if isinstance(itineraries, list) and itineraries:
+            return itineraries
+        segments = offer.get("segments")
+        if isinstance(segments, list) and segments:
+            return [{"segments": segments}]
+        return []
+
+    def _flight_code(seg: Dict[str, Any]) -> str:
+        carrier = (
+            seg.get("carrier")
+            or seg.get("marketingCarrier")
+            or seg.get("operatingCarrier")
+        )
+        number = seg.get("flightNumber") or ""
+        combined = f"{carrier or ''} {number}".strip()
+        return combined or "Flight"
+
+    def _option_header(
+        index: int,
+        opt: Dict[str, Any],
+        offer: Dict[str, Any],
+        price_text: str,
+        stops_value: Optional[int],
+    ) -> str:
+        segments = offer.get("segments") or []
+        first_seg = segments[0] if segments else {}
+        primary = _flight_code(first_seg)
+        trip_type = "One way" if offer.get("oneWay") else "Round trip"
+        label = opt.get("label")
+        stops_txt = None
+        if stops_value is None:
+            stops_value = offer.get("stops")
+        try:
+            if stops_value is not None:
+                stops_value = int(stops_value)
+                if stops_value <= 0:
+                    stops_txt = "nonstop"
+                elif stops_value == 1:
+                    stops_txt = "1 stop"
+                else:
+                    stops_txt = f"{stops_value} stops"
+        except Exception:
+            stops_txt = None
+        parts = [f"{index}. **{primary}**", f"· {trip_type}"]
+        if stops_txt:
+            parts.append(f"· {stops_txt}")
+        if label:
+            parts.append(f"· {label}")
+        if price_text:
+            parts.append(f"· **{price_text}**")
+        return " ".join(parts)
+
+    combined_options: List[Dict[str, Any]] = []
+    if take_direct and direct_opts:
+        combined_options.extend(direct_opts[:take_direct])
+    if take_conn and conn_opts:
+        combined_options.extend(conn_opts[:take_conn])
+
+    if not combined_options:
+        return ["No matching flights were found. Try adjusting the dates or departure airport."]
+
+    lines: List[str] = []
+    section_prefix = "   - "
+    segment_prefix = "     "
+    attribute_prefix = "       "
+
+    for idx, opt in enumerate(combined_options, start=1):
+        offer = opt.get("offer") or {}
+        price_text = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
+        header = _option_header(idx, opt, offer, price_text, opt.get("stops"))
+        lines.append(header)
+
+        sections = _timeline_sections(offer)
+        if not sections:
+            lines.append(f"{section_prefix}No segment details available.")
         else:
-            body = {}
-    else:
-        body = {}
+            for section_index, itinerary in enumerate(sections):
+                title = (
+                    "Outbound timeline"
+                    if section_index == 0
+                    else "Return timeline"
+                    if section_index == 1
+                    else f"Segment {section_index + 1} timeline"
+                )
+                lines.append(f"{section_prefix}{title}:")
+                segments = itinerary.get("segments") or []
+                if not segments:
+                    lines.append(f"{segment_prefix}No segment data provided.")
+                    continue
+                prev_arrival_dt = None
+                prev_arrival_airport = None
+                for seg_idx, seg in enumerate(segments):
+                    dep_dt = _parse_dt(seg.get("departureTime") or seg.get("depTime"))
+                    arr_dt = _parse_dt(seg.get("arrivalTime") or seg.get("arrTime"))
+                    dep_airport = seg.get("from") or "?"
+                    arr_airport = seg.get("to") or "?"
+                    dep_time_txt = _hhmm(dep_dt)
+                    arr_time_txt = _hhmm(arr_dt)
+                    if dep_dt and arr_dt and dep_dt.date() != arr_dt.date():
+                        arr_time_txt = f"{arr_time_txt} NEXT DAY"
+                    seg_duration = _format_iso_duration(seg.get("duration"))
+                    if prev_arrival_dt and dep_dt:
+                        layover_minutes = int((dep_dt - prev_arrival_dt).total_seconds() // 60)
+                        while layover_minutes < 0:
+                            layover_minutes += 1440
+                        layover_txt = _format_minutes(layover_minutes)
+                        location = prev_arrival_airport or "Layover airport"
+                        lines.append(f"{segment_prefix}Layover: {location} · {layover_txt}")
+                    timeline_line = (
+                        f"{segment_prefix}{dep_airport} {dep_time_txt} → {arr_airport} {arr_time_txt} ({seg_duration})"
+                    )
+                    lines.append(timeline_line)
 
-    query = event.get("queryStringParameters") or {}
-    headers = event.get("headers") or {}
+                    carrier_line = _flight_code(seg)
+                    aircraft = seg.get("aircraft") or "Not specified"
+                    cabin = seg.get("cabin") or "Not specified"
+                    services = seg.get("services") or []
+                    amenities = _format_services(services)
+                    legroom = _infer_legroom(services)
 
-    session_id = (
-        body.get("sessionId")
-        or query.get("sessionId")
-        or query.get("sid")
-        or headers.get("x-session-id")
-        or "lambda-session"
+                    lines.append(f"{attribute_prefix}Carrier: {carrier_line}")
+                    lines.append(f"{attribute_prefix}Aircraft: {aircraft}")
+                    lines.append(f"{attribute_prefix}Cabin: {cabin}")
+                    lines.append(f"{attribute_prefix}Amenities: {amenities}")
+                    lines.append(f"{attribute_prefix}Legroom: {legroom}")
+
+                    prev_arrival_dt = arr_dt
+                    prev_arrival_airport = arr_airport
+
+        carbon_line = _carbon_text(offer)
+        fare_note_line = _fare_note_text(offer)
+        lines.append(f"{section_prefix}Carbon: {carbon_line}")
+        lines.append(f"{section_prefix}Fare note: {fare_note_line}")
+        if idx < len(combined_options):
+            lines.append("")
+
+    return lines
+
+
+# ------------------------ Response wrappers ------------------------
+
+
+def _wrap_openapi(
+    event: Dict[str, Any],
+    status: int,
+    body_obj: Dict[str, Any],
+    logger: Optional[InvocationLogger] = None,
+) -> Dict[str, Any]:
+
+    if logger is None:
+        logger = _get_logger()
+    # Avoid bloating action-group responses unless explicitly debugging
+    payload = body_obj
+    if DEBUG_TOOL_IO:
+        try:
+            payload = _attach_logs(body_obj, logger)
+        except Exception:
+            payload = body_obj
+    response_body = {"application/json": {"body": json.dumps(payload)}}
+    action_response = {
+        "actionGroup": event.get("actionGroup"),
+        "apiPath": event.get("apiPath"),
+        "httpMethod": event.get("httpMethod"),
+        "httpStatusCode": status,
+        "responseBody": response_body,
+    }
+    _log("OpenAPI response wrapped", status=status)
+    return {
+        "messageVersion": "1.0",
+        "response": action_response,
+        "sessionAttributes": event.get("sessionAttributes", {}),
+        "promptSessionAttributes": event.get("promptSessionAttributes", {}),
+    }
+
+
+def _wrap_function(
+    event: Dict[str, Any],
+    status: int,
+    body_obj: Dict[str, Any],
+    logger: Optional[InvocationLogger] = None,
+) -> Dict[str, Any]:
+
+    if logger is None:
+        logger = _get_logger()
+    response_payload = {
+        "status": status,
+        "data": body_obj,
+    }
+    # Avoid large responses causing agent runtime failures: omit verbose logs for heavy functions
+    func_name = str(event.get("function") or "").strip().lower()
+    if func_name not in {"recommend_destinations"}:
+        response_payload = _attach_logs(response_payload, logger)
+    # Surface a plain text body so the agent renders lists immediately
+    text_body: str = ""
+    try:
+        # Prefer a direct 'message' field provided by the handler body
+        if isinstance(body_obj, dict):
+            msg = body_obj.get("message")
+            if isinstance(msg, str) and msg.strip():
+                text_body = msg.strip()
+        if not text_body:
+            # Fallback to a compact JSON string
+            text_body = json.dumps(response_payload)
+    except Exception:
+        try:
+            text_body = json.dumps(response_payload)
+        except Exception:
+            text_body = str(response_payload)
+    _log("Function response wrapped", status=status, function=event.get("function"))
+    return {
+        "messageVersion": "1.0",
+        "response": {
+            "actionGroup": event.get("actionGroup"),
+            "function": event.get("function", "search_flights"),
+            "functionResponse": {
+                "responseBody": {
+                    # For function calls, Agents expect TEXT only
+                    "TEXT": {"body": text_body},
+                }
+            },
+        },
+        "sessionAttributes": event.get("sessionAttributes", {}),
+        "promptSessionAttributes": event.get("promptSessionAttributes", {}),
+    }
+
+
+# ------------------------ Handlers ------------------------
+
+
+def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
+    # NEW: detect IATA lookup path first
+    api_path = (event.get("apiPath") or "").strip().lower()
+    _log("Handling OpenAPI event", api_path=api_path or "<none>")
+    if api_path == "/iata/lookup":
+        props = (
+            event.get("requestBody", {})
+            .get("content", {})
+            .get("application/json", {})
+            .get("properties", [])
+        )
+        body = _props_to_dict(props)
+        term = (
+            body.get("term")
+            or body.get("code")
+            or body.get("q")
+            or body.get("query")
+        )
+        _log("OpenAPI IATA lookup request parsed", term=term)
+        try:
+            data = iata_lookup_via_proxy(term)
+            _log("OpenAPI IATA lookup success", term=term, count=len(data.get("matches", [])))
+            return _wrap_openapi(
+                event,
+                200,
+                {
+                    "generatedAt": _now_iso(),
+                    "query": {"term": term},
+                    "result": data,
+                },
+            )
+        except Exception as e:
+            _log("OpenAPI IATA lookup error", term=term, error=str(e))
+            return _wrap_openapi(event, 502, {"error": str(e)[:1200]})
+
+    # (existing flight-search code continues below)
+    props = (
+        event.get("requestBody", {})
+        .get("content", {})
+        .get("application/json", {})
+        .get("properties", [])
     )
-    text = (
-        body.get("inputText")
-        or body.get("text")
-        or query.get("inputText")
-        or query.get("text")
-        or ""
+    body = _props_to_dict(props)
+    if not body:
+        params = event.get("parameters")
+        _log("OpenAPI request body empty, using parameters", param_type=type(params).__name__)
+        if isinstance(params, list) and params:
+            sample = []
+            for entry in params[:3]:
+                if isinstance(entry, dict):
+                    sample.append({k: entry.get(k) for k in ("name", "value")})
+            if sample:
+                _log("OpenAPI parameters sample", sample=sample)
+        body = _props_to_dict(params if isinstance(params, list) else [])
+    _log("OpenAPI request body parsed", keys=list(body.keys()))
+    normalized = _normalize_flight_request_fields(body)
+    had_origin_before_context = bool((normalized or {}).get("origin"))
+    normalized = _apply_contextual_defaults(normalized, event)
+    if normalized:
+        _log("OpenAPI normalized flight fields", normalized=normalized)
+    api_path = (event.get("apiPath") or "").strip()
+    if api_path == "/tools/iata/lookup":
+        term = body.get("term")
+        if not term or (isinstance(term, str) and term.strip().lower() in {"nearest airport", "closest airport", "nearest", "closest", "nearest airport to my location", "closest airport to me"}):
+            # Fall back to contextual default origin label if traveler said 'nearest/closest airport'
+            ctx = event.get("promptSessionAttributes") or event.get("sessionAttributes") or {}
+            label = ctx.get("default_origin_label") or ctx.get("default_origin")
+            if label:
+                _log("IATA lookup: substituting nearest/closest with context label", label=label)
+                term = label
+        if not term:
+            _log("OpenAPI validation error", reason="missing_term")
+            return _wrap_openapi(
+                event,
+                400,
+                {"error": "Provide 'term' to perform an IATA lookup."},
+            )
+        try:
+            matches = proxy_lookup_iata(term)
+        except Exception as exc:
+            _log("OpenAPI proxy IATA lookup failed", term=term, error=str(exc))
+            return _wrap_openapi(event, 502, {"error": f"IATA lookup failed: {exc}"})
+        _log("OpenAPI proxy IATA lookup success", term=term, matches=len(matches))
+        return _wrap_openapi(event, 200, {"matches": matches})
+
+    if api_path == "/tools/datetime/interpret":
+        _log(
+            "Datetime interpret endpoint deprecated",
+            note="Use bedrock-time-tools action group instead.",
+        )
+        return _wrap_openapi(
+            event,
+            410,
+            {"error": "Datetime parsing is handled by the TimePhraseParser action group Lambda."},
+        )
+    raw_origin = normalized.get("origin")
+    raw_destination = normalized.get("destination")
+    origin, origin_suggestions = _resolve_iata_code(raw_origin)
+    filled_from_context = (not had_origin_before_context) and bool(origin)
+    destination, destination_suggestions = _resolve_iata_code(raw_destination)
+    departure_input = normalized.get("departureDate")
+    departure_date = _iso_date(str(departure_input) if departure_input is not None else "")
+    return_input = normalized.get("returnDate")
+    return_date = _iso_date(str(return_input)) if return_input else None
+    adults = _to_int(normalized.get("adults", 1), 1)
+    cabin = (normalized.get("cabin") or "ECONOMY").upper()
+    nonstop = _to_bool(normalized.get("nonstop", False), False)
+    currency = "EUR"
+    lh_group_only = _to_bool(
+        normalized.get("lhGroupOnly", os.getenv("LH_GROUP_ONLY", "true")), True
     )
-    session_state = body.get("sessionState")
-    return session_id, text, session_state
+    max_results = _to_int(normalized.get("max", 10), 10)
+    _log(
+        "OpenAPI flight request prepared",
+        origin=origin,
+        destination=destination,
+        departureDate=departure_date,
+        returnDate=return_date,
+        adults=adults,
+        nonstop=nonstop,
+        cabin=cabin,
+        currency=currency,
+        lhGroupOnly=lh_group_only,
+        max=max_results,
+    )
+    if not origin:
+        msg = "Please choose a departure airport IATA code (for example, MUC)."
+        suggestions = origin_suggestions or []
+        _log("OpenAPI validation message", reason="missing_origin", suggestions=suggestions)
+        return _wrap_openapi(
+            event,
+            200,
+            {"message": msg, "suggestions": suggestions},
+        )
+    if not destination:
+        msg = "Please choose an arrival airport IATA code (for example, ZRH)."
+        suggestions = destination_suggestions or []
+        _log(
+            "OpenAPI validation message",
+            reason="missing_destination",
+            suggestions=suggestions,
+        )
+        return _wrap_openapi(
+            event,
+            200,
+            {"message": msg, "suggestions": suggestions},
+        )
+    if not departure_date:
+        _log("OpenAPI validation error", reason="missing_departure_date")
+        return _wrap_openapi(
+            event, 400, {"error": "Provide 'departureDate' in YYYY-MM-DD."}
+        )
+    departure_date = _roll_forward_recent_past_date(departure_date) or departure_date
+    departure_date = _advance_far_past_date(departure_date) or departure_date
+    if return_date:
+        return_date = _roll_forward_recent_past_date(return_date) or return_date
+        return_date = _advance_far_past_date(return_date) or return_date
+    window_error = _validate_booking_window(departure_date, return_date)
+    if window_error:
+        _log("OpenAPI validation error", reason="window_error", detail=window_error)
+        return _wrap_openapi(event, 400, {"error": window_error})
+    try:
+        raw = google_search_flight_offers(
+            origin,
+            destination,
+            departure_date,
+            return_date,
+            adults,
+            cabin,
+            nonstop,
+            currency,
+            lh_group_only,
+            max_results,
+        )
+        offers = _summarize_offers(raw, currency)
+        # Fallback: if nonstop requested and none found, retry with connections allowed.
+        if nonstop and not offers:
+            _log("OpenAPI: No nonstop offers; retrying with connections allowed")
+            raw = google_search_flight_offers(
+                origin,
+                destination,
+                departure_date,
+                return_date,
+                adults,
+                cabin,
+                False,
+                currency,
+                lh_group_only,
+                max_results,
+            )
+            offers = _summarize_offers(raw, currency)
+        # If still none, probe nearest alternative dates and include up to 5.
+        alternatives: List[Dict[str, Any]] = []
+        if not offers:
+            alternatives = _nearest_date_alternatives(
+                origin,
+                destination,
+                departure_date,
+                return_date,
+                adults,
+                cabin,
+                currency,
+                lh_group_only,
+                max_results,
+                nonstop=nonstop,
+                limit=5,
+            )
+        _log("OpenAPI flight search success", origin=origin, destination=destination, offers=len(offers), alternatives=len(alternatives))
+        # If we auto-filled origin from context, cache it into session and surface a brief note.
+        note = None
+        if filled_from_context and origin:
+            try:
+                event.setdefault("sessionAttributes", {})["default_origin"] = origin
+            except Exception:
+                pass
+            note = f"Using your nearest airport as departure location ({origin}). Say 'change departure location' to update it."
+        # Build textual summary for offers so the agent surfaces concrete details
+        offer_text_block = None
+        if offers:
+            try:
+                direct_opts = [off for off in offers if (off.get("stops") == 0)]
+                conn_opts = [off for off in offers if (off.get("stops") and off.get("stops") > 0) or off.get("stops") is None]
+                max_total = min(10, RECOMMENDER_MAX_OPTIONS)
+                direct_wrapped = [
+                    {"offer": off, "label": off.get("label") or "Direct", "stops": off.get("stops")}
+                    for off in direct_opts[:max_total]
+                ]
+                remaining = max_total - len(direct_wrapped)
+                conn_wrapped = [
+                    {"offer": off, "label": off.get("label") or "Connecting", "stops": off.get("stops")}
+                    for off in conn_opts[: max(0, remaining)]
+                ]
+                lines2 = _build_recommendation_message(
+                    direct_wrapped,
+                    conn_wrapped,
+                    len(direct_wrapped),
+                    len(conn_wrapped),
+                    currency,
+                )
+                offer_text_block = "\n".join(lines2)
+            except Exception:
+                offer_text_block = None
+        # Build textual alternatives list if applicable (partitioned, compact, PDF-compatible)
+        def _alt_sections(alts: List[Dict[str, Any]]) -> List[str]:
+            lines: List[str] = ["No offers on requested dates. Nearby alternatives:"]
+            direct = [a for a in alts if ((a.get("offer") or {}).get("stops") == 0)]
+            conn = [a for a in alts if ((a.get("offer") or {}).get("stops") or 0) > 0]
+            max_total = min(10, RECOMMENDER_MAX_OPTIONS)
+            take_direct = min(len(direct), max_total)
+            take_conn = min(len(conn), max_total - take_direct)
+            def _fmt_price(val: Any, curr: Optional[str]) -> str:
+                try:
+                    return f"{float(val):.0f} {curr or ''}".strip() if val is not None else "?"
+                except Exception:
+                    return f"{val} {curr or ''}".strip()
+            def _hhmm2(ts: Optional[str]) -> str:
+                try:
+                    if not ts:
+                        return "?"
+                    t = str(ts).replace("T", " ").replace("Z", "").split(" ")[1]
+                    return t[:5]
+                except Exception:
+                    return "?"
+            if take_direct:
+                lines.append("Direct Alternatives")
+                for idx, alt in enumerate(direct[:take_direct], start=1):
+                    off = alt.get("offer") or {}
+                    dep_ap = off.get("departureAirport") or "?"
+                    arr_ap = off.get("arrivalAirport") or "?"
+                    dep_tm = _hhmm2(off.get("departureTime"))
+                    dur = off.get("duration") or "?"
+                    price_txt = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
+                    segs = off.get("segments")
+                    seg0 = segs[0] if isinstance(segs, list) and segs else None
+                    c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                    fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                    c0fn = f"{c0}{fn0}".strip() if (c0 or fn0) else None
+                    parts = [f"{idx}) {dep_ap} {dep_tm}", "->", f"{arr_ap}", "|", alt.get("date") or "?", "|", "nonstop", "|", dur]
+                    if c0fn:
+                        parts.extend(["|", c0fn])
+                    parts.extend(["|", f"**{price_txt}**"])
+                    lines.append(" ".join(str(p) for p in parts if str(p)))
+                    carriers2 = off.get("carriers") or []
+                    carriers_txt2 = ",".join(carriers2) if isinstance(carriers2, list) else str(carriers2 or "")
+                    if carriers_txt2:
+                        lines.append(f"    - Carriers: {carriers_txt2}")
+            if take_conn:
+                if take_direct:
+                    lines.append("")
+                lines.append("Connecting Alternatives")
+                for idx, alt in enumerate(conn[:take_conn], start=1):
+                    off = alt.get("offer") or {}
+                    dep_ap = off.get("departureAirport") or "?"
+                    arr_ap = off.get("arrivalAirport") or "?"
+                    dep_tm = _hhmm2(off.get("departureTime"))
+                    dur = off.get("duration") or "?"
+                    price_txt = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
+                    stops = off.get("stops")
+                    stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                    segs = off.get("segments")
+                    seg0 = segs[0] if isinstance(segs, list) and segs else None
+                    c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                    fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                    c0fn = f"{c0}{fn0}".strip() if (c0 or fn0) else None
+                    parts = [f"{idx}) {dep_ap} {dep_tm}", "->", f"{arr_ap}", "|", alt.get("date") or "?", "|", stops_txt, "|", dur]
+                    if c0fn:
+                        parts.extend(["|", c0fn])
+                    parts.extend(["|", f"**{price_txt}**"])
+                    lines.append(" ".join(str(p) for p in parts if str(p)))
+                    carriers2 = off.get("carriers") or []
+                    carriers_txt2 = ",".join(carriers2) if isinstance(carriers2, list) else str(carriers2 or "")
+                    if carriers_txt2:
+                        lines.append(f"    - Carriers: {carriers_txt2}")
+            return lines
+        alt_text_block = None
+        if not offers and alternatives:
+            alt_text_block = "\n".join(_alt_sections(alternatives))
+        return _wrap_openapi(
+            event,
+            200,
+            {
+                "generatedAt": _now_iso(),
+                "query": {
+                    "origin": origin,
+                    "destination": destination,
+                    "departureDate": departure_date,
+                    "returnDate": return_date,
+                    "adults": adults,
+                    "cabin": cabin,
+                    "nonstop": nonstop,
+                    "currency": currency,
+                    "lhGroupOnly": lh_group_only,
+                    "max": max_results,
+                },
+                **({"note": note, "message": note} if note else {}),
+                "offers": offers,
+                **({
+                    "message": alt_text_block,
+                    "alternatives": alternatives,
+                } if alt_text_block else {}),
+                "provider": "Amadeus Flight Offers Search v2",
+            },
+        )
+    except Exception as e:
+        _log("OpenAPI flight search error", error=str(e))
+        return _wrap_openapi(event, 502, {"error": str(e)[:1200]})
+
+
+def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
+    func_name = (event.get("function") or "").strip().lower()
+
+    # NEW: function-details variant
+    if func_name == "iata_lookup":
+        _log("Handling function event", function=func_name)
+        params = event.get("parameters", [])
+        term = (
+            _get_param(params, "term")
+            or _get_param(params, "code")
+            or _get_param(params, "q")
+            or _get_param(params, "query")
+        )
+        _log("Function IATA lookup request", term=term)
+        try:
+            data = iata_lookup_via_proxy(term)
+            _log(
+                "Function IATA lookup success",
+                term=term,
+                count=len(data.get("matches", [])),
+            )
+            return _wrap_function(
+                event,
+                200,
+                {
+                    "generatedAt": _now_iso(),
+                    "query": {"term": term},
+                    "result": data,
+                },
+            )
+        except Exception as e:
+            _log("Function IATA lookup error", term=term, error=str(e))
+            return _wrap_function(event, 502, {"error": str(e)[:1200]})
+
+    if func_name == "recommend_destinations":
+        _log("Handling function event", function=func_name)
+        params = event.get("parameters", [])
+        origin_code = _get_param(params, "originCode")
+        month_text = _get_param(params, "month")
+        month_range_text = _get_param(params, "monthRange") or month_text
+        theme_raw = _get_param(params, "themeTags")
+        min_avg_high = _get_param(params, "minAvgHighC")
+        max_candidates = _to_int(_get_param(params, "maxCandidates", 8), 8)
+        with_itins = _to_bool(_get_param(params, "withItineraries", True), True)
+        currency = "EUR"
+
+        theme_tags: List[str] = []
+        if isinstance(theme_raw, list):
+            theme_tags = [str(x).strip().lower() for x in theme_raw if str(x).strip()]
+        elif isinstance(theme_raw, str):
+            txt = theme_raw.strip()
+            loaded = None
+            try:
+                loaded = json.loads(txt)
+            except Exception:
+                loaded = None
+            if isinstance(loaded, list):
+                theme_tags = [str(x).strip().lower() for x in loaded if str(x).strip()]
+            else:
+                theme_tags = [s.strip().lower() for s in txt.split(",") if s.strip()]
+        theme_tags = _canonicalize_theme_tags(theme_tags, month_text)
+
+        if not origin_code:
+            origin_code = (event.get("sessionAttributes") or {}).get("default_origin")
+        origin_code = _normalized_iata(str(origin_code or "")) or origin_code
+
+        (year, target_month), _ = _parse_month_range(month_range_text)
+        theme_set = set(theme_tags)
+
+        explore_meta: Dict[str, Any] = {}
+        explore_candidates: List[Dict[str, Any]] = []
+        try:
+            explore_candidates, explore_meta = _fetch_explore_candidates(
+                origin_code,
+                month_range_text,
+                month_text,
+                theme_tags,
+                max_candidates,
+                currency=currency,
+                timeout=GOOGLE_SEARCH_TIMEOUT,
+            )
+        except Exception as exc:
+            _log("Explore candidate fetch failed", error=str(exc))
+            explore_candidates = []
+            explore_meta = {"error": str(exc)}
+
+        scored: List[Tuple[float, Dict[str, Any], str]] = []
+        if explore_candidates:
+            total = len(explore_candidates)
+            for idx, candidate in enumerate(explore_candidates, start=1):
+                score_val = float(total - idx + 1)
+                reason_txt = candidate.get("reason") or "Google Explore match"
+                scored.append((score_val, candidate, reason_txt))
+
+        catalog_used = False
+        if not scored:
+            catalog = _load_catalog()
+            if not catalog:
+                _log("Destination catalog is empty")
+                return _wrap_function(
+                    event,
+                    200,
+                    {"message": "Destination catalog not available yet. Please try again later."},
+                )
+            filtered: List[Dict[str, Any]] = []
+            for dest in catalog:
+                tags = set(str(t).lower() for t in dest.get("tags", []))
+                if theme_set and not (theme_set & tags):
+                    continue
+                if min_avg_high is not None:
+                    try:
+                        min_val = float(min_avg_high)
+                    except Exception:
+                        min_val = None
+                    if min_val is not None:
+                        avg = (dest.get("avgHighCByMonth") or {}).get(str(target_month))
+                        if isinstance(avg, (int, float)) and float(avg) < min_val:
+                            continue
+                filtered.append(dest)
+            if not filtered and ("winter_sports" in theme_set or any(tag in theme_set for tag in ("ski", "skiing"))):
+                filtered = [
+                    dest for dest in catalog if "winter_sports" in set(str(t).lower() for t in dest.get("tags", []))
+                ]
+            for dest in filtered:
+                score_val, reason_txt = _score_destination(dest, theme_set, target_month, origin_code)
+                scored.append((score_val, dest, reason_txt))
+            catalog_used = True
+
+        if not scored:
+            payload_empty: Dict[str, Any] = {
+                "generatedAt": _now_iso(),
+                "query": {
+                    "originCode": origin_code,
+                    "month": month_text,
+                    "monthRange": month_range_text,
+                    "themeTags": theme_tags,
+                    "minAvgHighC": min_avg_high,
+                    "maxCandidates": max_candidates,
+                },
+                "candidates": [],
+                "message": "No destinations matched your filters. Try adjusting month or theme.",
+                "source": "google_explore" if explore_candidates else "catalog",
+            }
+            if explore_meta:
+                payload_empty["explore"] = explore_meta
+            _log(
+                "Destination recommendations prepared",
+                origin=origin_code,
+                month=month_text,
+                monthRange=month_range_text,
+                themeTags=theme_tags,
+                candidates=0,
+                source=payload_empty["source"],
+                messageBytes=len(payload_empty["message"].encode("utf-8")),
+                responseBytes=len(json.dumps(payload_empty, ensure_ascii=False).encode("utf-8")),
+            )
+            return _wrap_function(event, 200, payload_empty)
+
+        scored.sort(key=lambda item: item[0], reverse=True)
+        top = scored[: max(1, max_candidates)]
+        top_dest_objects = [entry for (_score, entry, _reason) in top]
+
+        candidates: List[Dict[str, Any]] = []
+        for idx, (score_val, data, reason_txt) in enumerate(top, start=1):
+            entry: Dict[str, Any] = {
+                "code": data.get("code"),
+                "city": data.get("city"),
+                "country": data.get("country"),
+                "score": round(float(score_val), 3),
+                "reason": reason_txt,
+                "tags": data.get("tags") or list(theme_tags),
+                "rank": data.get("rank") or idx,
+            }
+            if data.get("price") is not None:
+                entry["price"] = data.get("price")
+            if data.get("currency"):
+                entry["currency"] = data.get("currency")
+            if data.get("stops") is not None:
+                entry["stops"] = data.get("stops")
+            if data.get("duration"):
+                entry["duration"] = data.get("duration")
+            if data.get("carriers"):
+                entry["carriers"] = data.get("carriers")
+            if data.get("image"):
+                entry["image"] = data.get("image")
+            if data.get("pitch"):
+                entry["pitch"] = data.get("pitch")
+            if data.get("exploreFlight"):
+                entry["exploreFlight"] = data.get("exploreFlight")
+            if data.get("outboundDate"):
+                entry["outboundDate"] = data.get("outboundDate")
+            if data.get("returnDate"):
+                entry["returnDate"] = data.get("returnDate")
+            entry["source"] = data.get("source") or ("google_explore" if explore_candidates else "catalog")
+            candidates.append(entry)
+
+        payload: Dict[str, Any] = {
+            "generatedAt": _now_iso(),
+            "query": {
+                "originCode": origin_code,
+                "month": month_text,
+                "monthRange": month_range_text,
+                "themeTags": theme_tags,
+                "minAvgHighC": min_avg_high,
+                "maxCandidates": max_candidates,
+            },
+            "candidates": candidates,
+            "source": "google_explore" if explore_candidates else ("catalog" if catalog_used else "hybrid"),
+        }
+        if explore_meta:
+            payload["explore"] = explore_meta
+
+        if with_itins and origin_code and candidates:
+            try:
+                options = search_best_itineraries(
+                    origin_code,
+                    top_dest_objects,
+                    month_range_text,
+                    currency=currency,
+                    lh_group_only=True,
+                )
+                direct_opts = [opt for opt in options if (opt.get("stops") == 0)]
+                conn_opts = [opt for opt in options if (opt.get("stops") and opt.get("stops") > 0) or opt.get("stops") is None]
+                max_total = min(10, RECOMMENDER_MAX_OPTIONS)
+                take_direct = min(len(direct_opts), max_total)
+                take_conn = min(len(conn_opts), max_total - take_direct)
+                payload["options"] = direct_opts[:take_direct] + conn_opts[:take_conn]
+                lines = _build_recommendation_message(direct_opts, conn_opts, take_direct, take_conn, currency)
+                if lines:
+                    for idx_opt, opt in enumerate(options, start=1):
+                        offer = opt.get("offer") or {}
+                        price_txt = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
+                        dep = offer.get("departureAirport") or "?"
+                        arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
+                        dep_time = offer.get("departureTime") or "?"
+                        dur = offer.get("duration") or "?"
+                        label = opt.get("label") or "Option"
+                        pitch = opt.get("pitch") or ""
+                        stops_val = opt.get("stops")
+                        stops_txt = "nonstop" if stops_val == 0 else (f"{stops_val} stop" if stops_val == 1 else f"{stops_val} stops")
+                        carriers = offer.get("carriers") or []
+                        carriers_txt = ",".join(carriers) if isinstance(carriers, list) else str(carriers or "")
+                        header = f"{idx_opt}) {label} - {dep} -> {arr} | {opt.get('date')} | {stops_txt} | {dur} | **{price_txt}**"
+                        try:
+                            segs = offer.get("segments")
+                            seg0 = segs[0] if isinstance(segs, list) and segs else None
+                            c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
+                            fn0 = (seg0.get("flightNumber") if isinstance(seg0, dict) else None) or ""
+                            dt0 = _hhmm((seg0.get("departureTime") if isinstance(seg0, dict) else None) or dep_time)
+                            c0fn = f"{c0}{fn0}".strip() if c0 or fn0 else (carriers[0] if isinstance(carriers, list) and carriers else "")
+                            header_parts = [
+                                f"{idx_opt}) {label} - {dep} {dt0}".strip(),
+                                "->",
+                                f"{arr}",
+                                "|",
+                                f"{opt.get('date')}",
+                                "|",
+                                f"{stops_txt}",
+                                "|",
+                                f"{dur}",
+                            ]
+                            if c0fn:
+                                header_parts.extend(["|", c0fn])
+                            header_parts.extend(["|", f"**{price_txt}**"])
+                            header = " ".join(str(part) for part in header_parts if str(part))
+                        except Exception:
+                            pass
+                        lines.append(header)
+                        if carriers_txt:
+                            lines.append(f"    - Carriers: {carriers_txt}")
+                        if RECOMMENDER_VERBOSE and isinstance(offer.get("segments"), list) and offer["segments"]:
+                            for segment in offer["segments"][:3]:
+                                c = segment.get("carrier") or segment.get("marketingCarrier") or segment.get("operatingCarrier") or "?"
+                                fn = segment.get("flightNumber") or ""
+                                s_dep = segment.get("from") or "?"
+                                s_arr = segment.get("to") or "?"
+                                s_dt = _hhmm(segment.get("departureTime") or segment.get("depTime"))
+                                s_at = _hhmm(segment.get("arrivalTime") or segment.get("arrTime"))
+                                lines.append(f"    - THEN {c}{fn} {s_dep} {s_dt} -> {s_arr} {s_at}")
+                        if pitch:
+                            lines.append(f"    - {pitch}")
+            except Exception as exc:
+                _log("Itinerary aggregator failed", error=str(exc))
+
+        if not payload.get("message"):
+            header = "Inspiration — top matches (ASCII)"
+            msg_lines = [header]
+            for idx_msg, candidate in enumerate(candidates[:5], start=1):
+                city = candidate.get("city") or "?"
+                country = candidate.get("country") or "?"
+                code = candidate.get("code") or "?"
+                reason_text = (candidate.get("reason") or "").replace("°", " ").replace("\u00B0", " ")
+                extras: List[str] = []
+                price_val = candidate.get("price")
+                if price_val is not None:
+                    try:
+                        extras.append(f"approx €{int(round(float(price_val)))}")
+                    except Exception:
+                        extras.append(f"price {price_val}")
+                duration_val = candidate.get("duration")
+                if duration_val:
+                    extras.append(duration_val)
+                stops_val = candidate.get("stops")
+                if stops_val is not None:
+                    extras.append("nonstop" if stops_val == 0 else f"{stops_val} stop{'s' if stops_val != 1 else ''}")
+                line = f"{idx_msg}) {city}, {country} ({code}) - {reason_text}"
+                if extras:
+                    line = f"{line} | {' | '.join(extras)}"
+                msg_lines.append(line)
+                pitch_txt = candidate.get("pitch")
+                if isinstance(pitch_txt, str) and pitch_txt.strip():
+                    msg_lines.append(f"    - {pitch_txt.strip()}")
+            payload["message"] = "\n".join(msg_lines)
+
+        try:
+            response_bytes = len(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+        except Exception:
+            response_bytes = None
+        try:
+            message_bytes = len((payload.get("message") or "").encode("utf-8")) if isinstance(payload.get("message"), str) else None
+        except Exception:
+            message_bytes = None
+        _log(
+            "Destination recommendations prepared",
+            origin=origin_code,
+            month=month_text,
+            monthRange=month_range_text,
+            themeTags=theme_tags,
+            candidates=len(candidates),
+            messageBytes=message_bytes,
+            responseBytes=response_bytes,
+            source=payload.get("source"),
+            exploreCount=len(explore_candidates),
+        )
+        return _wrap_function(event, 200, payload)
+
+    if func_name == "datetime_interpret":
+        _log(
+            "Deprecated datetime_interpret invocation",
+            note="Use TimePhraseParser action group.",
+        )
+        return _wrap_function(
+            event,
+            410,
+            {"error": "Datetime parsing is handled by the TimePhraseParser action group Lambda."},
+        )
+
+    # (existing flight-search code continues below)
+    _log("Handling function event", function=func_name or "search_flights")
+    params = event.get("parameters", [])
+    param_body = _props_to_dict(params)
+    normalized = _normalize_flight_request_fields(param_body)
+    had_origin_before_context = bool((normalized or {}).get("origin"))
+    normalized = _apply_contextual_defaults(normalized, event)
+    if normalized:
+        _log("Function normalized flight fields", normalized=normalized)
+    origin_raw = normalized.get("origin")
+    destination_raw = normalized.get("destination")
+    origin, origin_suggestions = _resolve_iata_code(origin_raw)
+    filled_from_context = (not had_origin_before_context) and bool(origin)
+    destination, destination_suggestions = _resolve_iata_code(destination_raw)
+    departure_input = normalized.get("departureDate")
+    departure_date = _iso_date(str(departure_input) if departure_input is not None else "")
+    return_input = normalized.get("returnDate")
+    return_date = _iso_date(str(return_input)) if return_input else None
+    adults = _to_int(normalized.get("adults", 1), 1)
+    cabin = (normalized.get("cabin") or "ECONOMY").upper()
+    nonstop = _to_bool(normalized.get("nonstop", False), False)
+    currency = "EUR"
+    lh_group_only = _to_bool(
+        normalized.get("lhGroupOnly", os.getenv(
+            "LH_GROUP_ONLY", "true")), True
+    )
+    max_results = _to_int(normalized.get("max", 10), 10)
+    _log(
+        "Function flight request prepared",
+        origin=origin,
+        destination=destination,
+        departureDate=departure_date,
+        returnDate=return_date,
+        adults=adults,
+        nonstop=nonstop,
+        cabin=cabin,
+        currency=currency,
+        lhGroupOnly=lh_group_only,
+        max=max_results,
+    )
+    if not origin:
+        msg = "Please choose a departure airport IATA code (for example, MUC)."
+        suggestions = origin_suggestions or []
+        _log("Function validation message", reason="missing_origin", suggestions=suggestions)
+        return _wrap_function(
+            event,
+            200,
+            {"message": msg, "suggestions": suggestions},
+        )
+    if not destination:
+        msg = "Please choose an arrival airport IATA code (for example, ZRH)."
+        suggestions = destination_suggestions or []
+        _log(
+            "Function validation message",
+            reason="missing_destination",
+            suggestions=suggestions,
+        )
+        return _wrap_function(
+            event,
+            200,
+            {"message": msg, "suggestions": suggestions},
+        )
+    if not departure_date:
+        _log("Function validation error", reason="missing_departure_date")
+        return _wrap_function(
+            event, 400, {"error": "Provide 'departureDate' in YYYY-MM-DD."}
+        )
+    departure_date = _roll_forward_recent_past_date(departure_date) or departure_date
+    departure_date = _advance_far_past_date(departure_date) or departure_date
+    if return_date:
+        return_date = _roll_forward_recent_past_date(return_date) or return_date
+        return_date = _advance_far_past_date(return_date) or return_date
+    window_error = _validate_booking_window(departure_date, return_date)
+    if window_error:
+        _log("Function validation error", reason="window_error", detail=window_error)
+        return _wrap_function(event, 400, {"error": window_error})
+    try:
+        raw = google_search_flight_offers(
+            origin,
+            destination,
+            departure_date,
+            return_date,
+            adults,
+            cabin,
+            nonstop,
+            currency,
+            lh_group_only,
+            max_results,
+        )
+        offers = _summarize_offers(raw, currency)
+        # Fallback: if user asked for nonstop and none found, retry with connections allowed.
+        if nonstop and not offers:
+            _log("No nonstop offers; retrying with connections allowed")
+            raw = google_search_flight_offers(
+                origin,
+                destination,
+                departure_date,
+                return_date,
+                adults,
+                cabin,
+                False,  # allow connections
+                currency,
+                lh_group_only,
+                max_results,
+            )
+            offers = _summarize_offers(raw, currency)
+        # If still none, probe nearest alternative dates and include up to 5.
+        alternatives: List[Dict[str, Any]] = []
+        if not offers:
+            alternatives = _nearest_date_alternatives(
+                origin,
+                destination,
+                departure_date,
+                return_date,
+                adults,
+                cabin,
+                currency,
+                lh_group_only,
+                max_results,
+                nonstop=nonstop,
+                limit=5,
+            )
+        # Add previewText to each offer for easy UI display
+        try:
+            def _hhmm_txt(ts: Optional[str]) -> str:
+                try:
+                    if not ts:
+                        return "?"
+                    t = str(ts).replace("T", " ").replace("Z", "").split(" ")[1]
+                    return t[:5]
+                except Exception:
+                    return "?"
+            def _price_txt(val: Any, curr: Optional[str]) -> str:
+                try:
+                    return f"{float(val):.0f} {curr or ''}".strip() if val is not None else "?"
+                except Exception:
+                    return f"{val} {curr or ''}".strip()
+            for _o in offers or []:
+                _dep_ap = _o.get("departureAirport") or "?"
+                _dep_tm = _hhmm_txt(_o.get("departureTime"))
+                _arr_ap = _o.get("arrivalAirport") or "?"
+                _dur = _o.get("duration") or "?"
+                _segs = _o.get("segments")
+                _seg0 = _segs[0] if isinstance(_segs, list) and _segs else None
+                _c0 = (_seg0.get("carrier") or _seg0.get("marketingCarrier") or _seg0.get("operatingCarrier")) if isinstance(_seg0, dict) else None
+                _fn0 = (_seg0.get("flightNumber") if isinstance(_seg0, dict) else None) or ""
+                _c0fn = f"{_c0 or ''}{_fn0}".strip()
+                _pr = _price_txt(_o.get("totalPrice"), _o.get("currency") or currency)
+                _parts = [f"{_dep_ap} {_dep_tm}", "->", f"{_arr_ap}", "|", _dur]
+                if _c0fn:
+                    _parts.extend(["|", _c0fn])
+                _parts.extend(["|", f"**{_pr}**"])
+                _o["previewText"] = " ".join(str(x) for x in _parts if str(x))
+        except Exception:
+            pass
+        # Build a human-readable offer text block so the agent renders concrete options
+        offer_text_block = None
+        try:
+            def _hhmm(ts: Optional[str]) -> str:
+                try:
+                    if not ts:
+                        return "?"
+                    t = str(ts).replace("T", " ").replace("Z", "").split(" ")[1]
+                    return t[:5]
+                except Exception:
+                    return "?"
+            def _fmt_price(val: Any, curr: Optional[str]) -> str:
+                try:
+                    return f"{float(val):.0f} {curr or ''}".strip()
+                except Exception:
+                    return str(val)
+            if offers:
+                direct = [o for o in offers if (o.get("stops") == 0)]
+                conn = [o for o in offers if (o.get("stops") and o.get("stops") > 0) or o.get("stops") is None]
+                max_total = min(10, RECOMMENDER_MAX_OPTIONS)
+                direct_wrapped = [{"offer": off, "label": off.get("label") or "Direct", "stops": off.get("stops")} for off in direct[:max_total]]
+                remaining = max_total - len(direct_wrapped)
+                conn_wrapped = [{"offer": off, "label": off.get("label") or "Connecting", "stops": off.get("stops")} for off in conn[:max(0, remaining)]]
+                lines2 = _build_recommendation_message(direct_wrapped, conn_wrapped, len(direct_wrapped), len(conn_wrapped), currency)
+                offer_text_block = "\n".join(lines2)
+        except Exception:
+            offer_text_block = None
+        _log("Function flight search success", origin=origin, destination=destination, offers=len(offers), alternatives=len(alternatives))
+        note = None
+        if filled_from_context and origin:
+            try:
+                event.setdefault("sessionAttributes", {})["default_origin"] = origin
+            except Exception:
+                pass
+            note = f"Using your nearest airport as departure location ({origin}). Say 'change departure location' to update it."
+        # Build textual alternatives list if applicable
+        def _alt_lines(alts: List[Dict[str, Any]]) -> List[str]:
+            lines: List[str] = []
+            for idx, alt in enumerate(alts[:5], start=1):
+                off = alt.get("offer") or {}
+                date_txt = alt.get("date") or "?"
+                price = off.get("totalPrice")
+                curr = off.get("currency") or currency or ""
+                try:
+                    price_txt = f"{float(price):.0f} {curr}".strip() if price is not None else "?"
+                except Exception:
+                    price_txt = f"{price} {curr}".strip()
+                dur = off.get("duration") or "?"
+                stops = off.get("stops")
+                stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
+                lines.append(f"{idx}) {date_txt} | {stops_txt} | {dur} | **{price_txt}**")
+            return lines
+        alt_text_block = None
+        if not offers and alternatives:
+            alt_text_block = "\n".join(["No offers on requested dates. Nearby alternatives:"] + _alt_lines(alternatives))
+        return _wrap_function(
+            event,
+            200,
+            {
+                "generatedAt": _now_iso(),
+                "query": {
+                    "origin": origin,
+                    "destination": destination,
+                    "departureDate": departure_date,
+                    "returnDate": return_date,
+                    "adults": adults,
+                    "cabin": cabin,
+                    "nonstop": nonstop,
+                    "currency": currency,
+                    "lhGroupOnly": lh_group_only,
+                    "max": max_results,
+                },
+                **({"note": note, "message": note} if note else {}),
+                "offers": offers,
+                **({"message": offer_text_block} if offer_text_block else {}),
+                **({
+                    "message": alt_text_block,
+                    "alternatives": alternatives,
+                } if alt_text_block else {}),
+                "provider": "Amadeus Flight Offers Search v2",
+            },
+        )
+    except Exception as e:
+        _log("Function flight search error", error=str(e))
+        return _wrap_function(event, 502, {"error": str(e)[:1200]})
 
 
 def lambda_handler(event, context):
+    logger = InvocationLogger()
+    token = _CURRENT_LOGGER.set(logger)
+    _log(
+        "Lambda invocation started",
+        event_keys=list(event.keys()),
+        has_context=bool(context),
+    )
     try:
-        session_id, initial_text, incoming_state = _extract_payload(event or {})
-    except Exception as exc:
-        return {
-            "statusCode": 400,
-            "headers": {"content-type": "application/json"},
-            "body": json.dumps({"error": f"Invalid request payload: {exc}"}),
+        if "apiPath" in event and "httpMethod" in event:
+            _log("Routing to OpenAPI handler")
+            response = _handle_openapi(event)
+            _log("Lambda invocation completed via OpenAPI handler")
+            return response
+        if "function" in event and "parameters" in event:
+            _log("Routing to function handler")
+            response = _handle_function(event)
+            _log("Lambda invocation completed via function handler")
+            return response
+        _log("Falling back to diagnostic response")
+        payload = {
+            "note": "Unsupported event shape. Use action-group OpenAPI or function-details.",
+            "eventKeys": list(event.keys()),
         }
-
-    final_text = ""
-    state = incoming_state or {}
-
-    direct_invocation_inputs = None
-    direct_invocation_id = None
-    if isinstance(event, dict):
-        direct_invocation_inputs = event.get("invocationInputs")
-        direct_invocation_id = event.get("invocationId")
-        if not direct_invocation_id:
-            direct_invocation_id = event.get("invocation_id") or event.get("invocation-id")
-
-    if isinstance(event, dict) and event.get("actionGroup"):
-        path = event.get("apiPath") or event.get("operation") or ""
-        method = (event.get("httpMethod") or event.get("method") or "POST").upper()
-        params = event.get("parameters") or event.get("query") or {}
-        body = event.get("requestBody") or event.get("body") or {}
-        proxy_result = _call_proxy(path, method, params, body)
-        try:
-            print(
-                "[lambda] tool_invocation",
-                json.dumps(
-                    {
-                        "actionGroup": event.get("actionGroup"),
-                        "apiPath": path,
-                        "httpMethod": method,
-                        "status": proxy_result.get("status"),
-                        "ok": proxy_result.get("ok"),
-                    }
-                ),
+        if "apiPath" in event:
+            return _wrap_openapi(
+                event,
+                200,
+                {
+                    "message": "Missing request body. Gather origin, destination, and ISO dates before invoking the action group.",
+                    **payload,
+                },
+                logger,
             )
-        except Exception:
-            pass
-        try:
-            print(
-                "[lambda] tool_payload",
-                json.dumps(
-                    {
-                        "params": params,
-                        "body": body,
-                    },
-                    default=str,
-                ),
+        if "function" in event:
+            return _wrap_function(
+                event,
+                200,
+                {
+                    "message": "Missing parameters. Collect all required flight inputs before invoking the action group.",
+                    **payload,
+                },
+                logger,
             )
-        except Exception:
-            pass
-        status_code = proxy_result.get("status", 200 if proxy_result.get("ok") else 502)
-        response_body = proxy_result.get("data")
-        try:
-            encoded_body = json.dumps(response_body)
-        except Exception:
-            encoded_body = json.dumps({"raw": str(response_body)})
-        return {
-            "messageVersion": event.get("messageVersion", "1.0"),
+        payload = _attach_logs(payload, logger)
+        fallback = {
+            "messageVersion": "1.0",
             "response": {
-                "actionGroup": event.get("actionGroup"),
-                "apiPath": path,
-                "httpMethod": method,
-                "httpStatusCode": status_code,
-                "responseBody": {
-                    "application/json": {
-                        "body": encoded_body
+                "actionGroup": event.get("actionGroup", "daisy_in_action"),
+                "function": event.get("function", "diagnostic"),
+                "functionResponse": {
+                    "responseBody": {
+                        "TEXT": {"body": json.dumps(payload)}
                     }
                 },
             },
-            "sessionAttributes": event.get("sessionAttributes") or {},
-            "promptSessionAttributes": event.get("promptSessionAttributes") or {},
+            "sessionAttributes": event.get("sessionAttributes", {}),
+            "promptSessionAttributes": event.get("promptSessionAttributes", {}),
         }
+        return fallback
+    except Exception as exc:
+        _log("Lambda invocation raised exception", error=str(exc))
+        raise
+    finally:
+        _CURRENT_LOGGER.reset(token)
 
-    if isinstance(direct_invocation_inputs, list) and direct_invocation_inputs:
-        results = []
-        for entry in direct_invocation_inputs:
-            path = entry.get("apiPath") or entry.get("operation") or ""
-            method = (entry.get("httpMethod") or entry.get("method") or "POST").upper()
-            params = entry.get("parameters") or entry.get("query") or {}
-            body = entry.get("requestBody") or entry.get("body") or {}
-            results.append(_call_proxy(path, method, params, body))
-        rc_results = _rc_result(direct_invocation_id or "direct", direct_invocation_inputs, results)
-        state = state or {}
-        state["returnControlInvocationResults"] = rc_results
-        return {
-            "statusCode": 200,
-            "headers": {"content-type": "application/json"},
-            "body": json.dumps(
-                {
-                    "returnControlInvocationResults": rc_results,
-                    "sessionState": state,
-                }
-            ),
-        }
 
-    try:
-        print(
-            "[lambda] event_summary",
-            json.dumps(
-                {
-                    "keys": sorted(event.keys()) if isinstance(event, dict) else None,
-                    "has_body": bool(event.get("body")) if isinstance(event, dict) else False,
-                    "has_invocation_inputs": bool(event.get("invocationInputs")) if isinstance(event, dict) else False,
-                    "initial_text_len": len(initial_text or ""),
-                    "session_state_keys": sorted((state or {}).keys()) if isinstance(state, dict) else None,
-                }
-            ),
-        )
-    except Exception:
-        pass
 
-    try:
-        agent_id, agent_alias_id = _resolve_agent_context(event, state)
-    except ValueError as exc:
-        return {
-            "statusCode": 500,
-            "headers": {"content-type": "application/json"},
-            "body": json.dumps({"error": str(exc)}),
-        }
 
-    for hop in range(RC_MAX_HOPS):
-        outbound_text = initial_text if hop == 0 else ""
-        if hop > 0 and isinstance(state, dict):
-            has_results = bool(state.get("returnControlInvocationResults"))
-        else:
-            has_results = False
-        is_http_event = isinstance(event, dict) and "body" in event
-        if is_http_event and not outbound_text and not has_results:
-            return {
-                "statusCode": 400,
-                "headers": {"content-type": "application/json"},
-                "body": json.dumps({"error": "inputText_required"}),
-            }
-        try:
-            print(
-                "[lambda] hop_dispatch",
-                json.dumps(
-                    {
-                        "hop": hop,
-                        "textLength": len(outbound_text or ""),
-                        "hasReturnControlResults": has_results,
-                        "sessionAttributes": list((state or {}).get("sessionAttributes", {}).keys()) if isinstance(state, dict) else None,
-                    }
-                ),
-            )
-        except Exception:
-            print(f"[lambda] hop_dispatch hop={hop} textLength={len(outbound_text or '')} hasReturnControlResults={has_results}")
 
-        chunk, rc, returned_state = _invoke_once(agent_id, agent_alias_id, session_id, outbound_text, state)
-        final_text += chunk or ""
-        if returned_state:
-            state = returned_state
 
-        if not rc:
-            break
 
-        inputs = rc.get("invocationInputs") or []
-        results = []
-        for entry in inputs:
-            path = entry.get("apiPath") or entry.get("operation") or ""
-            method = entry.get("httpMethod") or "POST"
-            params = entry.get("parameters") or entry.get("query") or {}
-            body = entry.get("requestBody") or entry.get("body") or {}
-            results.append(_call_proxy(path, method, params, body))
 
-        state = state or {}
-        state["returnControlInvocationResults"] = _rc_result(rc.get("invocationId", f"hop-{hop}"), inputs, results)
 
-    response_payload = {"text": final_text}
-    if state:
-        response_payload["sessionState"] = state
 
-    return {
-        "statusCode": 200,
-        "headers": {"content-type": "application/json"},
-        "body": json.dumps(response_payload),
-    }
 
