@@ -341,6 +341,8 @@ def _fetch_explore_candidates(
         params["interests"] = interests
     elif "interests" not in params:
         params["interests"] = "popular"
+    if params.get("travel_mode") == "flights_only" and "interests" in params:
+        params.pop("interests", None)
     _enforce_google_defaults(params, "explore")
     meta: Dict[str, Any] = {
         "params": {
@@ -419,6 +421,21 @@ def _fetch_explore_candidates(
             "outboundDate": dest.get("outbound_date"),
             "returnDate": dest.get("return_date"),
             "source": "google_explore",
+        }
+        search_request = {
+            "origin": departure,
+            "destination": code,
+            "departureDate": dest.get("outbound_date"),
+            "returnDate": dest.get("return_date"),
+            "adults": 1,
+            "cabin": "ECONOMY",
+            "nonstop": True if stops == 0 else (False if isinstance(stops, int) else None),
+            "currency": currency or "EUR",
+            "lhGroupOnly": True,
+            "max": 10,
+        }
+        candidate["flightSearchRequest"] = {
+            k: v for k, v in search_request.items() if v not in (None, "", [])
         }
         pitch = dest.get("description") or dest.get("blurb")
         if isinstance(pitch, str) and pitch.strip():
@@ -2030,6 +2047,32 @@ def search_best_itineraries(
         code = str(o.get("destination") or "")
         tags = tag_lookup.get(code, set())
         label = label_map[idx] if idx < len(label_map) else "Also Noteworthy"
+        offer_block = o.get("offer") or {}
+        departure_date = o.get("date")
+        dep_time = offer_block.get("departureTime")
+        if isinstance(dep_time, str) and len(dep_time) >= 10:
+            departure_date = dep_time[:10]
+        return_date = offer_block.get("returnDate")
+        if isinstance(return_date, str) and len(return_date) >= 10:
+            return_date = return_date[:10]
+        segs = offer_block.get("segments")
+        if not return_date and isinstance(segs, list) and segs:
+            last_seg = segs[-1]
+            arr_time = last_seg.get("arrivalTime") if isinstance(last_seg, dict) else None
+            if isinstance(arr_time, str) and len(arr_time) >= 10:
+                return_date = arr_time[:10]
+        search_request = {
+            "origin": origin,
+            "destination": code,
+            "departureDate": departure_date,
+            "returnDate": return_date,
+            "adults": 1,
+            "cabin": "ECONOMY",
+            "nonstop": True if o.get("stops") == 0 else (False if isinstance(o.get("stops"), int) else None),
+            "currency": currency,
+            "lhGroupOnly": lh_group_only,
+            "max": max_per_destination,
+        }
         options.append({
             "label": label,
             "pitch": _pitch(tags),
@@ -2037,6 +2080,9 @@ def search_best_itineraries(
             "date": o.get("date"),
             "offer": o,
             "stops": _stops(o),
+            "flightSearchRequest": {
+                k: v for k, v in search_request.items() if v not in (None, "", [])
+            },
         })
 
     return options

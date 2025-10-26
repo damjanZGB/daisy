@@ -96,7 +96,6 @@ class TestExploreProxy(unittest.TestCase):
         request_obj = mock_urlopen.call_args[0][0]
         self.assertTrue(request_obj.full_url.startswith(lf.GOOGLE_BASE_URL))
         self.assertIn("time_period=Summer+2026", request_obj.full_url)
-        self.assertIn("interests=beach", request_obj.full_url)
         self.assertIn("travel_class=business", request_obj.full_url)
         self.assertIn("max_price=1200", request_obj.full_url)
 
@@ -128,9 +127,22 @@ class TestExploreProxy(unittest.TestCase):
         self.assertTrue(first_request.full_url.startswith(lf.GOOGLE_BASE_URL))
 
     def test_fetch_explore_candidates_applies_documented_defaults(self):
+        sample_dest = {
+            "name": "Demo City",
+            "country": "Demo",
+            "outbound_date": "2025-11-08",
+            "return_date": "2025-11-14",
+            "flight": {
+                "airport_code": "DEM",
+                "price": 199,
+                "stops": 0,
+                "flight_duration": "2hr 10min",
+                "airline_code": "EW",
+            },
+        }
         with mock.patch("aws.lambda_function._proxy_get") as mock_proxy_get:
-            mock_proxy_get.return_value = {"destinations": []}
-            lf._fetch_explore_candidates(
+            mock_proxy_get.return_value = {"destinations": [sample_dest]}
+            cands, _ = lf._fetch_explore_candidates(
                 origin_code="ZAG",
                 month_range_text=None,
                 month_text=None,
@@ -144,7 +156,12 @@ class TestExploreProxy(unittest.TestCase):
         self.assertEqual(
             sent_params["time_period"], "one_week_trip_in_the_next_six_months"
         )
-        self.assertEqual(sent_params["interests"], "popular")
+        self.assertNotIn("interests", sent_params)
+        request = cands[0].get("flightSearchRequest")
+        self.assertIsInstance(request, dict)
+        self.assertEqual(request.get("origin"), "ZAG")
+        self.assertEqual(request.get("destination"), "DEM")
+        self.assertEqual(request.get("departureDate"), "2025-11-08")
 
 
 if __name__ == "__main__":

@@ -43,7 +43,8 @@ Reference (SearchAPI documentation):
        adjustment. (We plan to replace this with geo-derived inference in a
        later iteration.)
      - Recompute `gl` from the resolved IATA (`_country_for_iata` already does
-      this); if the lookup fails, fall back to `DE`. Always send `hl=en-GB` with no additional overrides.
+     this); if the lookup fails, fall back to `DE`. Always send `hl=en-GB` with no additional overrides.
+     - Exclude the `interests` parameter whenever `travel_mode=flights_only` (SearchAPI ignores feature filters on flight-only results).
      - Log a warning when the fallback kicks in so we know how often it occurs.
      - Always pass `included_airlines=LH,LX,OS,SN,EW,4Y,EN` and clamp results to
        at most 10 entries before responding.
