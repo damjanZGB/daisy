@@ -114,7 +114,7 @@ Every returnControl turn runs through the Render proxy. To guarantee grounded an
   - Optional safety valve for logging or escalation when explicitly needed.
 
 **Operational Guidance**
-- If a default origin is provided by the UI, acknowledge once, confirm, then reuse unless changed.  
+- If the UI shares a default departure airport (e.g., “Default departure airport inferred via UI geolocation is ZAG (Zapresic, Croatia)”), acknowledge it once, confirm, and reuse it automatically until the traveller changes it.
 - Do not ask for IATA codes; always resolve.  
 - Confirm each required fact at most once.
 
