@@ -483,18 +483,14 @@ def _fetch_explore_candidates(
     elif month_text and _is_searchapi_time_period_token(str(month_text).strip().lower()):
         token_candidate = str(month_text).strip().lower()
 
-    if token_candidate:
+    if iso_range_value:
+        params["time_period"] = iso_range_value
+    elif token_candidate:
         params["time_period"] = token_candidate
     else:
         period = _month_range_to_period_text(month_range_text, month_text)
         if period:
             params["time_period"] = period
-        elif iso_range_value:
-            params["time_period"] = iso_range_value
-
-    if not params.get("time_period"):
-        if iso_range_value:
-            params["time_period"] = iso_range_value
         else:
             params["time_period"] = "one_week_trip_in_the_next_six_months"
 
@@ -525,12 +521,43 @@ def _fetch_explore_candidates(
         meta["isoRange"] = iso_range_hint
     if normalized_trip_type:
         meta["tripType"] = normalized_trip_type
-    payload = _proxy_get(
-        "/google/explore/search",
-        params,
-        timeout=timeout or GOOGLE_SEARCH_TIMEOUT,
-        base_url=GOOGLE_BASE_URL,
-    )
+    adjusted_time_period = False
+    try:
+        payload = _proxy_get(
+            "/google/explore/search",
+            params,
+            timeout=timeout or GOOGLE_SEARCH_TIMEOUT,
+            base_url=GOOGLE_BASE_URL,
+        )
+    except RuntimeError as exc:
+        message = str(exc)
+        too_far = any(
+            phrase in message
+            for phrase in (
+                "Time period too far in the future",
+                "End date too far in the future",
+                "Max is today +",
+            )
+        )
+        if not too_far:
+            raise
+        params["time_period"] = "one_week_trip_in_the_next_six_months"
+        adjusted_time_period = True
+        _log(
+            "Explore time period adjusted after error",
+            previous=time_period_token or iso_range_value or month_range_text or month_text,
+            fallback=params["time_period"],
+            error=message[:200],
+        )
+        payload = _proxy_get(
+            "/google/explore/search",
+            params,
+            timeout=timeout or GOOGLE_SEARCH_TIMEOUT,
+            base_url=GOOGLE_BASE_URL,
+        )
+    if adjusted_time_period:
+        meta["timePeriodAdjusted"] = True
+
     destinations = payload.get("destinations") if isinstance(payload, dict) else None
     total_destinations = len(destinations) if isinstance(destinations, list) else 0
     meta["destinationCount"] = total_destinations

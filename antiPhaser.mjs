@@ -42,7 +42,7 @@ const SEARCHAPI_DURATION_DEFAULT = 7;
 const SEARCHAPI_DURATION_TWO_WEEK = 14;
 const SEARCHAPI_DURATION_WEEKEND = 3;
 const SEARCHAPI_DEFAULT_ROLLING_MONTHS = 6;
-const SEARCHAPI_MAX_MONTHS_AHEAD = 11;
+const SEARCHAPI_MAX_MONTHS_AHEAD = 6;
 
 function setCorsHeaders(req, res) {
   const requestOrigin = req.headers.origin;
