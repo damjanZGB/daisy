@@ -27,6 +27,14 @@ class TestRecommenderHelpers(unittest.TestCase):
         self.assertIn("winter_sports", tags)
         self.assertIn("cold", tags)
 
+    def test_season_phrase_converts_to_range(self):
+        period = lf._month_range_to_period_text("Spring 2026", None, reference=date(2025, 10, 27))
+        self.assertEqual(period, "2026-03-01..2026-05-31")
+
+    def test_past_range_rolls_forward(self):
+        period = lf._month_range_to_period_text("2025-02..2025-02", None, reference=date(2025, 10, 27))
+        self.assertEqual(period, "2026-02-01..2026-02-28")
+
 
 class TestScoring(unittest.TestCase):
     def setUp(self):
@@ -168,6 +176,36 @@ class TestExploreProxy(unittest.TestCase):
         self.assertTrue(request.get("lhGroupOnly"))
         self.assertEqual(cands[0].get("alliance"), "STAR ALLIANCE")
         self.assertEqual(cands[0].get("presentedCarriers"), "Lufthansa Group")
+
+
+class TestExploreOpenAPI(unittest.TestCase):
+    @mock.patch("aws.lambda_function._fetch_explore_candidates")
+    def test_openapi_explore_without_destination(self, mock_fetch):
+        mock_fetch.return_value = (
+            [{"destination": "ABC"}],
+            {"params": {"time_period": "2026-03-01..2026-05-31"}},
+        )
+        event = {
+            "apiPath": "/google/explore/search",
+            "httpMethod": "GET",
+            "parameters": [
+                {"name": "engine", "value": "google_travel_explore"},
+                {"name": "departure_id", "value": "ZAG"},
+                {"name": "time_period", "value": "Spring 2026"},
+            ],
+            "sessionAttributes": {},
+            "promptSessionAttributes": {},
+        }
+        response = lf._handle_openapi(event)
+        mock_fetch.assert_called_once()
+        call_kwargs = mock_fetch.call_args.kwargs
+        self.assertEqual(call_kwargs.get("origin_code"), "ZAG")
+        body = json.loads(
+            response["response"]["responseBody"]["application/json"]["body"]
+        )
+        self.assertEqual(body.get("origin"), "ZAG")
+        self.assertEqual(body.get("destinations"), [{"destination": "ABC"}])
+        self.assertEqual(body.get("timePeriod"), "2026-03-01..2026-05-31")
 
 
 class TestIataLookup(unittest.TestCase):

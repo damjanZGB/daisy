@@ -1,4 +1,4 @@
-﻿# lambda_function.py
+# lambda_function.py
 # AWS Lambda for Agents for Amazon Bedrock (Action Group).
 # Searches real flight offers via Amadeus Self-Service API and returns simplified offers.
 # Default filters to Lufthansa Group carriers unless overridden.
@@ -161,11 +161,29 @@ def _month_from_phrase(phrase: Optional[str], reference: Optional[date] = None) 
     m = re.fullmatch(r"(\d{4})-(\d{2})", txt)
     if m:
         return int(m.group(1)), int(m.group(2))
+    # Season keywords (spring, summer, autumn/fall, winter)
+    season_map = {
+        "spring": 3,
+        "summer": 6,
+        "autumn": 9,
+        "fall": 9,
+        "winter": 12,
+    }
+    lower = txt.lower()
+    for season, start_month in season_map.items():
+        if season in lower:
+            ym = re.search(r"(\d{4})", lower)
+            year = int(ym.group(1)) if ym else reference.year
+            if ym is None:
+                if season != "winter" and start_month < reference.month:
+                    year += 1
+                elif season == "winter" and reference.month > 11:
+                    year += 1
+            return year, start_month
     # Month name and optional year
     months = [
         "january","february","march","april","may","june","july","august","september","october","november","december"
     ]
-    lower = txt.lower()
     if "next year" in lower and any(mon in lower for mon in months):
         for idx, mon in enumerate(months, start=1):
             if mon in lower:
@@ -186,6 +204,15 @@ def _month_from_phrase(phrase: Optional[str], reference: Optional[date] = None) 
         return int(m3.group(1)), int(m3.group(2))
     return reference.year, reference.month
 
+
+
+def _format_price_text(value: Any, currency: Optional[str]) -> str:
+    code = str(currency or "EUR").strip().upper() or "EUR"
+    try:
+        amount = float(value)
+        return f"{code} {amount:,.0f}"
+    except Exception:
+        return f"{code} {value}" if value is not None else code
 
 def _canonicalize_theme_tags(raw: List[str], phrase: Optional[str] = None) -> List[str]:
     """Normalize theme tags to catalog tags.
@@ -269,17 +296,63 @@ def _parse_month_range(value: Optional[str], reference: Optional[date] = None) -
     if m:
         y1, m1, y2, m2 = int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4))
         return (y1, m1), (y2, m2)
+    lower = text.lower()
+    season_ranges = {
+        "spring": (3, 5),
+        "summer": (6, 8),
+        "autumn": (9, 11),
+        "fall": (9, 11),
+        "winter": (12, 2),
+    }
+    for season, (start_month, end_month) in season_ranges.items():
+        if season in lower:
+            ym = re.search(r"(\d{4})", lower)
+            year = int(ym.group(1)) if ym else reference.year
+            if ym is None:
+                if season != "winter" and start_month < reference.month:
+                    year += 1
+                elif season == "winter" and reference.month > 11:
+                    year += 1
+            end_year = year
+            if end_month < start_month:
+                end_year = year + 1
+            return (year, start_month), (end_year, end_month)
     # Minimal natural-language: just resolve first month and mirror
     y, mon = _month_from_phrase(text, reference)
     return (y, mon), (y, mon)
 
 
-def _month_range_to_period_text(month_range_text: Optional[str], month_text: Optional[str]) -> Optional[str]:
+def _add_months(year: int, month: int, delta: int) -> Tuple[int, int]:
+    total = year * 12 + (month - 1) + delta
+    new_year = total // 12
+    new_month = total % 12 + 1
+    return new_year, new_month
+
+
+def _add_months_date(dt: date, delta: int) -> date:
+    year, month = _add_months(dt.year, dt.month, delta)
+    day = min(dt.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def _ensure_future_range(start_date: date, end_date: date, reference: Optional[date] = None) -> Tuple[date, date]:
+    today = reference or datetime.utcnow().date()
+    if start_date >= today:
+        return start_date, end_date
+    shifted_start = start_date
+    shifted_end = end_date
+    while shifted_start < today:
+        shifted_start = _add_months_date(shifted_start, 12)
+        shifted_end = _add_months_date(shifted_end, 12)
+    return shifted_start, shifted_end
+
+
+def _month_range_to_period_text(month_range_text: Optional[str], month_text: Optional[str], reference: Optional[date] = None) -> Optional[str]:
     source = month_range_text or month_text
     if source is None:
         return None
     try:
-        (start_year, start_month), (end_year, end_month) = _parse_month_range(source)
+        (start_year, start_month), (end_year, end_month) = _parse_month_range(source, reference)
     except Exception:
         return None
     try:
@@ -288,6 +361,7 @@ def _month_range_to_period_text(month_range_text: Optional[str], month_text: Opt
         end_date = date(end_year, end_month, end_day)
     except Exception:
         return None
+    start_date, end_date = _ensure_future_range(start_date, end_date, reference)
     return f"{start_date.isoformat()}..{end_date.isoformat()}"
 
 
@@ -391,11 +465,8 @@ def _fetch_explore_candidates(
         duration_minutes = flight.get("flight_duration_minutes")
         reason_parts: List[str] = []
         if price is not None:
-            try:
-                price_num = float(price)
-                reason_parts.append(f"from €{int(round(price_num))}")
-            except Exception:
-                reason_parts.append(f"from €{price}")
+            price_text = _format_price_text(price, flight.get("currency") or currency)
+            reason_parts.append(f"from {price_text}")
         if stops is not None:
             reason_parts.append("nonstop" if stops == 0 else f"{stops} stop{'s' if stops != 1 else ''}")
         reason_parts.append("STAR ALLIANCE")
@@ -407,7 +478,7 @@ def _fetch_explore_candidates(
             reason_parts.append(f"{int(duration_minutes)} min")
         avg_night = dest.get("avg_cost_per_night")
         if isinstance(avg_night, (int, float)):
-            reason_parts.append(f"stay ≈ €{int(round(float(avg_night)))} /night")
+            reason_parts.append(f"stay approx {_format_price_text(avg_night, currency or 'EUR')} /night")
         reason = ", ".join(reason_parts) if reason_parts else "Google Explore match"
         candidate = {
             "code": code,
@@ -503,7 +574,7 @@ def _score_destination(dest: dict, theme_tags: set[str], target_month: int, orig
         if tag in theme_tags and tag in (dest.get("tags") or []):
             score += 0.2
             reasons.append(tag)
-    # Carrier bias (prefer LHâ€‘Group presence)
+    # Carrier bias (prefer LHÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬ËœGroup presence)
     brands = set(str(x) for x in dest.get("lhGroupCarriers", []))
     if brands:
         score += 0.1
@@ -582,9 +653,9 @@ def _normalise_phrase_tokens(raw: str) -> List[str]:
     if not raw:
         return []
     text = _strip_trailing_punctuation(raw)
-    # Replace unicode dashes with spaces before stripping separators so �next�Saturday� works.
-    text = text.replace("�", " ").replace("�", " ")
-    text = text.replace("�", "'")
+    # Replace unicode dashes with spaces before stripping separators so Ã¯Â¿Â½nextÃ¯Â¿Â½SaturdayÃ¯Â¿Â½ works.
+    text = text.replace("Ã¯Â¿Â½", " ").replace("Ã¯Â¿Â½", " ")
+    text = text.replace("Ã¯Â¿Â½", "'")
     text = re.sub(r"[,\-/]", " ", text)
     text = re.sub(r"[()]", " ", text)
     text = _NON_WORD_RE.sub(" ", text)
@@ -691,7 +762,7 @@ def _attach_logs(payload: Dict[str, Any], logger: Optional[InvocationLogger]) ->
 
 
 _FLIGHT_FIELD_ALIASES = {
-    "origin": ("origin", "originLocationCode", "origin_code", "originCode"),
+    "origin": ("origin", "originLocationCode", "origin_code", "originCode", "departure_id", "departureId", "departureID"),
     "destination": ("destination", "destinationLocationCode", "destination_code", "destinationCode"),
     "departureDate": (
         "departureDate",
@@ -1928,7 +1999,7 @@ def search_best_itineraries(
     mid = 15
     dates: List[str] = []
     ml = _month_len(start_y, start_m)
-    # Weekend-biased ±14d elasticity around mid-month
+    # Weekend-biased Ã‚Â±14d elasticity around mid-month
     cands_days = [
         max(1, mid - 14),
         max(1, mid - 7),
@@ -2170,11 +2241,13 @@ def _build_recommendation_message(
 ) -> List[str]:
     """Build rich, timeline-style recommendation lines for flight options."""
 
-    def _fmt_price(val: Any, curr: Optional[str]) -> str:
+    def _format_price_text(val: Any, curr: Optional[str]) -> str:
+        currency_code = str(curr or "").strip().upper() or "EUR"
         try:
-            return f"{float(val):.0f} {curr or ''}".strip()
+            amount = float(val)
+            return f"{currency_code} {amount:,.0f}"
         except Exception:
-            return str(val) if val is not None else ""
+            return f"{currency_code} {val}" if val is not None else currency_code
 
     def _parse_dt(value: Optional[str]) -> Optional[datetime]:
         if not value:
@@ -2355,15 +2428,14 @@ def _build_recommendation_message(
                     stops_txt = f"{stops_value} stops"
         except Exception:
             stops_txt = None
-        parts = [f"{index}. **{primary}**", f"· {trip_type}"]
+        parts = [f"{index}. **{primary}**", f"- {trip_type}"]
         if stops_txt:
-            parts.append(f"· {stops_txt}")
+            parts.append(f"- {stops_txt}")
         if label:
-            parts.append(f"· {label}")
+            parts.append(f"- {label}")
         if price_text:
-            parts.append(f"· **{price_text}**")
+            parts.append(f"- **{price_text}**")
         return " ".join(parts)
-
     combined_options: List[Dict[str, Any]] = []
     if take_direct and direct_opts:
         combined_options.extend(direct_opts[:take_direct])
@@ -2380,7 +2452,7 @@ def _build_recommendation_message(
 
     for idx, opt in enumerate(combined_options, start=1):
         offer = opt.get("offer") or {}
-        price_text = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
+        price_text = _format_price_text(offer.get("totalPrice"), offer.get("currency") or currency)
         header = _option_header(idx, opt, offer, price_text, opt.get("stops"))
         lines.append(header)
 
@@ -2419,9 +2491,9 @@ def _build_recommendation_message(
                             layover_minutes += 1440
                         layover_txt = _format_minutes(layover_minutes)
                         location = prev_arrival_airport or "Layover airport"
-                        lines.append(f"{segment_prefix}Layover: {location} · {layover_txt}")
+                        lines.append(f"{segment_prefix}Layover: {location} - {layover_txt}")
                     timeline_line = (
-                        f"{segment_prefix}{dep_airport} {dep_time_txt} → {arr_airport} {arr_time_txt} ({seg_duration})"
+                        f"{segment_prefix}{dep_airport} {dep_time_txt} -> {arr_airport} {arr_time_txt} ({seg_duration})"
                     )
                     lines.append(timeline_line)
 
@@ -2543,9 +2615,10 @@ def _wrap_function(
 
 def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
     # NEW: detect IATA lookup path first
-    api_path = (event.get("apiPath") or "").strip().lower()
-    _log("Handling OpenAPI event", api_path=api_path or "<none>")
-    if api_path == "/iata/lookup":
+    api_path_raw = (event.get("apiPath") or "").strip()
+    api_path_lower = api_path_raw.lower()
+    _log("Handling OpenAPI event", api_path=api_path_lower or "<none>")
+    if api_path_lower == "/iata/lookup":
         props = (
             event.get("requestBody", {})
             .get("content", {})
@@ -2601,8 +2674,9 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
     normalized = _apply_contextual_defaults(normalized, event)
     if normalized:
         _log("OpenAPI normalized flight fields", normalized=normalized)
-    api_path = (event.get("apiPath") or "").strip()
-    if api_path == "/tools/iata/lookup":
+    if api_path_lower.startswith("/google/explore"):
+        return _handle_openapi_explore(event, body, normalized, had_origin_before_context)
+    if api_path_lower == "/tools/iata/lookup":
         param_list = event.get("parameters")
         parameters = param_list if isinstance(param_list, list) else []
         session_attrs = event.get("sessionAttributes") or {}
@@ -2760,7 +2834,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         )
         return _wrap_openapi(event, 200, {"matches": matches})
 
-    if api_path == "/tools/datetime/interpret":
+    if api_path_lower == "/tools/datetime/interpret":
         _log(
             "Datetime interpret endpoint deprecated",
             note="Use bedrock-time-tools action group instead.",
@@ -2770,6 +2844,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             410,
             {"error": "Datetime parsing is handled by the TimePhraseParser action group Lambda."},
         )
+
     raw_origin = normalized.get("origin")
     raw_destination = normalized.get("destination")
     origin, origin_suggestions = _resolve_iata_code(raw_origin)
@@ -2925,11 +3000,12 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             max_total = min(10, RECOMMENDER_MAX_OPTIONS)
             take_direct = min(len(direct), max_total)
             take_conn = min(len(conn), max_total - take_direct)
-            def _fmt_price(val: Any, curr: Optional[str]) -> str:
+            def _format_price_text(val: Any, curr: Optional[str]) -> str:
+                currency_code = str(curr or "").strip().upper() or "EUR"
                 try:
-                    return f"{float(val):.0f} {curr or ''}".strip() if val is not None else "?"
+                    return f"{currency_code} {float(val):,.0f}" if val is not None else currency_code
                 except Exception:
-                    return f"{val} {curr or ''}".strip()
+                    return f"{currency_code} {val}" if val is not None else currency_code
             def _hhmm2(ts: Optional[str]) -> str:
                 try:
                     if not ts:
@@ -2946,7 +3022,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                     arr_ap = off.get("arrivalAirport") or "?"
                     dep_tm = _hhmm2(off.get("departureTime"))
                     dur = off.get("duration") or "?"
-                    price_txt = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
+                    price_txt = _format_price_text(off.get("totalPrice"), off.get("currency") or currency)
                     segs = off.get("segments")
                     seg0 = segs[0] if isinstance(segs, list) and segs else None
                     c0 = (seg0.get("carrier") or seg0.get("marketingCarrier") or seg0.get("operatingCarrier")) if isinstance(seg0, dict) else None
@@ -2971,7 +3047,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                     arr_ap = off.get("arrivalAirport") or "?"
                     dep_tm = _hhmm2(off.get("departureTime"))
                     dur = off.get("duration") or "?"
-                    price_txt = _fmt_price(off.get("totalPrice"), off.get("currency") or currency)
+                    price_txt = _format_price_text(off.get("totalPrice"), off.get("currency") or currency)
                     stops = off.get("stops")
                     stops_txt = "nonstop" if stops == 0 else (f"{stops} stop" if stops == 1 else f"{stops} stops")
                     segs = off.get("segments")
@@ -3022,6 +3098,88 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
         _log("OpenAPI flight search error", error=str(e))
         return _wrap_openapi(event, 502, {"error": str(e)[:1200]})
 
+
+
+def _handle_openapi_explore(
+    event: Dict[str, Any],
+    body: Dict[str, Any],
+    normalized: Dict[str, Any],
+    had_origin_before_context: bool,
+) -> Dict[str, Any]:
+    origin_value = (normalized or {}).get("origin")
+    origin = _normalized_iata(str(origin_value or "")) if origin_value else None
+    if not origin:
+        msg = "Please choose a departure airport IATA code (for example, FRA)."
+        _log("OpenAPI explore validation message", reason="missing_origin")
+        return _wrap_openapi(event, 200, {"message": msg, "suggestions": []})
+
+    limit_raw = body.get("limit") or body.get("max") or (normalized or {}).get("max")
+    max_candidates = _to_int(limit_raw, 16)
+    currency = str(
+        body.get("currency")
+        or (normalized or {}).get("currency")
+        or "EUR"
+    ).strip().upper() or "EUR"
+
+    time_period_text = (
+        body.get("time_period")
+        or body.get("timePeriod")
+        or body.get("period")
+    )
+    month_text = body.get("month")
+
+    theme_raw = body.get("interests") or body.get("themeTags")
+    if isinstance(theme_raw, str):
+        theme_tags = [part.strip() for part in theme_raw.split(",") if part.strip()]
+    elif isinstance(theme_raw, list):
+        theme_tags = [str(item).strip() for item in theme_raw if str(item).strip()]
+    else:
+        theme_tags = []
+
+    try:
+        candidates, meta = _fetch_explore_candidates(
+            origin_code=origin,
+            month_range_text=time_period_text,
+            month_text=month_text,
+            theme_tags=theme_tags,
+            max_candidates=max_candidates,
+            currency=currency,
+            timeout=GOOGLE_SEARCH_TIMEOUT,
+        )
+    except Exception as exc:
+        _log("OpenAPI explore fetch failed", origin=origin, error=str(exc))
+        return _wrap_openapi(event, 502, {"error": f"Explore search failed: {exc}"})
+
+    _log(
+        "OpenAPI explore search success",
+        origin=origin,
+        destinations=len(candidates),
+    )
+
+    message = (
+        "Inspiration - STAR ALLIANCE options (filtered to Lufthansa Group carriers)"
+        if candidates
+        else "No Explore destinations found for that window. Try another month or broaden your request."
+    )
+
+    response_payload: Dict[str, Any] = {
+        "generatedAt": _now_iso(),
+        "origin": origin,
+        "destinations": candidates,
+        "meta": meta,
+        "message": message,
+    }
+    params_meta = meta.get("params") if isinstance(meta, dict) else None
+    if isinstance(params_meta, dict) and params_meta.get("time_period"):
+        response_payload["timePeriod"] = params_meta["time_period"]
+
+    if not had_origin_before_context and origin:
+        try:
+            event.setdefault("sessionAttributes", {})["default_origin"] = origin
+        except Exception:
+            pass
+
+    return _wrap_openapi(event, 200, response_payload)
 
 def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
     func_name = (event.get("function") or "").strip().lower()
@@ -3266,7 +3424,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 if lines:
                     for idx_opt, opt in enumerate(options, start=1):
                         offer = opt.get("offer") or {}
-                        price_txt = _fmt_price(offer.get("totalPrice"), offer.get("currency") or currency)
+                        price_txt = _format_price_text(offer.get("totalPrice"), offer.get("currency") or currency)
                         dep = offer.get("departureAirport") or "?"
                         arr = offer.get("arrivalAirport") or (opt.get("destination") or "?")
                         dep_time = offer.get("departureTime") or "?"
@@ -3320,20 +3478,17 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 _log("Itinerary aggregator failed", error=str(exc))
 
         if not payload.get("message"):
-            header = "Inspiration — STAR ALLIANCE options (filtered to Lufthansa Group carriers)"
+            header = "Inspiration - STAR ALLIANCE options (filtered to Lufthansa Group carriers)"
             msg_lines = [header, "These results are Lufthansa Group-operated; let me know if you want to explore other STAR ALLIANCE carriers or keep only Lufthansa Group."]
             for idx_msg, candidate in enumerate(candidates[:5], start=1):
                 city = candidate.get("city") or "?"
                 country = candidate.get("country") or "?"
                 code = candidate.get("code") or "?"
-                reason_text = (candidate.get("reason") or "").replace("°", " ").replace("\u00B0", " ")
+                reason_text = (candidate.get("reason") or "").replace("\u00B0", " ")
                 extras: List[str] = []
                 price_val = candidate.get("price")
                 if price_val is not None:
-                    try:
-                        extras.append(f"approx €{int(round(float(price_val)))}")
-                    except Exception:
-                        extras.append(f"price {price_val}")
+                    extras.append(f"approx {_format_price_text(price_val, candidate.get('currency') or 'EUR')}")
                 duration_val = candidate.get("duration")
                 if duration_val:
                     extras.append(duration_val)
@@ -3548,11 +3703,12 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     return t[:5]
                 except Exception:
                     return "?"
-            def _fmt_price(val: Any, curr: Optional[str]) -> str:
+            def _format_price_text(val: Any, curr: Optional[str]) -> str:
+                currency_code = str(curr or "").strip().upper() or "EUR"
                 try:
-                    return f"{float(val):.0f} {curr or ''}".strip()
+                    return f"{currency_code} {float(val):,.0f}"
                 except Exception:
-                    return str(val)
+                    return f"{currency_code} {val}" if val is not None else currency_code
             if offers:
                 direct = [o for o in offers if (o.get("stops") == 0)]
                 conn = [o for o in offers if (o.get("stops") and o.get("stops") > 0) or o.get("stops") is None]
@@ -3689,10 +3845,6 @@ def lambda_handler(event, context):
         raise
     finally:
         _CURRENT_LOGGER.reset(token)
-
-
-
-
 
 
 
