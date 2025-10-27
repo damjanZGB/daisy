@@ -347,6 +347,69 @@ def _ensure_future_range(start_date: date, end_date: date, reference: Optional[d
     return shifted_start, shifted_end
 
 
+MONTH_SLUGS = [
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+]
+MONTH_SLUG_TO_INDEX = {slug: idx + 1 for idx, slug in enumerate(MONTH_SLUGS)}
+_SEARCHAPI_TOKEN_PATTERN = re.compile(
+    r"(?:one_week_trip_in_(?:[a-z]+|the_next_six_months)|"
+    r"two_week_trip_in_(?:[a-z]+|the_next_six_months)|"
+    r"weekend(?:_trip)?_in_(?:[a-z]+|the_next_six_months)|"
+    r"trip_in_(?:[a-z]+|the_next_six_months))$"
+)
+_ISO_RANGE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}\.\.\d{4}-\d{2}-\d{2}$")
+
+
+def _is_iso_range(value: Optional[str]) -> bool:
+    if not value:
+        return False
+    return bool(_ISO_RANGE_PATTERN.fullmatch(str(value).strip()))
+
+
+def _is_searchapi_time_period_token(value: Optional[str]) -> bool:
+    if not value:
+        return False
+    return bool(_SEARCHAPI_TOKEN_PATTERN.fullmatch(str(value).strip().lower()))
+
+
+def _time_period_token_to_month_year(token: str, reference: Optional[date] = None) -> Optional[Tuple[int, int]]:
+    if not _is_searchapi_time_period_token(token):
+        return None
+    suffix = token.strip().lower().split("_in_")[-1]
+    if suffix == "the_next_six_months":
+        return None
+    month_index = MONTH_SLUG_TO_INDEX.get(suffix)
+    if not month_index:
+        return None
+    today = reference or datetime.utcnow().date()
+    year = today.year
+    if month_index < today.month:
+        year += 1
+    return year, month_index
+
+
+def _time_period_token_to_iso_range(token: str, reference: Optional[date] = None) -> Optional[str]:
+    month_year = _time_period_token_to_month_year(token, reference)
+    if not month_year:
+        return None
+    year, month = month_year
+    end_day = calendar.monthrange(year, month)[1]
+    start_date = date(year, month, 1)
+    end_date = date(year, month, end_day)
+    return f"{start_date.isoformat()}..{end_date.isoformat()}"
+
+
 def _month_range_to_period_text(month_range_text: Optional[str], month_text: Optional[str], reference: Optional[date] = None) -> Optional[str]:
     source = month_range_text or month_text
     if source is None:
@@ -396,6 +459,9 @@ def _fetch_explore_candidates(
     *,
     currency: str = "EUR",
     timeout: Optional[float] = None,
+    time_period_token: Optional[str] = None,
+    iso_range: Optional[str] = None,
+    trip_type: Optional[str] = None,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     departure = _normalized_iata(str(origin_code or "").strip() or DEFAULT_EXPLORE_DEPARTURE) or DEFAULT_EXPLORE_DEPARTURE
     params: Dict[str, Any] = {
@@ -407,11 +473,31 @@ def _fetch_explore_candidates(
         "limit": str(max(10, max_candidates * 2)),
         "included_airlines": "STAR_ALLIANCE",
     }
-    period = _month_range_to_period_text(month_range_text, month_text)
-    if period:
-        params["time_period"] = period
-    if "time_period" not in params:
-        params["time_period"] = "one_week_trip_in_the_next_six_months"
+    token_candidate: Optional[str] = None
+    iso_range_value: Optional[str] = iso_range if iso_range and _is_iso_range(iso_range) else None
+    normalized_trip_type: Optional[str] = str(trip_type).strip().lower() if trip_type else None
+    if time_period_token and _is_searchapi_time_period_token(time_period_token):
+        token_candidate = time_period_token.strip().lower()
+    elif month_range_text and _is_searchapi_time_period_token(str(month_range_text).strip().lower()):
+        token_candidate = str(month_range_text).strip().lower()
+    elif month_text and _is_searchapi_time_period_token(str(month_text).strip().lower()):
+        token_candidate = str(month_text).strip().lower()
+
+    if token_candidate:
+        params["time_period"] = token_candidate
+    else:
+        period = _month_range_to_period_text(month_range_text, month_text)
+        if period:
+            params["time_period"] = period
+        elif iso_range_value:
+            params["time_period"] = iso_range_value
+
+    if not params.get("time_period"):
+        if iso_range_value:
+            params["time_period"] = iso_range_value
+        else:
+            params["time_period"] = "one_week_trip_in_the_next_six_months"
+
     interests = ",".join(sorted({t for t in theme_tags if t})) if theme_tags else ""
     if interests:
         params["interests"] = interests
@@ -420,6 +506,12 @@ def _fetch_explore_candidates(
     if params.get("travel_mode") == "flights_only" and "interests" in params:
         params.pop("interests", None)
     _enforce_google_defaults(params, "explore")
+    iso_range_hint: Optional[str] = None
+    if iso_range_value:
+        iso_range_hint = iso_range_value
+    elif token_candidate:
+        iso_range_hint = _time_period_token_to_iso_range(token_candidate)
+
     meta: Dict[str, Any] = {
         "params": {
             key: params.get(key)
@@ -427,6 +519,12 @@ def _fetch_explore_candidates(
             if key in params
         }
     }
+    if token_candidate:
+        meta["timePeriodToken"] = token_candidate
+    if iso_range_hint:
+        meta["isoRange"] = iso_range_hint
+    if normalized_trip_type:
+        meta["tripType"] = normalized_trip_type
     payload = _proxy_get(
         "/google/explore/search",
         params,
@@ -521,6 +619,10 @@ def _fetch_explore_candidates(
             "currency": currency or "EUR",
             "max": 10,
         }
+        if normalized_trip_type:
+            search_request["flightType"] = "one_way" if normalized_trip_type.startswith("one") else "round_trip"
+            if normalized_trip_type.startswith("one"):
+                search_request.pop("returnDate", None)
         if star_alliance_requested:
             search_request["lhGroupOnly"] = False
         else:
@@ -2000,6 +2102,8 @@ def search_best_itineraries(
     lh_group_only: bool = True,
     max_per_destination: int = 2,
     timeout: Optional[float] = None,
+    time_period_token: Optional[str] = None,
+    iso_range: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Search several dates per destination and return Good-Better-Best.
 
@@ -2007,7 +2111,27 @@ def search_best_itineraries(
     - Ranks offers by price, duration, and stops to produce a varied top set.
     - Adds lightweight microcopy labels.
     """
-    (start_y, start_m), _end = _parse_month_range(month_range_text)
+    reference_today = datetime.utcnow().date()
+    start_month_tuple: Optional[Tuple[int, int]] = None
+    end_month_tuple: Optional[Tuple[int, int]] = None
+    if iso_range and _is_iso_range(iso_range):
+        start_iso, end_iso = iso_range.split("..")
+        start_date = _parse_iso_date(start_iso)
+        end_date = _parse_iso_date(end_iso)
+        if start_date and end_date:
+            start_month_tuple = (start_date.year, start_date.month)
+            end_month_tuple = (end_date.year, end_date.month)
+    if not start_month_tuple and time_period_token:
+        month_year = _time_period_token_to_month_year(time_period_token, reference_today)
+        if month_year:
+            start_month_tuple = month_year
+            end_month_tuple = month_year
+    if not start_month_tuple:
+        start_month_tuple, end_month_tuple = _parse_month_range(month_range_text, reference_today)
+    start_y, start_m = start_month_tuple
+    if end_month_tuple is None:
+        end_month_tuple = start_month_tuple
+    _end = end_month_tuple
 
     def _iso(y: int, m: int, d: int) -> str:
         return f"{y:04d}-{m:02d}-{d:02d}"
@@ -3149,6 +3273,30 @@ def _handle_openapi_explore(
         or body.get("period")
     )
     month_text = body.get("month")
+    time_period_token_param = (
+        body.get("searchApiTimePeriodToken")
+        or body.get("time_period_token")
+        or body.get("timePeriodToken")
+    )
+    iso_range_param = (
+        body.get("searchApiIsoRange")
+        or body.get("iso_range")
+        or body.get("isoRange")
+    )
+    trip_type_param = (
+        body.get("searchApiTripType")
+        or body.get("trip_type")
+        or body.get("tripType")
+    )
+    if time_period_token_param:
+        candidate_token = str(time_period_token_param).strip()
+        time_period_token_param = (
+            candidate_token.lower() if _is_searchapi_time_period_token(candidate_token) else None
+        )
+    if iso_range_param and not _is_iso_range(iso_range_param):
+        iso_range_param = None
+    if trip_type_param:
+        trip_type_param = str(trip_type_param).strip().lower()
 
     theme_raw = body.get("interests") or body.get("themeTags")
     if isinstance(theme_raw, str):
@@ -3167,6 +3315,9 @@ def _handle_openapi_explore(
             max_candidates=max_candidates,
             currency=currency,
             timeout=GOOGLE_SEARCH_TIMEOUT,
+            time_period_token=time_period_token_param,
+            iso_range=iso_range_param,
+            trip_type=trip_type_param,
         )
     except Exception as exc:
         _log("OpenAPI explore fetch failed", origin=origin, error=str(exc))
@@ -3197,6 +3348,13 @@ def _handle_openapi_explore(
     params_meta = meta.get("params") if isinstance(meta, dict) else None
     if isinstance(params_meta, dict) and params_meta.get("time_period"):
         response_payload["timePeriod"] = params_meta["time_period"]
+    if isinstance(meta, dict):
+        if meta.get("timePeriodToken"):
+            response_payload["timePeriodToken"] = meta["timePeriodToken"]
+        if meta.get("isoRange"):
+            response_payload["isoRange"] = meta["isoRange"]
+        if meta.get("tripType"):
+            response_payload["tripType"] = meta["tripType"]
 
     if not had_origin_before_context and origin:
         try:
@@ -3246,6 +3404,21 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
         origin_code = _get_param(params, "originCode")
         month_text = _get_param(params, "month")
         month_range_text = _get_param(params, "monthRange") or month_text
+        time_period_token = (
+            _get_param(params, "searchApiTimePeriodToken")
+            or _get_param(params, "timePeriodToken")
+            or _get_param(params, "time_period_token")
+        )
+        iso_range_param = (
+            _get_param(params, "searchApiIsoRange")
+            or _get_param(params, "isoRange")
+            or _get_param(params, "iso_range")
+        )
+        trip_type_param = (
+            _get_param(params, "searchApiTripType")
+            or _get_param(params, "tripType")
+            or _get_param(params, "trip_type")
+        )
         theme_raw = _get_param(params, "themeTags")
         min_avg_high = _get_param(params, "minAvgHighC")
         max_candidates = _to_int(_get_param(params, "maxCandidates", 8), 8)
@@ -3272,7 +3445,30 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             origin_code = (event.get("sessionAttributes") or {}).get("default_origin")
         origin_code = _normalized_iata(str(origin_code or "")) or origin_code
 
-        (year, target_month), _ = _parse_month_range(month_range_text)
+        if month_range_text and _is_searchapi_time_period_token(str(month_range_text).strip().lower()):
+            if not time_period_token:
+                time_period_token = str(month_range_text).strip().lower()
+            month_range_text = None
+
+        iso_range_value = iso_range_param if _is_iso_range(iso_range_param) else None
+        if time_period_token and not iso_range_value:
+            iso_range_value = _time_period_token_to_iso_range(time_period_token)
+
+        if trip_type_param:
+            trip_type_param = str(trip_type_param).strip().lower()
+
+        reference_today = datetime.utcnow().date()
+        derived_month_year: Optional[Tuple[int, int]] = None
+        if iso_range_value:
+            start_iso_part = iso_range_value.split("..")[0]
+            start_date = _parse_iso_date(start_iso_part)
+            if start_date:
+                derived_month_year = (start_date.year, start_date.month)
+        if not derived_month_year and time_period_token:
+            derived_month_year = _time_period_token_to_month_year(time_period_token, reference_today)
+        if not derived_month_year:
+            derived_month_year, _ = _parse_month_range(month_range_text, reference_today)
+        year, target_month = derived_month_year
         theme_set = set(theme_tags)
 
         explore_meta: Dict[str, Any] = {}
@@ -3286,11 +3482,23 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 max_candidates,
                 currency=currency,
                 timeout=GOOGLE_SEARCH_TIMEOUT,
+                time_period_token=time_period_token,
+                iso_range=iso_range_value,
+                trip_type=trip_type_param,
             )
         except Exception as exc:
             _log("Explore candidate fetch failed", error=str(exc))
             explore_candidates = []
             explore_meta = {"error": str(exc)}
+
+        if isinstance(explore_meta, dict):
+            if not time_period_token and explore_meta.get("timePeriodToken"):
+                time_period_token = explore_meta.get("timePeriodToken")
+            meta_iso = explore_meta.get("isoRange")
+            if not iso_range_value and meta_iso and _is_iso_range(meta_iso):
+                iso_range_value = meta_iso
+            if not trip_type_param and explore_meta.get("tripType"):
+                trip_type_param = explore_meta.get("tripType")
 
         star_alliance_requested = bool(explore_meta.get("starAllianceRequested"))
         presented_carriers_label = "STAR ALLIANCE carriers" if star_alliance_requested else "Lufthansa Group"
@@ -3343,7 +3551,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 "query": {
                     "originCode": origin_code,
                     "month": month_text,
-                    "monthRange": month_range_text,
+                    "monthRange": month_range_text or time_period_token,
                     "themeTags": theme_tags,
                     "minAvgHighC": min_avg_high,
                     "maxCandidates": max_candidates,
@@ -3352,6 +3560,12 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 "message": "No destinations matched your filters. Try adjusting month or theme.",
                 "source": "google_explore" if explore_candidates else "catalog",
             }
+            if time_period_token:
+                payload_empty["query"]["timePeriodToken"] = time_period_token
+            if iso_range_value:
+                payload_empty["query"]["isoRange"] = iso_range_value
+            if trip_type_param:
+                payload_empty["query"]["tripType"] = trip_type_param
             filters_empty: Dict[str, Any] = {"presentedCarriers": presented_carriers_label}
             if star_alliance_requested:
                 filters_empty["alliance"] = "STAR ALLIANCE"
@@ -3416,7 +3630,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             "query": {
                 "originCode": origin_code,
                 "month": month_text,
-                "monthRange": month_range_text,
+                "monthRange": month_range_text or time_period_token,
                 "themeTags": theme_tags,
                 "minAvgHighC": min_avg_high,
                 "maxCandidates": max_candidates,
@@ -3424,6 +3638,12 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             "candidates": candidates,
             "source": "google_explore" if explore_candidates else ("catalog" if catalog_used else "hybrid"),
         }
+        if time_period_token:
+            payload["query"]["timePeriodToken"] = time_period_token
+        if iso_range_value:
+            payload["query"]["isoRange"] = iso_range_value
+        if trip_type_param:
+            payload["query"]["tripType"] = trip_type_param
         filters_block: Dict[str, Any] = {"presentedCarriers": presented_carriers_label}
         if star_alliance_requested:
             filters_block["alliance"] = "STAR ALLIANCE"
@@ -3436,9 +3656,11 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 options = search_best_itineraries(
                     origin_code,
                     top_dest_objects,
-                    month_range_text,
+                    month_range_text or time_period_token,
                     currency=currency,
                     lh_group_only=not star_alliance_requested,
+                    time_period_token=time_period_token,
+                    iso_range=iso_range_value,
                 )
                 direct_opts = [opt for opt in options if (opt.get("stops") == 0)]
                 conn_opts = [opt for opt in options if (opt.get("stops") and opt.get("stops") > 0) or opt.get("stops") is None]

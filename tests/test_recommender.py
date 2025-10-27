@@ -35,6 +35,14 @@ class TestRecommenderHelpers(unittest.TestCase):
         period = lf._month_range_to_period_text("2025-02..2025-02", None, reference=date(2025, 10, 27))
         self.assertEqual(period, "2026-02-01..2026-02-28")
 
+    def test_time_period_token_to_month_year(self):
+        result = lf._time_period_token_to_month_year("one_week_trip_in_february", reference=date(2025, 10, 27))
+        self.assertEqual(result, (2026, 2))
+
+    def test_time_period_token_iso_range(self):
+        iso_range = lf._time_period_token_to_iso_range("weekend_in_march", reference=date(2025, 10, 27))
+        self.assertEqual(iso_range, "2026-03-01..2026-03-31")
+
 
 class TestScoring(unittest.TestCase):
     def setUp(self):
