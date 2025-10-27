@@ -763,7 +763,15 @@ def _attach_logs(payload: Dict[str, Any], logger: Optional[InvocationLogger]) ->
 
 _FLIGHT_FIELD_ALIASES = {
     "origin": ("origin", "originLocationCode", "origin_code", "originCode", "departure_id", "departureId", "departureID"),
-    "destination": ("destination", "destinationLocationCode", "destination_code", "destinationCode"),
+    "destination": (
+        "destination",
+        "destinationLocationCode",
+        "destination_code",
+        "destinationCode",
+        "arrival_id",
+        "arrivalId",
+        "arrivalID",
+    ),
     "departureDate": (
         "departureDate",
         "departure_date",
@@ -2241,14 +2249,6 @@ def _build_recommendation_message(
 ) -> List[str]:
     """Build rich, timeline-style recommendation lines for flight options."""
 
-    def _format_price_text(val: Any, curr: Optional[str]) -> str:
-        currency_code = str(curr or "").strip().upper() or "EUR"
-        try:
-            amount = float(val)
-            return f"{currency_code} {amount:,.0f}"
-        except Exception:
-            return f"{currency_code} {val}" if val is not None else currency_code
-
     def _parse_dt(value: Optional[str]) -> Optional[datetime]:
         if not value:
             return None
@@ -3000,12 +3000,6 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             max_total = min(10, RECOMMENDER_MAX_OPTIONS)
             take_direct = min(len(direct), max_total)
             take_conn = min(len(conn), max_total - take_direct)
-            def _format_price_text(val: Any, curr: Optional[str]) -> str:
-                currency_code = str(curr or "").strip().upper() or "EUR"
-                try:
-                    return f"{currency_code} {float(val):,.0f}" if val is not None else currency_code
-                except Exception:
-                    return f"{currency_code} {val}" if val is not None else currency_code
             def _hhmm2(ts: Optional[str]) -> str:
                 try:
                     if not ts:
@@ -3703,12 +3697,6 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     return t[:5]
                 except Exception:
                     return "?"
-            def _format_price_text(val: Any, curr: Optional[str]) -> str:
-                currency_code = str(curr or "").strip().upper() or "EUR"
-                try:
-                    return f"{currency_code} {float(val):,.0f}"
-                except Exception:
-                    return f"{currency_code} {val}" if val is not None else currency_code
             if offers:
                 direct = [o for o in offers if (o.get("stops") == 0)]
                 conn = [o for o in offers if (o.get("stops") and o.get("stops") > 0) or o.get("stops") is None]

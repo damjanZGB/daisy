@@ -439,6 +439,12 @@ def _fetch_explore_candidates(
     if not isinstance(destinations, list):
         return [], meta
     filtered: List[Dict[str, Any]] = []
+    requested_airlines = {
+        token.strip().upper()
+        for token in str(params.get("included_airlines") or "").split(",")
+        if token.strip()
+    }
+    star_alliance_requested = "STAR_ALLIANCE" in requested_airlines
     lh_allowed = set(LH_GROUP_CODES)
     for dest in destinations:
         if not isinstance(dest, dict):
@@ -457,7 +463,7 @@ def _fetch_explore_candidates(
         if not code:
             continue
         airlines = _explore_airline_codes(dest)
-        if airlines and not (airlines & lh_allowed):
+        if airlines and not star_alliance_requested and not (airlines & lh_allowed):
             continue
         price = flight.get("price")
         stops = flight.get("stops")
@@ -469,9 +475,10 @@ def _fetch_explore_candidates(
             reason_parts.append(f"from {price_text}")
         if stops is not None:
             reason_parts.append("nonstop" if stops == 0 else f"{stops} stop{'s' if stops != 1 else ''}")
-        reason_parts.append("STAR ALLIANCE")
-        if airlines:
-            reason_parts.append("Lufthansa Group carrier")
+        if star_alliance_requested:
+            reason_parts.append("Includes STAR ALLIANCE carriers")
+        elif airlines:
+            reason_parts.append(f"Carriers: {', '.join(sorted(airlines))}")
         if isinstance(duration_txt, str) and duration_txt.strip():
             reason_parts.append(duration_txt.strip())
         elif isinstance(duration_minutes, (int, float)):
@@ -491,14 +498,12 @@ def _fetch_explore_candidates(
             "stops": stops,
             "duration": duration_txt or (f"{int(duration_minutes)} min" if isinstance(duration_minutes, (int, float)) else None),
             "carriers": sorted(airlines) if airlines else [],
-            "image": dest.get("image") or dest.get("thumbnail"),
             "kgmid": dest.get("kgmid"),
             "exploreFlight": flight,
             "outboundDate": dest.get("outbound_date"),
             "returnDate": dest.get("return_date"),
             "source": "google_explore",
-            "alliance": "STAR ALLIANCE",
-            "presentedCarriers": "Lufthansa Group",
+            **({"alliance": "STAR ALLIANCE"} if star_alliance_requested else {}),
         }
         search_request = {
             "origin": departure,
@@ -763,7 +768,15 @@ def _attach_logs(payload: Dict[str, Any], logger: Optional[InvocationLogger]) ->
 
 _FLIGHT_FIELD_ALIASES = {
     "origin": ("origin", "originLocationCode", "origin_code", "originCode", "departure_id", "departureId", "departureID"),
-    "destination": ("destination", "destinationLocationCode", "destination_code", "destinationCode"),
+    "destination": (
+        "destination",
+        "destinationLocationCode",
+        "destination_code",
+        "destinationCode",
+        "arrival_id",
+        "arrivalId",
+        "arrivalID",
+    ),
     "departureDate": (
         "departureDate",
         "departure_date",
@@ -2241,14 +2254,6 @@ def _build_recommendation_message(
 ) -> List[str]:
     """Build rich, timeline-style recommendation lines for flight options."""
 
-    def _format_price_text(val: Any, curr: Optional[str]) -> str:
-        currency_code = str(curr or "").strip().upper() or "EUR"
-        try:
-            amount = float(val)
-            return f"{currency_code} {amount:,.0f}"
-        except Exception:
-            return f"{currency_code} {val}" if val is not None else currency_code
-
     def _parse_dt(value: Optional[str]) -> Optional[datetime]:
         if not value:
             return None
@@ -3000,12 +3005,6 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             max_total = min(10, RECOMMENDER_MAX_OPTIONS)
             take_direct = min(len(direct), max_total)
             take_conn = min(len(conn), max_total - take_direct)
-            def _format_price_text(val: Any, curr: Optional[str]) -> str:
-                currency_code = str(curr or "").strip().upper() or "EUR"
-                try:
-                    return f"{currency_code} {float(val):,.0f}" if val is not None else currency_code
-                except Exception:
-                    return f"{currency_code} {val}" if val is not None else currency_code
             def _hhmm2(ts: Optional[str]) -> str:
                 try:
                     if not ts:
@@ -3703,12 +3702,6 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     return t[:5]
                 except Exception:
                     return "?"
-            def _format_price_text(val: Any, curr: Optional[str]) -> str:
-                currency_code = str(curr or "").strip().upper() or "EUR"
-                try:
-                    return f"{currency_code} {float(val):,.0f}"
-                except Exception:
-                    return f"{currency_code} {val}" if val is not None else currency_code
             if offers:
                 direct = [o for o in offers if (o.get("stops") == 0)]
                 conn = [o for o in offers if (o.get("stops") and o.get("stops") > 0) or o.get("stops") is None]

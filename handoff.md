@@ -107,6 +107,12 @@ Bedrock action group (daisy_in_action) -> aws/lambda_function.py
 - Expand `AGENT_ID_ALLOWLIST` / `AGENT_ALIAS_ALLOWLIST` when onboarding new Bedrock agent versions.
 - Legacy tests in `tests/test_recommender` beyond `TestExploreProxy` remain pending refactor.
 
+### Recent Updates (2025-10-27)
+- Lambda request normalization now treats `arrival_id`/`arrivalId`/`arrivalID` as destination aliases so Explore selections flow directly into flight searches.
+- `shared/_format_price_text` helper standardizes currency output to ASCII-safe `CUR ###` strings; timeline and recommendation text no longer include raw euro symbols or malformed bullet characters.
+- Explore candidate shaping no longer filters out non-Lufthansa carriers when `included_airlines=STAR_ALLIANCE`; instead we surface STAR ALLIANCE coverage in the reason text.
+- Chat payloads omit large `image` URLs for Explore destinations to keep UI bubbles compact; thumbnails/images can be reintroduced later via dedicated UI elements.
+
 ### Quick Reference
 - Repo root: `C:\Users\Damjan\source\repos\daisy`
 - Lufthansa Group carriers (downstream): `LH`, `LX`, `OS`, `SN`, `EW`, `4Y`, `EN`
