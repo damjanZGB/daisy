@@ -382,7 +382,20 @@ export async function handleChat(payload = {}) {
     appendAttr("location_lon", lonNum.toFixed(6));
   }
   if (Object.keys(sessionAttrsRaw).length > 0) {
-    state.sessionAttributes = sanitizeSessionAttributes(sessionAttrsRaw);
+    const sanitized = sanitizeSessionAttributes(sessionAttrsRaw);
+    state.sessionAttributes = sanitized;
+    const promptAttrs = {};
+    if (sanitized.default_origin) promptAttrs.default_origin = sanitized.default_origin;
+    if (sanitized.default_origin_label) promptAttrs.default_origin_label = sanitized.default_origin_label;
+    if (parsedLabel) promptAttrs.location_label = parsedLabel;
+    if (sanitized.location_lat) promptAttrs.location_lat = sanitized.location_lat;
+    if (sanitized.location_lon) promptAttrs.location_lon = sanitized.location_lon;
+    if (Object.keys(promptAttrs).length > 0) {
+      state.promptSessionAttributes = {
+        ...(state.promptSessionAttributes || {}),
+        ...promptAttrs
+      };
+    }
   }
   const initialText = (text ?? inputText ?? "").toString();
   const userText = initialText.trim();
