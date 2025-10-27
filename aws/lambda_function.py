@@ -19,6 +19,7 @@ from urllib import error as _urlerr
 from urllib import parse as _urlparse
 from urllib import request as _urlreq
 import os
+import time
 import uuid
 from zoneinfo import ZoneInfo
 
@@ -1293,60 +1294,82 @@ def _props_to_dict(props: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def _proxy_post(
-    path: str, payload: Dict[str, Any], timeout: float = 8.0
+    path: str,
+    payload: Dict[str, Any],
+    timeout: float = 8.0,
+    *,
+    base_url: Optional[str] = None,
+    retries: int = 1,
+    retry_delay: float = 0.3,
 ) -> Dict[str, Any]:
-
-    url = f"{PROXY_BASE_URL}{path}"
+    target_base = (base_url or PROXY_BASE_URL).rstrip("/")
+    url = f"{target_base}{path}"
     data = json.dumps(payload).encode("utf-8")
     headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
-    req = _urlreq.Request(url, data=data, headers=headers, method="POST")
-    _log("Proxy POST request", path=path, url=url, timeout=timeout, payload=payload)
-    try:
-        with _urlreq.urlopen(req, timeout=timeout) as resp:
-            raw_bytes = resp.read()
-            text = raw_bytes.decode("utf-8")
-            status = getattr(resp, "status", None)
-            _log(
-                "Proxy POST response received",
-                path=path,
-                status=status,
-                bytes=len(raw_bytes),
-            )
-            try:
-                parsed = json.loads(text)
-            except Exception:
-                parsed = {"raw": text}
-            # Optional S3 debug capture
-            if DEBUG_TOOL_IO and _S3_CLIENT and DEBUG_S3_BUCKET:
+
+    attempt = 0
+    while True:
+        req = _urlreq.Request(url, data=data, headers=headers, method="POST")
+        _log("Proxy POST request", path=path, url=url, timeout=timeout, payload=payload, attempt=attempt + 1)
+        try:
+            with _urlreq.urlopen(req, timeout=timeout) as resp:
+                raw_bytes = resp.read()
+                text = raw_bytes.decode("utf-8")
+                status = getattr(resp, "status", None)
+                _log(
+                    "Proxy POST response received",
+                    path=path,
+                    status=status,
+                    bytes=len(raw_bytes),
+                )
                 try:
-                    key = f"{DEBUG_S3_PREFIX}/{datetime.utcnow().strftime('%Y/%m/%d')}/{uuid.uuid4().hex}_post.json"
-                    body = json.dumps({
-                        "path": path,
-                        "url": url,
-                        "request_payload": payload,
-                        "status": status,
-                        "response": parsed,
-                    }, default=str).encode("utf-8")
-                    _S3_CLIENT.put_object(Bucket=DEBUG_S3_BUCKET, Key=key, Body=body, ContentType="application/json")
-                    _log("Tool I/O debug stored", key=key, bytes=len(body))
-                except Exception as exc:  # pragma: no cover
-                    _log("Tool I/O debug store failed", error=str(exc))
-            return parsed if isinstance(parsed, dict) else {"raw": text}
-    except _urlerr.HTTPError as e:
-        body = (e.read() or b"").decode("utf-8", errors="replace")
-        _log(
-            "Proxy POST HTTP error",
-            path=path,
-            status=e.code,
-            body_preview=body[:200],
-        )
-        raise RuntimeError(f"Proxy HTTP {e.code}: {body[:500]}")
-    except _urlerr.URLError as e:
-        _log("Proxy POST network error", path=path, error=getattr(e, "reason", e))
-        raise RuntimeError(f"Proxy network error: {getattr(e, 'reason', e)}")
+                    parsed = json.loads(text)
+                except Exception:
+                    parsed = {"raw": text}
+                if DEBUG_TOOL_IO and _S3_CLIENT and DEBUG_S3_BUCKET:
+                    try:
+                        key = f"{DEBUG_S3_PREFIX}/{datetime.utcnow().strftime('%Y/%m/%d')}/{uuid.uuid4().hex}_post.json"
+                        body = json.dumps(
+                            {
+                                "path": path,
+                                "url": url,
+                                "request_payload": payload,
+                                "status": status,
+                                "response": parsed,
+                            },
+                            default=str,
+                        ).encode("utf-8")
+                        _S3_CLIENT.put_object(Bucket=DEBUG_S3_BUCKET, Key=key, Body=body, ContentType="application/json")
+                        _log("Tool I/O debug stored", key=key, bytes=len(body))
+                    except Exception as exc:  # pragma: no cover
+                        _log("Tool I/O debug store failed", error=str(exc))
+                return parsed if isinstance(parsed, dict) else {"raw": text}
+        except _urlerr.HTTPError as e:
+            body = (e.read() or b"").decode("utf-8", errors="replace")
+            _log(
+                "Proxy POST HTTP error",
+                path=path,
+                status=e.code,
+                body_preview=body[:200],
+                attempt=attempt + 1,
+            )
+            if 500 <= getattr(e, "code", 0) < 600 and attempt < retries:
+                _log("Proxy POST retry scheduled", path=path, status=e.code, nextAttempt=attempt + 2)
+                time.sleep(retry_delay)
+                attempt += 1
+                continue
+            raise RuntimeError(f"Proxy HTTP {e.code}: {body[:500]}")
+        except _urlerr.URLError as e:
+            _log("Proxy POST network error", path=path, error=getattr(e, "reason", e), attempt=attempt + 1)
+            if attempt < retries:
+                _log("Proxy POST retry scheduled", path=path, nextAttempt=attempt + 2)
+                time.sleep(retry_delay)
+                attempt += 1
+                continue
+            raise RuntimeError(f"Proxy network error: {getattr(e, 'reason', e)}")
 
 
 def _proxy_get(
@@ -1419,7 +1442,26 @@ def _call_proxy(
             query_params.setdefault("included_airlines", "STAR_ALLIANCE")
         return _proxy_get(path, query_params, base_url=base_url)
     payload = body or {}
-    return _proxy_post(path, payload)
+    try:
+        return _proxy_post(path, payload, base_url=base_url)
+    except RuntimeError as exc:
+        if path == "/tools/antiPhaser":
+            error_text = str(exc)
+            if "Proxy HTTP 5" in error_text or "Proxy network error" in error_text:
+                fallback_params: Dict[str, str] = {}
+                for source in (params or {}, payload):
+                    if not source:
+                        continue
+                    for key, value in source.items():
+                        if value is None:
+                            continue
+                        if isinstance(value, (dict, list)):
+                            fallback_params[key] = json.dumps(value)
+                        else:
+                            fallback_params[key] = str(value)
+                _log("Proxy POST fallback via GET", path=path, reason=error_text[:120])
+                return _proxy_get(path, fallback_params, base_url=base_url)
+        raise
 
 
 def proxy_lookup_iata(
@@ -1481,7 +1523,7 @@ def proxy_lookup_iata(
     )
     try:
         response = _proxy_get("/tools/iata/lookup", params)
-    except (_urlerr.HTTPError, _urlerr.URLError) as exc:  # pragma: no cover - surface proxy error
+    except (_urlerr.HTTPError, _urlerr.URLError) if False else None as exc:  # pragma: no cover - surface proxy error
         _log("IATA lookup failed", term=text or None, lat=params.get("lat"), lon=params.get("lon"), error=str(exc))
         raise RuntimeError(f"IATA lookup failed: {exc}") from exc
     except Exception as exc:  # pragma: no cover - unexpected error

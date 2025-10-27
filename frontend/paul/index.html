@@ -562,6 +562,11 @@
         method: 'PENDING',
         airport: null,
       });
+      const [defaultOrigin, setDefaultOrigin] = useState(() => {
+        const stored = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('inferred_origin') : null;
+        return stored ? stored.toUpperCase() : null;
+      });
+      const [locationResolved, setLocationResolved] = useState(false);
       const [proxyOnline, setProxyOnline] = useState(true);
       const locationHintSentRef = useRef(null);
       // Server-append state
@@ -662,8 +667,15 @@
             : (typeof inferred === 'string' && inferred.trim()
               ? { code: inferred.trim() }
               : null);
+          let resolvedCode = null;
           setLocationInfo(prev => {
             const resolvedAirport = inferredObj || prev.airport || null;
+            resolvedCode =
+              (resolvedAirport && resolvedAirport.code) ||
+              inferredObj?.code ||
+              prev.inferredOrigin ||
+              prev.airport?.code ||
+              null;
             const next = {
               ...prev,
               label,
@@ -690,6 +702,10 @@
             try { sessionStorage.setItem('inferred_origin', inferredObj.code); } catch {}
           } else if (typeof inferred === 'string' && inferred && typeof sessionStorage !== 'undefined') {
             try { sessionStorage.setItem('inferred_origin', inferred); } catch {}
+          }
+          if (resolvedCode && typeof resolvedCode === 'string') {
+            setDefaultOrigin(resolvedCode.trim().toUpperCase());
+            setLocationResolved(true);
           }
         };
         const updateFromCoords = async (lat, lon) => {
@@ -785,6 +801,29 @@
         };
         resolveLocation();
       }, [lookupUrl]);
+      useEffect(() => {
+        if (defaultOrigin) {
+          setLocationResolved(true);
+          return;
+        }
+        const method = locationInfo?.method;
+        const airportCode = locationInfo?.airport?.code;
+        const inferred = locationInfo?.inferredOrigin;
+        if (airportCode) {
+          setDefaultOrigin(String(airportCode).toUpperCase());
+          setLocationResolved(true);
+          return;
+        }
+        if (inferred) {
+          setDefaultOrigin(String(inferred).toUpperCase());
+          setLocationResolved(true);
+          return;
+        }
+        if (method && method !== 'PENDING' && !defaultOrigin) {
+          setDefaultOrigin('FRA');
+          setLocationResolved(true);
+        }
+      }, [locationInfo, defaultOrigin]);
       // ===== Log formatting tools =====
       const tsStr = (iso) => `[${iso}]`;
       const baseIndent = (iso) => ' '.repeat(tsStr(iso).length + 1); // after timestamp + one space
@@ -1025,9 +1064,10 @@
         setTimeout(() => URL.revokeObjectURL(a.href), 0);
       };
       // ---- Chat send ----
+      const inputDisabled = busy || !locationResolved || !defaultOrigin;
       const send = async () => {
         const text = input.trim();
-        if (!text || busy) return;
+        if (!text || busy || !locationResolved || !defaultOrigin) return;
         if (Persona.setPersonaFromQuestionnaire) {
           Persona.setPersonaFromQuestionnaire(text);
         }
@@ -1047,6 +1087,15 @@
           if (typeof locationInfo?.lat === "number" && typeof locationInfo?.lon === "number") {
             payload.locationLat = locationInfo.lat;
             payload.locationLon = locationInfo.lon;
+          }
+          if (defaultOrigin) {
+            payload.defaultOrigin = defaultOrigin;
+          }
+          if (locationInfo?.inferredOrigin) {
+            payload.inferredOrigin = locationInfo.inferredOrigin;
+          }
+          if (locationInfo?.airport && typeof locationInfo.airport === "object") {
+            payload.locationAirport = locationInfo.airport;
           }
           const res = await fetch(apiUrl, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
@@ -1098,7 +1147,14 @@
           setTimeout(appendToServer, 0);
         }
       };
-      const onKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
+      const onKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          if (!inputDisabled) {
+            send();
+          }
+        }
+      };
       return (
         <div className="min-h-screen grid grid-rows-[auto,1fr,auto] bg-gradient-to-b from-lhBlueDark to-[#0b1229]">
           <Header apiUrl={apiUrl} locationInfo={locationInfo} proxyOnline={proxyOnline} />
@@ -1137,14 +1193,24 @@
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder="Type your message...(Shift+Enter for newline)"
-                className="flex-1 bg-transparent outline-none resize-none text-sm leading-6 placeholder:text-white/40 px-3 py-2 h-[52px] max-h-[160px]"
+                placeholder={locationResolved ? "Type your message...(Shift+Enter for newline)" : "Detecting your nearest departure airport..."}
+                disabled={inputDisabled}
+                className="flex-1 bg-transparent outline-none resize-none text-sm leading-6 placeholder:text-white/40 px-3 py-2 h-[52px] max-h-[160px] disabled:cursor-not-allowed disabled:opacity-60 disabled:placeholder:text-white/30"
               />
-              <button onClick={send} disabled={busy} className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold bg-lhYellow text-lhBlue hover:brightness-95 active:brightness-90 disabled:opacity-60">
+              <button onClick={send} disabled={inputDisabled} className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold bg-lhYellow text-lhBlue hover:brightness-95 active:brightness-90 disabled:opacity-60 disabled:cursor-not-allowed">
                 <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M2 3l20 9-20 9 5-9-5-9zm7.2 9l-2.5 4.5L18 12 6.7 6.5 9.2 11H22" /></svg>
                 Send
               </button>
             </div>
+            {!locationResolved ? (
+              <p className="mt-2 text-xs text-white/60 px-1">
+                Detecting your nearest airport via device location or IP. Once resolved we will unlock chat; if unavailable, FRA will be used automatically.
+              </p>
+            ) : defaultOrigin ? (
+              <p className="mt-2 text-xs text-white/50 px-1">
+                Departure airport set to {defaultOrigin}.
+              </p>
+            ) : null}
           </footer>
           <div className="max-w-5xl mx-auto w-full px-4 pb-6 text-center">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-red-400">BETA test version!</p>
