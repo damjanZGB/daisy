@@ -1,0 +1,124 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "7f3ef6d1-b17d-41c4-bab9-61cdde5857dc",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "date": "Mon, 27 Oct 2025 03:11:09 GMT",
+      "content-type": "application/json",
+      "content-length": "1862",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "7f3ef6d1-b17d-41c4-bab9-61cdde5857dc",
+      "x-amz-apigw-id": "TFhgGGp5vHcEa8Q=",
+      "x-amzn-trace-id": "Root=1-68fee2cd-23076f3b0f55651658a31ec1"
+    },
+    "RetryAttempts": 0
+  },
+  "agentAlias": {
+    "agentId": "JDLTXAKYJY",
+    "agentAliasId": "UY0U7MRMDK",
+    "agentAliasName": "Gina",
+    "agentAliasArn": "arn:aws:bedrock:us-west-2:083756035354:agent-alias/JDLTXAKYJY/UY0U7MRMDK",
+    "clientToken": "5135a432-a1b8-4b8f-a926-32a27d9f040f",
+    "description": "Gina - Pauls alter ego numero uno",
+    "routingConfiguration": [
+      {
+        "agentVersion": "146"
+      }
+    ],
+    "createdAt": "2025-10-16 23:48:12.631120+00:00",
+    "updatedAt": "2025-10-25 15:48:36.729074+00:00",
+    "agentAliasHistoryEvents": [
+      {
+        "routingConfiguration": [
+          {
+            "agentVersion": "141"
+          }
+        ],
+        "endDate": "2025-10-25 15:48:39.739890+00:00",
+        "startDate": "2025-10-24 07:29:35.137865+00:00"
+      },
+      {
+        "routingConfiguration": [
+          {
+            "agentVersion": "140"
+          }
+        ],
+        "endDate": "2025-10-24 07:29:35.137865+00:00",
+        "startDate": "2025-10-23 20:52:08.088635+00:00"
+      },
+      {
+        "routingConfiguration": [
+          {
+            "agentVersion": "139"
+          }
+        ],
+        "endDate": "2025-10-23 20:52:08.088635+00:00",
+        "startDate": "2025-10-23 18:53:55.227753+00:00"
+      },
+      {
+        "routingConfiguration": [
+          {
+            "agentVersion": "138"
+          }
+        ],
+        "endDate": "2025-10-23 18:53:55.227753+00:00",
+        "startDate": "2025-10-23 18:49:53.407040+00:00"
+      },
+      {
+        "routingConfiguration": [
+          {
+            "agentVersion": "136"
+          }
+        ],
+        "endDate": "2025-10-23 18:49:53.407040+00:00",
+        "startDate": "2025-10-22 23:32:22.546283+00:00"
+      },
+      {
+        "routingConfiguration": [
+          {
+            "agentVersion": "134"
+          }
+        ],
+        "endDate": "2025-10-22 23:32:22.546283+00:00",
+        "startDate": "2025-10-22 21:59:02.402629+00:00"
+      },
+      {
+        "routingConfiguration": [
+          {
+            "agentVersion": "130"
+          }
+        ],
+        "endDate": "2025-10-22 21:59:02.402629+00:00",
+        "startDate": "2025-10-22 19:31:18.521603+00:00"
+      },
+      {
+        "routingConfiguration": [
+          {
+            "agentVersion": "127"
+          }
+        ],
+        "endDate": "2025-10-22 19:31:18.521603+00:00",
+        "startDate": "2025-10-22 08:27:13.415074+00:00"
+      },
+      {
+        "routingConfiguration": [
+          {
+            "agentVersion": "125"
+          }
+        ],
+        "endDate": "2025-10-22 08:27:13.415074+00:00",
+        "startDate": "2025-10-22 08:25:46.549758+00:00"
+      },
+      {
+        "routingConfiguration": [
+          {
+            "agentVersion": "146"
+          }
+        ],
+        "startDate": "2025-10-25 15:48:39.739890+00:00"
+      }
+    ],
+    "agentAliasStatus": "PREPARED",
+    "aliasInvocationState": "ACCEPT_INVOCATIONS"
+  }
+}

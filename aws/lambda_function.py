@@ -445,6 +445,7 @@ def _fetch_explore_candidates(
         if token.strip()
     }
     star_alliance_requested = "STAR_ALLIANCE" in requested_airlines
+    meta["starAllianceRequested"] = star_alliance_requested
     lh_allowed = set(LH_GROUP_CODES)
     for dest in destinations:
         if not isinstance(dest, dict):
@@ -505,6 +506,10 @@ def _fetch_explore_candidates(
             "source": "google_explore",
             **({"alliance": "STAR ALLIANCE"} if star_alliance_requested else {}),
         }
+        if star_alliance_requested:
+            candidate["presentedCarriers"] = "STAR ALLIANCE carriers"
+        else:
+            candidate["presentedCarriers"] = "Lufthansa Group"
         search_request = {
             "origin": departure,
             "destination": code,
@@ -514,9 +519,12 @@ def _fetch_explore_candidates(
             "cabin": "ECONOMY",
             "nonstop": True if stops == 0 else (False if isinstance(stops, int) else None),
             "currency": currency or "EUR",
-            "lhGroupOnly": True,
             "max": 10,
         }
+        if star_alliance_requested:
+            search_request["lhGroupOnly"] = False
+        else:
+            search_request["lhGroupOnly"] = True
         candidate["flightSearchRequest"] = {
             k: v for k, v in search_request.items() if v not in (None, "", [])
         }
@@ -1727,7 +1735,7 @@ def _nearest_date_alternatives(
                 max_results,
                 timeout or GOOGLE_SEARCH_TIMEOUT,
             )
-            offers = _summarize_offers(raw, currency)
+            offers = _summarize_offers(raw, currency, lh_group_only=lh_group_only)
             if offers:
                 best = offers[0]
                 # brief form to keep payload small
@@ -1767,7 +1775,10 @@ def iata_lookup_via_proxy(term: Optional[str]) -> Dict[str, Any]:
 
 
 def _summarize_offers(
-    amadeus_json: Dict[str, Any], currency_hint: Optional[str]
+    amadeus_json: Dict[str, Any],
+    currency_hint: Optional[str],
+    *,
+    lh_group_only: bool = True,
 ) -> List[Dict[str, Any]]:
 
     _log(
@@ -1901,10 +1912,13 @@ def _summarize_offers(
                     "stops": stop_count,
                 }
             )
-        filtered = _filter_lh_group_offers(normalized)
-        removed = len(normalized) - len(filtered)
-        if removed:
-            _log("Filtered non-LH offers", removed=removed)
+        if lh_group_only:
+            filtered = _filter_lh_group_offers(normalized)
+            removed = len(normalized) - len(filtered)
+            if removed:
+                _log("Filtered non-LH offers", removed=removed)
+        else:
+            filtered = list(normalized)
         filtered.sort(key=lambda o: float(o.get("totalPrice") or 0))
         _log("Summarized offers (modern payload)", count=len(filtered))
         return filtered
@@ -1949,10 +1963,13 @@ def _summarize_offers(
                 "segments": segments_summary,
             }
         )
-    filtered = _filter_lh_group_offers(legacy)
-    removed = len(legacy) - len(filtered)
-    if removed:
-        _log("Filtered non-LH offers (legacy payload)", removed=removed)
+    if lh_group_only:
+        filtered = _filter_lh_group_offers(legacy)
+        removed = len(legacy) - len(filtered)
+        if removed:
+            _log("Filtered non-LH offers (legacy payload)", removed=removed)
+    else:
+        filtered = list(legacy)
     filtered.sort(key=lambda o: float(o.get("totalPrice") or 0))
     _log("Summarized offers (legacy payload)", count=len(filtered))
     return filtered
@@ -2069,7 +2086,7 @@ def search_best_itineraries(
                         timeout=timeout or GOOGLE_SEARCH_TIMEOUT,
                     )
                     api_calls += 1
-                    offers = _summarize_offers(raw, currency)
+                    offers = _summarize_offers(raw, currency, lh_group_only=lh_group_only)
                     if offers:
                         top = offers[: max(1, max_per_destination)]
                         results.append({"destination": code, "date": dep_date, "offers": top})
@@ -2238,8 +2255,14 @@ def search_best_itineraries(
             "flightSearchRequest": {
                 k: v for k, v in search_request.items() if v not in (None, "", [])
             },
-            "alliance": "STAR ALLIANCE",
-            "presentedCarriers": "Lufthansa Group",
+            **(
+                {
+                    "alliance": "STAR ALLIANCE",
+                    "presentedCarriers": "STAR ALLIANCE carriers",
+                }
+                if not lh_group_only
+                else {"presentedCarriers": "Lufthansa Group"}
+            ),
         })
 
     return options
@@ -2929,7 +2952,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             lh_group_only,
             max_results,
         )
-        offers = _summarize_offers(raw, currency)
+        offers = _summarize_offers(raw, currency, lh_group_only=lh_group_only)
         # Fallback: if nonstop requested and none found, retry with connections allowed.
         if nonstop and not offers:
             _log("OpenAPI: No nonstop offers; retrying with connections allowed")
@@ -2945,7 +2968,7 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                 lh_group_only,
                 max_results,
             )
-            offers = _summarize_offers(raw, currency)
+            offers = _summarize_offers(raw, currency, lh_group_only=lh_group_only)
         # If still none, probe nearest alternative dates and include up to 5.
         alternatives: List[Dict[str, Any]] = []
         if not offers:
@@ -3155,11 +3178,14 @@ def _handle_openapi_explore(
         destinations=len(candidates),
     )
 
-    message = (
-        "Inspiration - STAR ALLIANCE options (filtered to Lufthansa Group carriers)"
-        if candidates
-        else "No Explore destinations found for that window. Try another month or broaden your request."
-    )
+    star_alliance_requested = bool(meta.get("starAllianceRequested")) if isinstance(meta, dict) else False
+    if candidates:
+        if star_alliance_requested:
+            message = "Inspiration - STAR ALLIANCE options (includes STAR ALLIANCE airlines; let me know if you'd prefer Lufthansa Group only.)"
+        else:
+            message = "Inspiration - Lufthansa Group options (let me know if you want to broaden to STAR ALLIANCE carriers.)"
+    else:
+        message = "No Explore destinations found for that window. Try another month or broaden your request."
 
     response_payload: Dict[str, Any] = {
         "generatedAt": _now_iso(),
@@ -3266,6 +3292,9 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             explore_candidates = []
             explore_meta = {"error": str(exc)}
 
+        star_alliance_requested = bool(explore_meta.get("starAllianceRequested"))
+        presented_carriers_label = "STAR ALLIANCE carriers" if star_alliance_requested else "Lufthansa Group"
+
         scored: List[Tuple[float, Dict[str, Any], str]] = []
         if explore_candidates:
             total = len(explore_candidates)
@@ -3322,11 +3351,11 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 "candidates": [],
                 "message": "No destinations matched your filters. Try adjusting month or theme.",
                 "source": "google_explore" if explore_candidates else "catalog",
-                "filters": {
-                    "alliance": "STAR ALLIANCE",
-                    "presentedCarriers": "Lufthansa Group",
-                },
             }
+            filters_empty: Dict[str, Any] = {"presentedCarriers": presented_carriers_label}
+            if star_alliance_requested:
+                filters_empty["alliance"] = "STAR ALLIANCE"
+            payload_empty["filters"] = filters_empty
             if explore_meta:
                 payload_empty["explore"] = explore_meta
             _log(
@@ -3367,8 +3396,6 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 entry["duration"] = data.get("duration")
             if data.get("carriers"):
                 entry["carriers"] = data.get("carriers")
-            if data.get("image"):
-                entry["image"] = data.get("image")
             if data.get("pitch"):
                 entry["pitch"] = data.get("pitch")
             if data.get("exploreFlight"):
@@ -3397,10 +3424,10 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             "candidates": candidates,
             "source": "google_explore" if explore_candidates else ("catalog" if catalog_used else "hybrid"),
         }
-        payload["filters"] = {
-            "alliance": "STAR ALLIANCE",
-            "presentedCarriers": "Lufthansa Group",
-        }
+        filters_block: Dict[str, Any] = {"presentedCarriers": presented_carriers_label}
+        if star_alliance_requested:
+            filters_block["alliance"] = "STAR ALLIANCE"
+        payload["filters"] = filters_block
         if explore_meta:
             payload["explore"] = explore_meta
 
@@ -3411,7 +3438,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                     top_dest_objects,
                     month_range_text,
                     currency=currency,
-                    lh_group_only=True,
+                    lh_group_only=not star_alliance_requested,
                 )
                 direct_opts = [opt for opt in options if (opt.get("stops") == 0)]
                 conn_opts = [opt for opt in options if (opt.get("stops") and opt.get("stops") > 0) or opt.get("stops") is None]
@@ -3477,8 +3504,13 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 _log("Itinerary aggregator failed", error=str(exc))
 
         if not payload.get("message"):
-            header = "Inspiration - STAR ALLIANCE options (filtered to Lufthansa Group carriers)"
-            msg_lines = [header, "These results are Lufthansa Group-operated; let me know if you want to explore other STAR ALLIANCE carriers or keep only Lufthansa Group."]
+            if star_alliance_requested:
+                header = "Inspiration - STAR ALLIANCE options"
+                intro = "These results include STAR ALLIANCE airlines; let me know if you'd prefer Lufthansa Group only."
+            else:
+                header = "Inspiration - Lufthansa Group options"
+                intro = "These results are Lufthansa Group-operated; let me know if you want to broaden to other STAR ALLIANCE carriers."
+            msg_lines = [header, intro]
             for idx_msg, candidate in enumerate(candidates[:5], start=1):
                 city = candidate.get("city") or "?"
                 country = candidate.get("country") or "?"
@@ -3625,7 +3657,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
             lh_group_only,
             max_results,
         )
-        offers = _summarize_offers(raw, currency)
+        offers = _summarize_offers(raw, currency, lh_group_only=lh_group_only)
         # Fallback: if user asked for nonstop and none found, retry with connections allowed.
         if nonstop and not offers:
             _log("No nonstop offers; retrying with connections allowed")
@@ -3641,7 +3673,7 @@ def _handle_function(event: Dict[str, Any]) -> Dict[str, Any]:
                 lh_group_only,
                 max_results,
             )
-            offers = _summarize_offers(raw, currency)
+            offers = _summarize_offers(raw, currency, lh_group_only=lh_group_only)
         # If still none, probe nearest alternative dates and include up to 5.
         alternatives: List[Dict[str, Any]] = []
         if not offers:

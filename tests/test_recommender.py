@@ -173,9 +173,9 @@ class TestExploreProxy(unittest.TestCase):
         self.assertEqual(request.get("origin"), "ZAG")
         self.assertEqual(request.get("destination"), "DEM")
         self.assertEqual(request.get("departureDate"), "2025-11-08")
-        self.assertTrue(request.get("lhGroupOnly"))
+        self.assertFalse(request.get("lhGroupOnly"))
         self.assertEqual(cands[0].get("alliance"), "STAR ALLIANCE")
-        self.assertEqual(cands[0].get("presentedCarriers"), "Lufthansa Group")
+        self.assertEqual(cands[0].get("presentedCarriers"), "STAR ALLIANCE carriers")
 
 
 class TestExploreOpenAPI(unittest.TestCase):
