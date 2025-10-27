@@ -2817,10 +2817,30 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
             for entry in params[:3]:
                 if isinstance(entry, dict):
                     sample.append({k: entry.get(k) for k in ("name", "value")})
-            if sample:
-                _log("OpenAPI parameters sample", sample=sample)
+        if sample:
+            _log("OpenAPI parameters sample", sample=sample)
         body = _props_to_dict(params if isinstance(params, list) else [])
     _log("OpenAPI request body parsed", keys=list(body.keys()))
+    params_list = event.get("parameters")
+    query_params = _props_to_dict(params_list if isinstance(params_list, list) else [])
+
+    if api_path_lower.startswith("/tools/") and api_path_lower != "/tools/iata/lookup":
+        http_method = (event.get("httpMethod") or "GET").upper()
+        try:
+            proxy_body = body if http_method in {"POST", "PUT", "PATCH"} else None
+            proxy_params = query_params if http_method == "GET" else None
+            proxy_result = _call_proxy(
+                api_path_raw or api_path_lower,
+                http_method,
+                proxy_params,
+                proxy_body,
+            )
+            _log("OpenAPI tool proxy success", path=api_path_raw or api_path_lower)
+            return _wrap_openapi(event, 200, proxy_result)
+        except Exception as exc:
+            _log("OpenAPI tool proxy failure", path=api_path_raw or api_path_lower, error=str(exc))
+            return _wrap_openapi(event, 502, {"error": f"Tool call failed: {exc}"})
+
     normalized = _normalize_flight_request_fields(body)
     had_origin_before_context = bool((normalized or {}).get("origin"))
     normalized = _apply_contextual_defaults(normalized, event)
