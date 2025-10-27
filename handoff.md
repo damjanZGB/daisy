@@ -1,124 +1,128 @@
 ## Project Handoff
 
 ### Mission Snapshot
-- Deliver a Lufthansa Group conversational agent that always returns truthful, Lufthansa-aligned inspiration and flight search results.
-- Hard guarantees:
-  - All pricing in EUR.
-  - Google Flights/Calendar requests force `hl=en`, `gl=de`.
-  - Google Explore requests force `hl=en-GB`, `gl=DE`, `currency=EUR`, and `included_airlines=STAR_ALLIANCE`.
-  - Explore responses are filtered to Lufthansa Group carriers (`LH`, `LX`, `OS`, `SN`, `EW`, `4Y`, `EN`) and surfaced as such.
-- Stack: Render-hosted proxy + SearchAPI microservice in front of an Amazon Bedrock agent, with an AWS Lambda action group (Python) performing Amadeus and SearchAPI orchestration.
+- Deliver a Lufthansa Group conversational travel assistant that only surfaces truthful, Lufthansa-aligned inspiration and flight results.
+- Non-negotiables:
+  - All prices expressed in EUR.
+  - `/google/flights/*` and `/google/calendar/*` enforce `hl=en`, `gl=de`, `currency=EUR`.
+  - `/google/explore/search` enforces `hl=en-GB`, `gl=DE`, `currency=EUR`, `included_airlines=STAR_ALLIANCE`.
+  - Downstream messaging highlights Lufthansa Group carriers (`LH`, `LX`, `OS`, `SN`, `EW`, `4Y`, `EN`) even when STAR ALLIANCE is requested upstream.
+- Architecture: browser persona UI → Render proxy (`proxy.mjs`) → SearchAPI microservice (`google-api.mjs`) / origin tool services / Bedrock Agent (`JDLTXAKYJY`) → AWS Lambda action groups (`aws/lambda_function.py`).
 
 ### AWS & Bedrock Context
 - Region / Account: `us-west-2`, AWS account `083756035354`.
-- Primary Bedrock agent ID: `JDLTXAKYJY`.
-  - Aliases (agent versions): Bianca → `D84WDVHMZR` (v99), Paul → `R1YRB7NGUP` (v97), Gina → `UY0U7MRMDK` (v98), draft/test alias `TSTALIASID`.
+- Bedrock agent: `JDLTXAKYJY`.
+  - Aliases (current versions): Bianca `D84WDVHMZR` (v99), Paul `R1YRB7NGUP` (v97), Gina `UY0U7MRMDK` (v98), draft/test `TSTALIASID`.
 - Lambda action groups:
-  - `daisy_in_action` (`8QPJXRIZN5`) – flight search, bookings, explore bridging.
-  - `DestinationRecommender` (`DFAEASLNVH`) – inspiration + itinerary aggregation.
-  - Supporting groups (`TimePhraseParser`, `UserInputAction`) unchanged.
+  - `daisy_in_action` (`8QPJXRIZN5`) – explore → flights orchestration, booking, Amadeus integration.
+  - `DestinationRecommender` (`DFAEASLNVH`) – catalogue-driven inspiration aggregator.
+  - Supporting groups (`TimePhraseParser`, `UserInputAction`) remain unchanged.
 - IAM execution role: `service-role/daisy_in_action-0k2c0-role-FGL64GQRD5P`.
-- Environment allowlists: `AGENT_ID_ALLOWLIST` / `AGENT_ALIAS_ALLOWLIST` in `aws/env_update.json`. Add new Bedrock IDs here before deploying to avoid runtime rejects.
+- Allowlist configuration for proxy → Bedrock: `aws/env_update.json` (`AGENT_ID_ALLOWLIST`, `AGENT_ALIAS_ALLOWLIST`). Update before deploying new aliases.
 
 ### System Architecture Overview
 ```
-Frontend persona (React)  ->  Render proxy (proxy.mjs)
-                               |-> /google/* -> google-api.mjs (SearchAPI)
-                               |-> /tools/*  -> origin-daisy microservices (Amadeus etc.)
-                               \-> InvokeAgent (Bedrock agent)
+Frontend persona UI  ->  Render proxy (proxy.mjs)
+                           |-> /google/* -> google-api.mjs (SearchAPI)
+                           |-> /tools/*  -> origin-daisy microservices
+                           \-> InvokeAgent (Bedrock JDLTXAKYJY)
 
 Bedrock action group (daisy_in_action) -> aws/lambda_function.py
-                                           |-> Amadeus flight search
-                                           |-> Google Flights / Calendar
-                                           \-> Google Explore (STAR ALLIANCE upstream, LH-only downstream)
+                                             |-> Google Explore/Flights/Calendar
+                                             |-> Amadeus as fallback
+                                             \-> Inspiration shaping and validation
 ```
-- Shared data: `data/lh_destinations_catalog.json` (lambda inspiration source) and `iata.json` (nearest-airport lookup for proxy + lambda).
-- Logging: Lambda → CloudWatch; optional tool IO copies to `s3://origin-daisy-bucket/debug-tool-io/YYYY/MM/DD/...`.
+- Shared data: `data/lh_destinations_catalog.json` (fallback inspiration), `iata.json` (nearest airport lookup for UI + proxy + lambda).
+- Logging:
+  - Lambda → CloudWatch (`/aws/lambda/daisy_in_action-0k2c0`).
+  - Tool IO (when `DEBUG_TOOL_IO` enabled) → `s3://origin-daisy-bucket/debug-tool-io/YYYY/MM/DD/...`.
+  - Frontends stream transcripts to `/log.php` and optional S3 via `transcriptUrl`.
 
-### Runtime Defaults & Filtering
-- **Locale & currency**
-  - Flights/Calendar: `currency=EUR`, `hl=en`, `gl=de`.
-  - Explore: `currency=EUR`, `hl=en-GB`, `gl=DE`.
-- **Alliance handling**
-  - Every Explore request sets `included_airlines=STAR_ALLIANCE`.
-  - Lambda filters Explore results to Lufthansa Group carriers and annotates each candidate/option with `alliance="STAR ALLIANCE"` and `presentedCarriers="Lufthansa Group"`.
-- **Follow-on flight search**
-  - Explore candidates and itinerary options include a `flightSearchRequest` dict (origin/destination, dates, `lhGroupOnly`, etc.) so the Bedrock agent can immediately launch `search_flights` when a user picks an option.
-- **Messaging**
-  - Inspiration header: “Inspiration — STAR ALLIANCE options (filtered to Lufthansa Group carriers)”.
-  - Follow-up line invites the traveller to widen to full STAR ALLIANCE or stay Lufthansa Group-only.
-
-### Key Components
+### Component Summaries
 
 #### Lambda (`aws/lambda_function.py`)
-- `_fetch_explore_candidates` normalises search parameters, applies documented defaults, enforces the STAR ALLIANCE filter, removes `interests` when `travel_mode=flights_only`, and filters to Lufthansa Group carriers.
-- `_call_proxy` auto-inserts `included_airlines=STAR_ALLIANCE` whenever the agent hits `/google/explore/search`.
-- `recommend_destinations` merges Explore output with catalog fallback, builds scored candidates, attaches `flightSearchRequest` payloads to candidates/options, and crafts runway messaging.
-- `google_search_flight_offers` & `_search_amadeus` handle actual flight retrieval; `_build_recommendation_message` formats timelines without fabricating segments.
-- Unit tests: `tests/test_recommender.py` (particularly `TestExploreProxy`) confirm STAR ALLIANCE param injection, Lufthansa filtering, and the presence of `flightSearchRequest`.
+- `_normalize_flight_request_fields` maps alias parameters (`departure_id`, `arrival_id`, etc.) before defaults are applied.
+- `_apply_contextual_defaults` fills missing origins using `sessionAttributes/promptSessionAttributes.default_origin`, coordinates (nearest airport lookup), or FRA fallback.
+- `_fetch_explore_candidates` enforces STAR ALLIANCE parameters, shapes candidates, and attaches `flightSearchRequest` for immediate `/google/flights/search`.
+- `recommend_destinations` merges SearchAPI results with catalogue fallback and produces Lufthansa-branded messaging.
+- `google_search_flight_offers` and `_nearest_date_alternatives` handle actual flight retrieval; Amadeus remains as fallback.
+- Key logs to watch: `OpenAPI flight request prepared`, `OpenAPI explore search success`, `Context origin substituted`, and any `_log` entries mentioning fabrication or empty offers.
+- Tests: `tests/test_recommender.py::TestExploreProxy` (limited coverage). No automated verification yet for calendar search or itinerary PDF generation.
 
 #### Proxy (`proxy.mjs`)
-- Node 18 Express service on Render; wraps `InvokeAgent`.
-- Supplies persona + context (nearest airport, travel preferences) to Bedrock.
-- Forwards `/google/*` to `google-api.mjs`, `/tools/*` to origin-daisy services, with local `/tools/iata/lookup`.
-- Required env: `AWS_REGION`, `AGENT_ID`, `AGENT_ALIAS_ID`, `TOOLS_BASE_URL`, `GOOGLE_BASE_URL`, AWS credentials.
+- Node 18 Express on Render; wraps Bedrock `InvokeAgent`.
+- After 2025-10-27 update, mirrors default origin, label, and coordinates into both `sessionAttributes` and `promptSessionAttributes` so agent instructions can rely on `default_origin`.
+- Implements `/tools/iata/lookup` directly using `iata.json`; forwards other `/tools/*` calls to origin microservices.
+- Maintains `returnControlInvocationResults` between hops so tool traces remain attached.
+- Environment: `AWS_REGION`, `AGENT_ID`, `AGENT_ALIAS_ID`, `TOOLS_BASE_URL`, `GOOGLE_BASE_URL`, AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` when needed).
 
-#### SearchAPI microservice (`google-api.mjs`)
-- Enforces per-engine defaults (Flights/Calendar vs Explore).
-- Adds `SEARCHAPI_KEY`; forwards the call to `https://www.searchapi.io/api/v1/search`.
-- Deploy on Render service `google-api-daisy`; health check `GET /healthz`.
+#### SearchAPI Microservice (`google-api.mjs`)
+- Single Express service; enforces per-engine defaults, injects `SEARCHAPI_KEY`, and forwards to `https://www.searchapi.io/api/v1/search`.
+- Deploy as Render service `google-api-daisy`; health endpoint `GET /healthz`.
 
-#### Supporting Assets
-- `origin-daisy` Render services: Amadeus wrapper, PDF generator (`derDrucker`), `antiPhaser`, `s3escalator`.
-- `data/lh_destinations_catalog.json` packaged with lambda for fallback inspiration.
-- Scripts: `scripts/deploy_lambda.ps1`, `scripts/replay_sessions.mjs`, `scripts/debug_invoke_agent.mjs`, `scripts/run_hard_conversation.mjs`.
+#### Frontend Personas (`frontend/{bianca,gina,paul,origin}/index.html`)
+- React (UMD) apps with Tailwind styling and persona banner.
+- New behaviour (2025-10-27): chat textarea and send button remain disabled until geolocation/IP fallback resolves and a `defaultOrigin` is set. UI displays “Departure airport set to XXX” once unlocked; FRA used as final fallback.
+- Payloads include location label, coordinates, resolved airport object, `defaultOrigin`, `inferredOrigin`, plus persona data via `frontend/persona.js`.
+- Transcripts saved to `/log.php` and can be downloaded locally; PDF itinerary generation still wired through `derDrucker`.
 
-### Testing & Verification
-- **Unit**: `py -3 -m unittest tests.test_recommender.TestExploreProxy`.
-- **Lambda smoke**:
-  - `aws lambda invoke --function-name daisy_in_action-0k2c0 --payload fileb://aws/invoke_func.json aws/out_func_test.json`
-  - `aws lambda invoke --function-name daisy_in_action-0k2c0 --payload fileb://aws/invoke_reco.json aws/out_reco_test.json`
-- **Manual agent test**: `node scripts/debug_invoke_agent.mjs --text "Show me winter getaways in February"` (requires AWS creds + Bedrock IDs).
-- After redeploying Render services (proxy or google-api), wait ~5 minutes for cold starts before testing end-to-end.
+#### Supporting Services
+- `antiPhaser` (Render) parses natural language date ranges; proxy retries POST → GET and falls back cleanly.
+- `derDrucker` produces itinerary PDFs.
+- `s3escalator` handles optional escalation logging.
+- Amadeus wrapper remains available for fallback search flows (avoid unless required).
 
 ### Deployment Runbooks
 1. **Lambda (`daisy_in_action-0k2c0`)**
-   - Optional: `python -m compileall aws/lambda_function.py`.
-   - `scripts/deploy_lambda.ps1 -FunctionName daisy_in_action-0k2c0 -Region us-west-2`.
-   - Update `aws/env_update.json` if new Bedrock agent/alias IDs are added; apply via `aws lambda update-function-configuration --environment file://aws/env_update.json`.
-   - Tail CloudWatch logs `/aws/lambda/daisy_in_action-0k2c0`.
+   - Optional compile: `python -m compileall aws/lambda_function.py`.
+   - Deploy: `scripts/deploy_lambda.ps1 -FunctionName daisy_in_action-0k2c0 -Region us-west-2`.
+   - Update environment allowlists via `aws lambda update-function-configuration --environment file://aws/env_update.json` when alias IDs change.
+   - Monitor logs: `aws logs tail /aws/lambda/daisy_in_action-0k2c0 --follow`.
 2. **SearchAPI microservice (`google-api-daisy`)**
-   - Node 18 + `npm install`.
-  - Redeploy via Render (“Manual Deploy → Clear build cache & deploy”); verify with `/healthz`.
+   - Install deps (`npm install`), deploy via Render dashboard (clear build cache recommended).
+   - Verify with `GET https://google-api-daisy.onrender.com/healthz`.
 3. **Proxy service**
-   - Ensure env: `AGENT_ID`, `AGENT_ALIAS_ID`, `AWS_REGION`, `TOOLS_BASE_URL`, `GOOGLE_BASE_URL`, AWS creds.
-   - Redeploy via Render and confirm readiness (first call may take ~60s).
+   - Ensure env vars (above) are set; deploy via Render dashboard.
+   - First invocation may take ~60s due to cold start.
+4. **Frontend bundles**
+   - Each persona served statically (Render static site). Rebuild/redeploy when updating UI logic (default origin gating introduced 2025-10-27).
+
+### Testing & Verification
+- Unit: `py -3 -m unittest tests.test_recommender.TestExploreProxy`.
+- Lambda smoke:
+  - `aws lambda invoke --function-name daisy_in_action-0k2c0 --payload fileb://aws/invoke_func.json aws/out_func_test.json`
+  - `aws lambda invoke --function-name daisy_in_action-0k2c0 --payload fileb://aws/invoke_reco.json aws/out_reco_test.json`
+- Manual end-to-end:
+  - `node scripts/debug_invoke_agent.mjs --text "Show me skiing in February"` (requires AWS credentials & allowlisted agent alias).
+  - Browser persona UIs (Paul/Gina/Bianca). Confirm send button stays disabled until origin resolves and payload includes `defaultOrigin`.
 
 ### Observability & Troubleshooting
-- Lambda logs identify key milestones: `Google Explore candidates prepared`, `Destination recommendations prepared`, `Function flight request prepared`.
-- `DEBUG_TOOL_IO` uploads detailed tool inputs/outputs to S3 for auditing.
-- Render logs capture proxy and microservice behaviour; sample transcripts stored under `frontend/*/logs/`.
-- `docs/searchapi_google_explore_fix.md` documents SearchAPI quirks and required defaults (now explicitly noting STAR ALLIANCE usage).
+- CloudWatch logs for lambda show contextual substitutions, explore parameters, and flight search outcomes.
+- Render logs cover proxy, SearchAPI, and microservices (`antiPhaser`, `derDrucker`, etc.).
+- `frontend/*/logs/` captures past conversations (legacy sample data under `frontend/bianca/logs`).
+- `docs/searchapi_google_explore_fix.md` documents SearchAPI quirks (notably “time period too far” handling).
+- When investigating fabrication, pull the transcript (`Downloads\LHxxxx.log`) and correlate with CloudWatch `GetAgentSession` traces to confirm whether mandatory tool calls executed.
 
 ### Known Issues / Follow-ups
-- Ensure Render deployments stay current; lambda changes alone are insufficient.
-- Add integration coverage verifying that selecting an Explore option triggers `search_flights` using `flightSearchRequest`.
-- Monitor SearchAPI quota (HTTP 429) and add backoff if hit rates rise.
-- Expand `AGENT_ID_ALLOWLIST` / `AGENT_ALIAS_ALLOWLIST` when onboarding new Bedrock agent versions.
-- Legacy tests in `tests/test_recommender` beyond `TestExploreProxy` remain pending refactor.
+- **Bianca fabricating after selection**: Transcript `C:\Users\Damjan\Downloads\LH5239.log` (2025-10-27 08:21Z) shows placeholders despite instructions mandating `/google/flights/search`. Need to inspect Bedrock trace to verify whether the call was skipped or failed silently; root cause unresolved.
+- **Default origin acknowledgement still inconsistent**: Some logs (e.g., `LH2039.log`) show Bianca re-asking for departure despite `default_origin` being injected into prompt/session attributes. Verify alias instructions consume `promptSessionAttributes` correctly or further reinforce acknowledgement in instructions.
+- **Instruction/version drift**: Ensure latest `*_updated_instructions` (mandatory antiPhaser → explore → calendar → flights, tool fallback rules, no placeholders) are uploaded to Bedrock aliases after edits.
+- **Testing coverage gap**: Only explore proxy path has unit tests. Add integration checks for calendar search, flights search, and PDF output before shipping major changes.
+- **SearchAPI resilience**: Monitor for 4xx/5xx (notably “time period too far in the future”). Lambda currently retries with `one_week_trip_in_the_next_six_months`, but more robust backoff/alerts would help.
+- **Render deployment discipline**: Repo changes have no effect until each Render service is redeployed; always redeploy SearchAPI, proxy, and relevant frontends after merging patches.
 
 ### Recent Updates (2025-10-27)
-- Lambda request normalization now treats `arrival_id`/`arrivalId`/`arrivalID` as destination aliases so Explore selections flow directly into flight searches.
-- `shared/_format_price_text` helper standardizes currency output to ASCII-safe `CUR ###` strings; timeline and recommendation text no longer include raw euro symbols or malformed bullet characters.
-- Explore candidate shaping no longer filters out non-Lufthansa carriers when `included_airlines=STAR_ALLIANCE`; instead we surface STAR ALLIANCE coverage in the reason text.
-- Chat payloads omit large `image` URLs for Explore destinations to keep UI bubbles compact; thumbnails/images can be reintroduced later via dedicated UI elements.
+- Frontend personas updated to lock chat input until a default origin is inferred; UI now surfaces the chosen origin or FRA fallback.
+- Proxy mirrors location context into both session and prompt attributes to support instruction compliance.
+- `antiPhaser` microservice redeployed with six-month horizon; proxy retries POST and falls back to GET (with logging) on failure.
+- Lambda explore shaping retains STAR ALLIANCE upstream but tags Lufthansa-only presentation downstream; `flightSearchRequest` includes origin from context.
+- Instruction bundles (`gina_updated_instructions`, `bianca_updated_instructions`, `paul_updated_instructions`) refreshed with mandatory tool order (antiPhaser → explore → flights → calendar), STAR ALLIANCE messaging, anti-placeholder guidance, and Lufthansa-only emphasis.
 
 ### Quick Reference
 - Repo root: `C:\Users\Damjan\source\repos\daisy`
-- Lufthansa Group carriers (downstream): `LH`, `LX`, `OS`, `SN`, `EW`, `4Y`, `EN`
-- STAR ALLIANCE enforced upstream; Lufthansa-only presentation downstream
-- Primary identifiers: agent `JDLTXAKYJY`; aliases Bianca `D84WDVHMZR`, Paul `R1YRB7NGUP`, Gina `UY0U7MRMDK`, test `TSTALIASID`; action groups `8QPJXRIZN5` and `DFAEASLNVH`
+- Key carriers (downstream presentation): `LH`, `LX`, `OS`, `SN`, `EW`, `4Y`, `EN`
+- Primary identifiers: agent `JDLTXAKYJY`; aliases Bianca `D84WDVHMZR`, Paul `R1YRB7NGUP`, Gina `UY0U7MRMDK`, test `TSTALIASID`; action groups `8QPJXRIZN5`, `DFAEASLNVH`
 - Key scripts: `scripts/deploy_lambda.ps1`, `scripts/replay_sessions.mjs`, `scripts/debug_invoke_agent.mjs`
-- Health endpoints: `https://google-api-daisy.onrender.com/healthz`; proxy health depends on service logs
+- Health endpoints: `https://google-api-daisy.onrender.com/healthz` (SearchAPI). Proxy health via Render service logs.
 
-Keep this handoff updated after notable changes so the next Codex session can resume quickly with full context.
+Keep this document updated after notable changes so the next Codex session can resume with full context.
