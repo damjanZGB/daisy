@@ -31,12 +31,233 @@ const MONTH_DEFINITIONS = [
   { slug: "september", names: ["september", "sep"] },
   { slug: "october", names: ["october", "oct"] },
   { slug: "november", names: ["november", "nov"] },
-  { slug: "december", names: ["december", "dec"] },
+  { slug: "december", names: ["december", "dec", "xmas", "christmas", "weihnachten"] },
 ];
 
 const MONTH_SLUG_TO_INDEX = new Map(
   MONTH_DEFINITIONS.map((item, idx) => [item.slug, idx + 1])
 );
+
+function nextFixedDate(ref, zone, month, day) {
+  let candidate = DateTime.fromObject({ year: ref.year, month, day }, { zone });
+  if (!candidate.isValid) {
+    return null;
+  }
+  const refStartMillis = ref.startOf("day").toMillis();
+  if (candidate.toMillis() < refStartMillis) {
+    candidate = candidate.plus({ years: 1 });
+  }
+  return candidate;
+}
+
+function computeEasterSunday(year, zone) {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return DateTime.fromObject({ year, month, day }, { zone });
+}
+
+function nextEasterSunday(ref, zone) {
+  let easter = computeEasterSunday(ref.year, zone);
+  if (!easter.isValid) {
+    return null;
+  }
+  if (easter.toMillis() < ref.startOf("day").toMillis()) {
+    easter = computeEasterSunday(ref.year + 1, zone);
+  }
+  return easter;
+}
+
+const COMMON_PHRASE_RULES = [
+  {
+    slug: "new_years_eve",
+    label: "New Year's Eve",
+    confidence: 0.95,
+    patterns: [
+      /\bnew[\s-]*year'?s?\s*eve\b/i,
+      /\bnye\b/i,
+      /\bsilvester\b/i,
+    ],
+    resolve: (ref, zone) => {
+      const start = nextFixedDate(ref, zone, 12, 31);
+      return start ? { start } : null;
+    },
+  },
+  {
+    slug: "new_years_day",
+    label: "New Year's Day",
+    confidence: 0.95,
+    patterns: [
+      /\bnew[\s-]*year'?s?\s*day\b/i,
+      /\bnew[\s-]*year(?!'?\s*eve)\b/i,
+    ],
+    resolve: (ref, zone) => {
+      const start = nextFixedDate(ref, zone, 1, 1);
+      return start ? { start } : null;
+    },
+  },
+  {
+    slug: "christmas_eve",
+    label: "Christmas Eve",
+    confidence: 0.9,
+    patterns: [
+      /\bchristmas\s+eve\b/i,
+      /\bxmas\s+eve\b/i,
+      /\bheiligabend\b/i,
+    ],
+    resolve: (ref, zone) => {
+      const start = nextFixedDate(ref, zone, 12, 24);
+      return start ? { start } : null;
+    },
+  },
+  {
+    slug: "christmas_day",
+    label: "Christmas Day",
+    confidence: 0.9,
+    patterns: [
+      /\bchristmas\b/i,
+      /\bxmas\b/i,
+      /\bweihnachten\b/i,
+    ],
+    resolve: (ref, zone) => {
+      const start = nextFixedDate(ref, zone, 12, 25);
+      return start ? { start } : null;
+    },
+  },
+  {
+    slug: "boxing_day",
+    label: "Boxing Day",
+    confidence: 0.9,
+    patterns: [/\bboxing\s+day\b/i],
+    resolve: (ref, zone) => {
+      const start = nextFixedDate(ref, zone, 12, 26);
+      return start ? { start } : null;
+    },
+  },
+  {
+    slug: "valentines_day",
+    label: "Valentine's Day",
+    confidence: 0.9,
+    patterns: [/\bvalentine'?s?\s+day\b/i],
+    resolve: (ref, zone) => {
+      const start = nextFixedDate(ref, zone, 2, 14);
+      return start ? { start } : null;
+    },
+  },
+  {
+    slug: "halloween",
+    label: "Halloween",
+    confidence: 0.9,
+    patterns: [/\bhalloween\b/i],
+    resolve: (ref, zone) => {
+      const start = nextFixedDate(ref, zone, 10, 31);
+      return start ? { start } : null;
+    },
+  },
+  {
+    slug: "easter_weekend",
+    label: "Easter Weekend",
+    confidence: 0.9,
+    patterns: [
+      /\beaster\s+weekend\b/i,
+      /\boster(n)?wochenende\b/i,
+    ],
+    resolve: (ref, zone) => {
+      const easter = nextEasterSunday(ref, zone);
+      if (!easter) return null;
+      return {
+        start: easter.minus({ days: 2 }),
+        end: easter.plus({ days: 1 }),
+      };
+    },
+  },
+  {
+    slug: "easter_sunday",
+    label: "Easter Sunday",
+    confidence: 0.9,
+    patterns: [/\beaster\b/i, /\bostern\b/i],
+    resolve: (ref, zone) => {
+      const start = nextEasterSunday(ref, zone);
+      return start ? { start } : null;
+    },
+  },
+  {
+    slug: "good_friday",
+    label: "Good Friday",
+    confidence: 0.9,
+    patterns: [/\bgood\s+friday\b/i, /\bkarfreitag\b/i],
+    resolve: (ref, zone) => {
+      const easter = nextEasterSunday(ref, zone);
+      if (!easter) return null;
+      return { start: easter.minus({ days: 2 }) };
+    },
+  },
+  {
+    slug: "easter_monday",
+    label: "Easter Monday",
+    confidence: 0.9,
+    patterns: [/\beaster\s+monday\b/i, /\bostermontag\b/i],
+    resolve: (ref, zone) => {
+      const easter = nextEasterSunday(ref, zone);
+      if (!easter) return null;
+      return { start: easter.plus({ days: 1 }) };
+    },
+  },
+  {
+    slug: "pentecost",
+    label: "Pentecost",
+    confidence: 0.85,
+    patterns: [/\bpentecost\b/i, /\bwhitsun\b/i, /\bpfingsten\b/i],
+    resolve: (ref, zone) => {
+      const easter = nextEasterSunday(ref, zone);
+      if (!easter) return null;
+      return { start: easter.plus({ days: 49 }) };
+    },
+  },
+];
+
+function normalizeCommonPhrase(phrase, ref, zone) {
+  const trimmed = (phrase || "").trim();
+  if (!trimmed) {
+    return {
+      normalizedPhrase: "",
+    };
+  }
+  for (const rule of COMMON_PHRASE_RULES) {
+    if (!rule.patterns.some((regex) => regex.test(trimmed))) {
+      continue;
+    }
+    const resolved = rule.resolve(ref, zone);
+    if (!resolved || !resolved.start || !resolved.start.isValid) {
+      continue;
+    }
+    const confidenceOverride =
+      resolved.confidence ?? rule.confidence ?? 0.9;
+    const isoDate = resolved.start.toISODate();
+    return {
+      normalizedPhrase: resolved.start.toISODate(),
+      startOverride: resolved.start,
+      endOverride: resolved.end,
+      appliedRule: rule.slug,
+      explanation: `Preset phrase "${rule.label}" mapped to ${isoDate}.`,
+      confidenceOverride,
+    };
+  }
+  return {
+    normalizedPhrase: trimmed,
+  };
+}
 
 const SEARCHAPI_DURATION_DEFAULT = 7;
 const SEARCHAPI_DURATION_TWO_WEEK = 14;
@@ -113,9 +334,11 @@ function interpretDatePhrase({ phrase, referenceDate, timeZone }) {
 
   const zone = coerceTimezone(timeZone);
   const ref = resolveReferenceDate(referenceDate, zone);
+  const normalization = normalizeCommonPhrase(trimmed, ref, zone);
+  const chronoSource = normalization.normalizedPhrase || trimmed;
 
   try {
-    const parsed = chrono.parse(trimmed, ref.toJSDate(), {
+    const parsed = chrono.parse(chronoSource, ref.toJSDate(), {
       forwardDate: true,
     });
     if (!parsed || parsed.length === 0) {
@@ -138,7 +361,10 @@ function interpretDatePhrase({ phrase, referenceDate, timeZone }) {
       };
     }
 
-    const startDate = DateTime.fromJSDate(start.date(), { zone });
+    let startDate = DateTime.fromJSDate(start.date(), { zone });
+    if (normalization.startOverride) {
+      startDate = normalization.startOverride;
+    }
     const result = {
       success: true,
       phrase: trimmed,
@@ -148,13 +374,29 @@ function interpretDatePhrase({ phrase, referenceDate, timeZone }) {
       isoTime: startDate.toISOTime({ suppressMilliseconds: true }),
       timeZone: zone,
       referenceDate: ref.toISO(),
-      confidence: Number(extractConfidence(start).toFixed(2)),
-      explanation: best.text
-        ? `Interpreted "${best.text}" relative to ${ref.toISODate()}`
-        : "Interpreted using chrono-node default parser",
+      confidence: Number(
+        (
+          normalization.confidenceOverride ??
+          extractConfidence(start)
+        ).toFixed(2)
+      ),
+      explanation: normalization.explanation
+        ? normalization.explanation
+        : best.text
+          ? `Interpreted "${best.text}" relative to ${ref.toISODate()}`
+          : "Interpreted using chrono-node default parser",
     };
+    if (normalization.appliedRule) {
+      result.preset = normalization.appliedRule;
+    }
 
-    if (best.end) {
+    if (normalization.endOverride) {
+      const endDate = normalization.endOverride;
+      result.endIsoDate = endDate.toISO({ suppressMilliseconds: true });
+      result.endIsoDateUTC = endDate.toUTC().toISO({ suppressMilliseconds: true });
+      result.endIsoDateOnly = endDate.toISODate();
+      result.endIsoTime = endDate.toISOTime({ suppressMilliseconds: true });
+    } else if (best.end) {
       const endDate = DateTime.fromJSDate(best.end.date(), { zone });
       result.endIsoDate = endDate.toISO({ suppressMilliseconds: true });
       result.endIsoDateUTC = endDate.toUTC().toISO({ suppressMilliseconds: true });

@@ -13,7 +13,7 @@ import json
 import math
 import os
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from urllib import error as _urlerr
 from urllib import parse as _urlparse
@@ -820,6 +820,65 @@ def _env_bool(name: str, default: bool) -> bool:
 
 def _now_iso() -> str:
     return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+
+def _format_iso(dt_obj: datetime) -> str:
+    """Return an ISO string trimmed to seconds and with Z for UTC offsets."""
+    value = dt_obj.replace(microsecond=0).isoformat()
+    if value.endswith("+00:00"):
+        return value[:-6] + "Z"
+    return value
+
+
+def _clock_snapshot(timezone_hint: Optional[str] = None) -> Dict[str, Any]:
+    """Capture the current time in UTC and the requested time zone."""
+    tz_candidates = [
+        timezone_hint or "",
+        os.getenv("DEFAULT_TIMEZONE", ""),
+        os.getenv("CLOCK_FALLBACK_TIMEZONE", ""),
+        "UTC",
+    ]
+    tz_name = next((c.strip() for c in tz_candidates if isinstance(c, str) and c.strip()), "UTC")
+    try:
+        tz_info = ZoneInfo(tz_name)
+    except Exception:
+        tz_name = "UTC"
+        tz_info = ZoneInfo("UTC")
+    now_utc = datetime.now(timezone.utc)
+    now_local = now_utc.astimezone(tz_info)
+    offset_minutes = int(((now_local.utcoffset() or timedelta()).total_seconds()) // 60)
+    snapshot = {
+        "clockSource": "lambda",
+        "timezone": tz_name,
+        "timezoneOffsetMinutes": offset_minutes,
+        "currentDate": now_local.date().isoformat(),
+        "currentTime": now_local.time().replace(microsecond=0).isoformat(),
+        "currentDateTimeLocal": _format_iso(now_local),
+        "currentDateTimeUtc": _format_iso(now_utc),
+        "epochSeconds": int(now_utc.timestamp()),
+        "epochMilliseconds": int(now_utc.timestamp() * 1000),
+        "isoWeekday": now_local.strftime("%A"),
+    }
+    return snapshot
+
+
+def _enrich_with_clock_metadata(
+    payload: Any, timezone_hint: Optional[str]
+) -> Tuple[Any, Optional[Dict[str, Any]]]:
+    """Attach clock metadata to the given payload without mutating the original."""
+    if not isinstance(payload, dict):
+        return payload, None
+    snapshot = _clock_snapshot(timezone_hint)
+    augmented = dict(payload)
+    meta_block = augmented.get("meta")
+    if isinstance(meta_block, dict):
+        new_meta = dict(meta_block)
+        new_meta.update(snapshot)
+    else:
+        new_meta = dict(snapshot)
+    augmented["meta"] = new_meta
+    augmented["lambdaClock"] = snapshot
+    return augmented, snapshot
 
 
 def _safe_detail(value: Any, *, limit: int = 400) -> str:
@@ -2752,6 +2811,9 @@ def _wrap_openapi(
     status: int,
     body_obj: Dict[str, Any],
     logger: Optional[InvocationLogger] = None,
+    *,
+    session_attr_updates: Optional[Dict[str, Any]] = None,
+    prompt_attr_updates: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
 
     if logger is None:
@@ -2772,11 +2834,21 @@ def _wrap_openapi(
         "responseBody": response_body,
     }
     _log("OpenAPI response wrapped", status=status)
+    session_attrs = dict(event.get("sessionAttributes") or {})
+    prompt_attrs = dict(event.get("promptSessionAttributes") or {})
+    if session_attr_updates:
+        for key, val in session_attr_updates.items():
+            if val is not None:
+                session_attrs[key] = val
+    if prompt_attr_updates:
+        for key, val in prompt_attr_updates.items():
+            if val is not None:
+                prompt_attrs[key] = val
     return {
         "messageVersion": "1.0",
         "response": action_response,
-        "sessionAttributes": event.get("sessionAttributes", {}),
-        "promptSessionAttributes": event.get("promptSessionAttributes", {}),
+        "sessionAttributes": session_attrs,
+        "promptSessionAttributes": prompt_attrs,
     }
 
 
@@ -2904,8 +2976,41 @@ def _handle_openapi(event: Dict[str, Any]) -> Dict[str, Any]:
                 proxy_params,
                 proxy_body,
             )
+            session_updates: Optional[Dict[str, Any]] = None
+            prompt_updates: Optional[Dict[str, Any]] = None
+            if api_path_lower in {"/tools/antiphaser", "/tools/datetime/interpret"}:
+                timezone_hint = (
+                    body.get("timezone")
+                    or body.get("timeZone")
+                    or query_params.get("timezone")
+                    or query_params.get("timeZone")
+                )
+                proxy_result, clock_snapshot = _enrich_with_clock_metadata(
+                    proxy_result, timezone_hint
+                )
+                if clock_snapshot:
+                    session_updates = {
+                        "currentDate": clock_snapshot.get("currentDate"),
+                        "currentDateTimeUtc": clock_snapshot.get("currentDateTimeUtc"),
+                    }
+                    prompt_updates = {
+                        "currentTimeZone": clock_snapshot.get("timezone"),
+                        "currentDateTimeLocal": clock_snapshot.get("currentDateTimeLocal"),
+                    }
+                    _log(
+                        "OpenAPI clock metadata attached",
+                        path=api_path_raw or api_path_lower,
+                        timezone=clock_snapshot.get("timezone"),
+                        current_date=clock_snapshot.get("currentDate"),
+                    )
             _log("OpenAPI tool proxy success", path=api_path_raw or api_path_lower)
-            return _wrap_openapi(event, 200, proxy_result)
+            return _wrap_openapi(
+                event,
+                200,
+                proxy_result,
+                session_attr_updates=session_updates,
+                prompt_attr_updates=prompt_updates,
+            )
         except Exception as exc:
             _log("OpenAPI tool proxy failure", path=api_path_raw or api_path_lower, error=str(exc))
             return _wrap_openapi(event, 502, {"error": f"Tool call failed: {exc}"})
