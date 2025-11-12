@@ -25,6 +25,12 @@ if (Test-Path ${catalogFile}) {
   Copy-Item ${catalogFile} -Destination (Join-Path $staging 'data')
 }
 
+$requirementsPath = Join-Path ${awsDir} 'requirements.txt'
+if (Test-Path $requirementsPath) {
+  Write-Host "Installing Python dependencies from $requirementsPath into $staging"
+  & python -m pip install --disable-pip-version-check -r $requirementsPath -t $staging
+}
+
 $zipPath = Join-Path $dist 'lambda.zip'
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
